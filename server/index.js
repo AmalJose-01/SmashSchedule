@@ -27,8 +27,8 @@ connectToDatabase();
 
 // Middleware to parse JSON requests
 app.use(express.json());
-app.use(cors());
-// app.use(cors(corsOptions))
+// app.use(cors());
+ app.use(cors(corsOptions))
 app.use("/api/v1", routes);
 
 app.listen(PORT, () => {
