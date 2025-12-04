@@ -1,5 +1,5 @@
 import { useState } from "react";
-import AdminRoutes from "./routes/adminRoutes.jsx";
+import AdminRoutes from "./routes/AdminRoutes.jsx";
 import "./App.css";
 import {
   BrowserRouter as Router,
