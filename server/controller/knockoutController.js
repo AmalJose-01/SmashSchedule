@@ -74,6 +74,8 @@ const knockoutController = {
 
       // 2. Pick top teams based on totalPoints or pointsDiff
       let qualifiedTeams = [];
+            let remainingTeams = []; // store non-qualified teams to fill odd slots
+
       groups.forEach((group) => {
         console.log("mergedStandings", group.teams);
 
@@ -110,9 +112,66 @@ const knockoutController = {
             teamId: team.teamId,
           }));
         qualifiedTeams.push(...topTeams);
+
+     // Take exactly the next top team from each group
+  const nextTeam = sortedTeams[numberOfPlayersQualifiedToKnockout];
+  if (nextTeam) {
+    remainingTeams.push({
+      name: nextTeam.name,
+      teamId: nextTeam.teamId,
+      totalPoints: nextTeam.totalPoints,
+      pointsDiff: nextTeam.pointsDiff,
+    });
+  }
+
+
+
       });
 
-      console.log("Qualified Team", qualifiedTeams);
+      console.log("Qualified Team1", qualifiedTeams);
+         console.log("remainingTeams", remainingTeams);
+
+// 2. Ensure even number of teams
+
+  //  if (qualifiedTeams.length % 2 !== 0 && remainingTeams.length > 0) {
+  //    remainingTeams.sort((a, b) => {
+  //       if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+  //       return b.pointsDiff - a.pointsDiff;
+  //     });
+  //     qualifiedTeams.push({
+  //       name: remainingTeams[0].name,
+  //       teamId: remainingTeams[0].teamId,
+  //     });
+  //  }
+
+  // Ensure Qualified Teams Are Even AND Minimum 8
+while (
+  (qualifiedTeams.length % 2 !== 0) ||      // odd count → must add 1
+  (qualifiedTeams.length < 8)               // less than 8 → must add more
+) {
+  if (remainingTeams.length === 0) break;   // nothing left to add, stop safely
+
+  // sort remaining best → worst
+  remainingTeams.sort((a, b) => {
+    if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+    return b.pointsDiff - a.pointsDiff;
+  });
+
+  const nextBest = remainingTeams.shift();  // take the BEST available
+
+  qualifiedTeams.push({
+    name: nextBest.name,
+    teamId: nextBest.teamId,
+  });
+}
+
+
+
+
+         
+                  console.log("Qualified Team Final", qualifiedTeams);
+
+
       // 3. Create KnockoutTeam entries
 
       const roundNumber = getRoundNumber(qualifiedTeams.length);

@@ -6,7 +6,7 @@ const cors = require(`cors`)
 
 
 const app = express();
-var whitelist = ['http://localhost:5173', 'http://localhost:5174', 'https://smash-schedule.vercel.app']
+var whitelist = ['http://localhost:5173', 'http://localhost:5174', 'https://smash-schedule.vercel.app', 'http://localhost:5175']
 var corsOptions = {
   origin: function (origin, callback) {
     if (whitelist.indexOf(origin) !== -1) {

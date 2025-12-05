@@ -10,17 +10,27 @@ import TeamSetup from "./pages/user/TeamSetup";
 import { Toaster } from "sonner";
 import Home from "./pages/user/Home.jsx";
 import Login from "./pages/admin/Login.jsx";
+import Footer from "./components/Footer.jsx"
+import TournamentList from "./pages/user/TournamentList.jsx";
+import GroupStageList from "./pages/user/GroupStageList.jsx";
+import KnockoutResult from  "./pages/user/KnockoutResult.jsx"
 function App() {
   const [count, setCount] = useState(0);
 
   return (
     <>
-      <div className="w-full h-full bg-slate-200">
+      <div className="w-full h-full bg-slate-200 overflow-x-hidden">
         <Router>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/teams" element={<TeamSetup />} />
+            <Route path="/tournamentList" element={<TournamentList />} />
+                        <Route path="/groupStageList/:tournamentId" element={<GroupStageList />} />
+                                                <Route path="/knockoutResult" element={<KnockoutResult />} />
+
+
+
 
             {/* Logins admin access */}
             {AdminRoutes()}
@@ -31,6 +41,7 @@ function App() {
             <Route path="/teams" element={<TeamSetup />} />
             <Route path="/knockout" element={<KnockoutFixtures />} /> */}
           </Routes>
+          <Footer />
         </Router>
         <Toaster richColors position="top-center" />
       </div>

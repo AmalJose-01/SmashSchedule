@@ -10,6 +10,8 @@ import { useTournament } from "../../hooks/useTournament";
 import { setTournamentData } from "../../redux/slices/tournamentSlice";
 import { useDispatch } from "react-redux";
 import { FaTrash, FaChevronDown, FaChevronUp } from "react-icons/fa"; // import the trash icon
+import { Calendar, Settings, Plus } from "lucide-react";
+import ButtonWithIcon from "../../components/ButtonWithIcon";
 
 const SetupTournament = () => {
   const navigate = useNavigate();
@@ -119,9 +121,7 @@ const SetupTournament = () => {
     //   numberOfPlayersQualifiedToKnockout: docu
     // };
 
-  console.log("saveData",saveData);
-  
-
+    console.log("saveData", saveData);
 
     if (selectedPlayers.length < saveData.teamsPerGroup) {
       toast.error("Not enough teams to form groups");
@@ -135,9 +135,7 @@ const SetupTournament = () => {
 
     // Create groups
     const groups = [];
-    const groupCount = Math.ceil(
-      shuffledTeams.length / saveData.teamsPerGroup
-    );
+    const groupCount = Math.ceil(shuffledTeams.length / saveData.teamsPerGroup);
 
     for (let i = 0; i < groupCount; i++) groups.push([]);
 
@@ -153,8 +151,8 @@ const SetupTournament = () => {
       teamsPerGroup: saveData.teamsPerGroup,
       playType: saveData.playType,
       groups,
-      numberOfPlayersQualifiedToKnockout:saveData.playersToQualify,
-      numberOfCourts:saveData.numberOfCourts,
+      numberOfPlayersQualifiedToKnockout: saveData.playersToQualify,
+      numberOfCourts: saveData.numberOfCourts,
 
       // teams: selectedPlayers.map((p) => p.id),
     };
@@ -185,15 +183,25 @@ const SetupTournament = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white ">
       {/* HEADER */}
-      <div className="flex justify-between items-center bg-blue-300 p-4  shadow-lg sticky top-0">
-        <h1 className="text-3xl font-bold text-blue-800">Setup Tournament</h1>
+      <div className="flex justify-between items-center bg-white p-4  shadow-lg sticky top-0">
+        <div className="flex items-center gap-4">
+          <Settings
+            className="w-8 h-8 text-blue-600"
+            onClick={() => navigate("/")}
+          />
 
-        <button
+          <h2 className="text-xl font-semibold text-blue-800">
+            Setup Tournament
+          </h2>
+        </div>
+
+        <ButtonWithIcon
+          title="Add Team"
+          icon="plus"
+          buttonBGColor="bg-green-600"
+          textColor="text-white"
           onClick={() => navigate("/teams")}
-          className="bg-green-600 text-white px-4 py-2 rounded-xl shadow hover:bg-green-700 transition"
-        >
-          + Add Team
-        </button>
+        />
       </div>
 
       {/* Tournament List */}
@@ -276,8 +284,7 @@ const SetupTournament = () => {
 
       {/* SETTINGS */}
       <div className="bg-white rounded-3xl shadow-lg p-6 space-y-4 mt-4 ml-4 mr-4 mb-8">
-        <form className="space-y-4" 
-        onSubmit={handleSubmit(onSubmit)}>
+        <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
           {/* Tournament Name */}
           <div>
             <label className="font-semibold">Tournament Name:</label>
