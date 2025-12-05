@@ -8,7 +8,9 @@ const Home = () => {
 
   return (
     <div id="home" className="min-h-screen  bg-gray-50">
-      <Navbar />
+ <div className="sticky top-0 z-50 bg-white shadow">
+        <Navbar />
+      </div>
       {/* <div
           className="w-screen h-2/4 mt-0"
           style={{
@@ -40,7 +42,7 @@ const Home = () => {
               icon="trophy"
               buttonBGColor="bg-green-600"
               textColor="text-white"
-              onClick={() => navigate("/create-tournament")}
+              onClick={() => navigate("/tournamentList")}
             />
           </div>
         </div>

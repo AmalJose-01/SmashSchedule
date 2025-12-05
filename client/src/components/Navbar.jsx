@@ -3,7 +3,7 @@ import { MdHome } from "react-icons/md";
 import { FaBars, FaTimes } from "react-icons/fa";
 import { useLocation, useNavigate } from "react-router-dom";
 import ButtonWithIcon from "./ButtonWithIcon";
-import { Home, Trophy, LogIn } from "lucide-react";
+import { Home, Trophy, LogIn, Space } from "lucide-react";
 
 // import { useDispatch, useSelector } from "react-redux";
 // import { logOut } from "../redux/slices/userSlice";
@@ -26,7 +26,7 @@ const Navbar = () => {
 
   return (
     <>
-      <header className="w-full bg-white shadow-md">
+      <div className="w-full bg-white shadow-md sticky top-0">
         <div className="flex h-16 items-center justify-between ml-4 mr-4">
           <div className="flex items-center gap-2">
             <Trophy
@@ -41,32 +41,55 @@ const Navbar = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="hidden md:flex items-center justify-center gap-6">
             <div
               className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors"
-            onClick={() => navigate("/")}
+              onClick={() => navigate("/")}
             >
-              <Home className={`${currentPage === "/" ? "text-blue-500" : "text-black"} w-5 h-5`}/>
-              <span className={`${currentPage === "/" ? "text-blue-500" : "text-black"}`}>Home</span>
+              <Home
+                className={`${
+                  currentPage === "/" ? "text-blue-500" : "text-black"
+                } w-5 h-5`}
+              />
+              <span
+                className={`${
+                  currentPage === "/" ? "text-blue-500" : "text-black"
+                }`}
+              >
+                Home
+              </span>
             </div>
-             <div
+            <div
               className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors"
-            onClick={() => navigate("/create-tournament")}
+              onClick={() => navigate("/create-tournament")}
             >
-              <Trophy className={`${currentPage === "/create-tournament" ? "text-blue-500" : "text-black"} w-5 h-5`}/>
-              <span className={`${currentPage === "/create-tournament" ? "text-blue-500" : "text-black"}`}>Tournaments</span>
+              <Trophy
+                className={`${
+                  currentPage === "/create-tournament"
+                    ? "text-blue-500"
+                    : "text-black"
+                } w-5 h-5`}
+              />
+              <span
+                className={`${
+                  currentPage === "/create-tournament"
+                    ? "text-blue-500"
+                    : "text-black"
+                }`}
+              >
+                Tournaments
+              </span>
             </div>
           </div>
 
-        
-          <div className="flex flex-row gap-3">
-            <ButtonWithIcon
+          <div className="flex items-end justify-end">
+            {/* <ButtonWithIcon
               title="Register Team"
               icon="plus"
               buttonBGColor="bg-green-600"
               textColor="text-white"
               onClick={() => navigate("/teams")}
-            />
+            /> */}
 
             {currentPage === "/" && (
               <ButtonWithIcon
@@ -82,7 +105,7 @@ const Navbar = () => {
           <div className="md:hidden">
             <button
               onClick={toggleMenu}
-              className="text-white focus:outline-none hover:text-blue-400"
+              className="text-blue focus:outline-none hover:text-blue-400"
             >
               {isOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
             </button>
@@ -90,33 +113,49 @@ const Navbar = () => {
         </div>
 
         {isOpen && (
-          <div className="md:hidden flex flex-col items-start  space-y-2">
-            <button
-              className={`transition-colors hover:text-foreground/80 text-black hover:text-blue-500`}
+          <div className="md:hidden flex flex-col items-start  space-y-2 shadow-md mt-2 bg-slate-50 p-3">
+           
+           <div
+              className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors"
+              onClick={() => navigate("/")}
             >
-              Home
-            </button>
-            <button
-              onClick={() => navigate("features")}
-              className="text-foreground/60 transition-colors hover:text-foreground/80  text-black hover:text-blue-500"
+              <Home
+                className={`${
+                  currentPage === "/" ? "text-blue-500" : "text-black"
+                } w-5 h-5`}
+              />
+              <span
+                className={`${
+                  currentPage === "/" ? "text-blue-500" : "text-black"
+                }`}
+              >
+                Home
+              </span>
+            </div>
+            <div
+              className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors"
+              onClick={() => navigate("/create-tournament")}
             >
-              Features
-            </button>
-            <button
-              onClick={() => navigate("about")}
-              className="text-foreground/60 transition-colors hover:text-foreground/80  text-black hover:text-blue-500"
-            >
-              About
-            </button>
-            <button
-              onClick={() => navigate("contact")}
-              className="text-foreground/60 transition-colors hover:text-foreground/80  text-black hover:text-blue-500"
-            >
-              Contact
-            </button>
-          </div>
+              <Trophy
+                className={`${
+                  currentPage === "/create-tournament"
+                    ? "text-blue-500"
+                    : "text-black"
+                } w-5 h-5`}
+              />
+              <span
+                className={`${
+                  currentPage === "/create-tournament"
+                    ? "text-blue-500"
+                    : "text-black"
+                }`}
+              >
+                Tournaments
+              </span>
+            </div>        
+                     </div>
         )}
-      </header>
+      </div>
     </>
   );
 };

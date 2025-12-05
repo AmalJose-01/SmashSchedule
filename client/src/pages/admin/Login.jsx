@@ -1,13 +1,16 @@
 import { Link, useLocation } from "react-router-dom";
 import TextField from "../../components/TextField";
-import validationSchema from "../../../utils/validationSchemas"
+import validationSchema from "../../../utils/validationSchemas";
 import { set, useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
- import { GoogleLogin } from "@react-oauth/google";
+import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
 import { useState } from "react";
 import { useLogin } from "../../hooks/useLogin";
 import { useGoogleLogin } from "../../hooks/useGoogleLogin";
+import { X, LogIn, User, Lock, Shield } from "lucide-react";
+import ButtonWithIcon from "../../components/ButtonWithIcon";
+import { FaUserShield } from "react-icons/fa";
 
 const Login = () => {
   // 1. Define Yup schema for validation
@@ -38,14 +41,14 @@ const Login = () => {
       const decoded = jwtDecode(credentialResponse.credential);
       console.log("Decoded Google user:", decoded);
 
-      const accountType = "admin"
-        // isAdmin === true
-        //   ? "admin"
-        //   : selectedTab === "Trade"
-        //   ? "trade"
-        //   : selectedTab === "User"
-        //   ? "user"
-        //   : "";
+      const accountType = "admin";
+      // isAdmin === true
+      //   ? "admin"
+      //   : selectedTab === "Trade"
+      //   ? "trade"
+      //   : selectedTab === "User"
+      //   ? "user"
+      //   : "";
 
       const inputData = {
         email: decoded.email,
@@ -64,97 +67,123 @@ const Login = () => {
   };
 
   const onSubmit = (data) => {
-    const accountType = "admin"
-      // isAdmin === true
-      //   ? "admin"
-      //   : selectedTab === "Trade"
-      //   ? "trade"
-      //   : selectedTab === "User"
-      //   ? "user"
-      //   : "";
+    const accountType = "admin";
+    // isAdmin === true
+    //   ? "admin"
+    //   : selectedTab === "Trade"
+    //   ? "trade"
+    //   : selectedTab === "User"
+    //   ? "user"
+    //   : "";
     const loginData = { ...data, accountType };
     handleLogin(loginData);
   };
 
-   const handleTabSelect = (tab) => {
+  const handleTabSelect = (tab) => {
     console.log("Selected Tab:", tab);
     setSelectedTab(tab);
   };
 
-
   return (
     <>
-      <div className="flex w-full min-h-screen justify-center items-center bg-gradient-to-t from-zinc-400 to-blue-300">
-        <div className="card w-full max-w-md mx-auto shadow-lg rounded-lg">
-          <div className="card-body">
-            <div className="text-center">
+      <div className="flex w-full min-h-screen justify-center items-center bg-gray-400">
+        <div className="card w-full max-w-md mx-auto shadow-lg rounded-lg bg-blue-600">
+          <div className="card-body rounded-lg ">
+            <div className="flex flex-col items-center justify-center text-center p-4">
+              <FaUserShield className="w-24 h-24 text-white" />
               <h2 className="text-2xl font-bold text-white card-title-text">
                 Welcome back
               </h2>
-              <h4>Enter your credentials to access your account</h4>
+              <h4 className="text-white">
+                Enter your credentials to access your account
+              </h4>
             </div>
-            <form
-              className="mt-4 flex flex-col gap-4"
-              onSubmit={handleSubmit(onSubmit)}
-            >
-             
-              <TextField
-                register={register}
-                name="email"
-                error={errors.email}
-                placeholder="Enter your email"
-                type={"email"}
-              />
+            <div className="text-center p-4 bg-white rounded-b-lg">
+              <form
+                className="mt-4 flex flex-col gap-2 bg"
+                onSubmit={handleSubmit(onSubmit)}
+              >
+                <div className="flex items-center gap-2 text-gray-700 mb-2 ">
+                  <User className="w-4 h-4" />
+                  <div>Password</div>
+                </div>
 
-              <TextField
-                register={register}
-                name="password"
-                error={errors.password}
-                placeholder="Enter your password"
-                type={"password"}
-              />
+                <TextField
+                  register={register}
+                  name="email"
+                  error={errors.email}
+                  placeholder="Enter your email"
+                  type={"email"}
+                />
 
-              <div className="flex items-center justify-between">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input type="checkbox" className="rounded border-border" />
-                  <span className="text-sm">Remember me</span>
-                </label>
+                <div className="flex items-center gap-2 text-gray-700 mb-2 ">
+                  <Lock className="w-4 h-4" />
+                  <div>Username</div>
+                </div>
 
-                <Link
-                  to="/forgot-password" // Use 'to' prop for the destination path
-                  className="text-primary hover:underline"
-                >
-                  Forgot password?
-                </Link>
+                <TextField
+                  register={register}
+                  name="password"
+                  error={errors.password}
+                  placeholder="Enter your password"
+                  type={"password"}
+                />
+
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" className="rounded border-border" />
+                    <span className="text-sm">Remember me</span>
+                  </label>
+
+                  <Link
+                    to="/forgot-password" // Use 'to' prop for the destination path
+                    className="text-primary hover:underline text-blue-500"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+
+                <ButtonWithIcon
+                  title="Sign In"
+                  icon="login"
+                  buttonBGColor="bg-blue-600"
+                  textColor="text-white"
+                  onClick={() => navigate("/teams")}
+                />
+              </form>
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-white text-gray-500">OR</span>
+                </div>
+              </div>
+              <div className="w-full ">
+                <div className="w-full ">
+                  <GoogleLogin
+                    onSuccess={(credentialResponse) => {
+                      onClickLoginWithGoogle(credentialResponse);
+                    }}
+                    onError={() => {
+                      console.log("Login Failed");
+                    }}
+                    className="w-full"
+                  />
+                </div>
               </div>
 
-              <button type="submit" className="btn btn-primary w-full">
-                Sign In
-              </button>
-            </form>
-            <div className="divider">OR continue with</div>
-
-            <div className="flex justify-center items-center ">
-              <GoogleLogin
-                onSuccess={(credentialResponse) => {
-                  onClickLoginWithGoogle(credentialResponse);
-                }}
-                onError={() => {
-                  console.log("Login Failed");
-                }}
-              />
-            </div>
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                Don't have an account?{" "}
-                <Link
-                  to="/signup" // Use 'to' prop instead of 'href'
-                  className="text-primary hover:underline"
-                >
-                  Sign up
-                </Link>
-              </p>
+              <div className="mt-6 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Don't have an account?{" "}
+                  <Link
+                    to="/signup" // Use 'to' prop instead of 'href'
+                    className="text-primary hover:underline"
+                  >
+                    Sign up
+                  </Link>
+                </p>
+              </div>
             </div>
           </div>
         </div>

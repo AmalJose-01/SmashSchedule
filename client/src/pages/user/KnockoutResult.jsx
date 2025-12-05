@@ -4,7 +4,7 @@ import { useGetKnockoutList } from "../../hooks/useGetKnockoutList";
 import ButtonWithIcon from "../../components/ButtonWithIcon";
 import { createKnockoutScheduleAPI } from "../../services/teamServices";
 import { useKnockoutUpdateScore } from "../../hooks/useKnockoutUpdateScore";
-import { Table, Shuffle } from "lucide-react";
+import { Table } from "lucide-react";
 
 export function getRoundName(round) {
   switch (round) {
@@ -23,7 +23,7 @@ export function getRoundName(round) {
   }
 }
 
-const KnockoutFixtures = () => {
+const KnockoutResult = () => {
   const [matches, setMatches] = useState([]);
 
   const tournamentData = useSelector(
@@ -36,22 +36,11 @@ const KnockoutFixtures = () => {
 
   const knockoutList = handleKnockoutList();
 
-  const { handleKnockoutScore, isLoading, isError, isSuccess } =
-    useKnockoutUpdateScore();
-
   useEffect(() => {
     if (knockoutList?.matches) {
       setMatches(knockoutList.matches);
     }
   }, [knockoutList]);
-
-  const handleCreateKnockout = async () => {
-    try {
-      await createKnockoutScheduleAPI(tournamentData);
-    } catch (error) {
-      console.error("Failed to create knockout schedule:", error);
-    }
-  };
 
   // GROUP MATCHES BY ROUND
   const groupedMatches = matches.reduce((acc, match) => {
@@ -60,44 +49,8 @@ const KnockoutFixtures = () => {
     return acc;
   }, {});
 
-  // HANDLE SCORE CHANGE
-  const handleSetChange = (matchId, setIndex, teamType, value) => {
-    setMatches((prev) =>
-      prev.map((match) => {
-        if (match._id !== matchId) return match;
-
-        const updatedScores = match.scores.map((set, idx) =>
-          idx === setIndex ? { ...set, [teamType]: value } : set
-        );
-
-        return { ...match, scores: updatedScores };
-      })
-    );
-  };
-  const updateScore = async (matchId) => {
-    const match = matches.find((m) => m._id === matchId);
-    if (!match) return;
-
-    const scoreData = {
-      matchId: match._id,
-      tournamentId: tournamentData.tournamentId,
-      scores: match.scores,
-    };
-
-    try {
-      // Call your API to update the score
-      console.log("scoreData to be sent:", scoreData);
-
-      handleKnockoutScore(scoreData);
-      console.log("Score updated successfully");
-    } catch (error) {
-      console.error("Failed to update score:", error);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white ">
-     
       {/* Header */}
       <div className="flex justify-between items-center bg-white p-4  shadow-lg sticky top-0">
         <div className="flex items-center gap-4">
@@ -110,25 +63,7 @@ const KnockoutFixtures = () => {
             Knockout Stage
           </h2>
         </div>
-
-       <ButtonWithIcon
-          title="Shuffle Knockout Team"
-          icon="shuffle"
-          buttonBGColor="bg-green-600"
-          textColor="text-white"
-          onClick={handleCreateKnockout}
-        />
       </div>
-     
-     
-      {/* CREATE KNOCKOUT BUTTON */}
-      {/* <ButtonWithIcon
-        title="Knockout Team"
-        icon="plus"
-        buttonBGColor="bg-green-600"
-        textColor="text-white"
-        onClick={handleCreateKnockout}
-      /> */}
 
       {/* ROUNDS + MATCHES */}
       {matches.length > 0 ? (
@@ -156,6 +91,7 @@ const KnockoutFixtures = () => {
                       {match.scores.map((set, idx) => {
                         const isSameScore =
                           set.home === set.away && set.home > 0 && set.away > 0;
+
                         return (
                           <div
                             key={set._id}
@@ -166,19 +102,8 @@ const KnockoutFixtures = () => {
                               min={0}
                               max={21}
                               className="w-20 md:w-40 p-1 border rounded text-center text-black"
-                              value={set.home === 0 ? "" :  set.home}
-                              // onFocus={(e) => {
-                              //   if (Number(e.target.value) === 0) {
-                              //     e.target.value = "";
-                              //   }
-                              // }}
-                              onChange={(e) => {
-                                let value = Math.min(
-                                  21,
-                                  Math.max(0, Number(e.target.value))
-                                );
-                                handleSetChange(match._id, idx, "home", value);
-                              }}
+                              value={set.home === 0 ? "" : set.home}
+                              disabled={true}
                             />
                             <span>-</span>
                             <input
@@ -186,33 +111,12 @@ const KnockoutFixtures = () => {
                               min={0}
                               max={21}
                               className="w-20 md:w-40 p-1 border rounded text-center text-black"
-                              value={set.away ===0 ? "" : set.away}
-                              // onFocus={(e) => {
-                              //   if (Number(e.target.value) === 0) {
-                              //     e.target.value = "";
-                              //   }
-                              // }}
-                              onChange={(e) => {
-                                let value = Math.min(
-                                  21,
-                                  Math.max(0, Number(e.target.value))
-                                );
-                                handleSetChange(match._id, idx, "away", value);
-                              }}
+                              value={set.away === 0 ? "" : set.away}
+                              disabled={true}
                             />
                           </div>
                         );
                       })}
-                    </div>
-
-                    {/* Update Score Button */}
-                    <div className="mt-2 items-center flex justify-center">
-                      <button
-                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                        onClick={() => updateScore(match._id)}
-                      >
-                        Update Score
-                      </button>
                     </div>
                   </div>
                 ))}
@@ -231,4 +135,4 @@ const KnockoutFixtures = () => {
   );
 };
 
-export default KnockoutFixtures;
+export default KnockoutResult;

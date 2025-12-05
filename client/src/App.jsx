@@ -11,6 +11,9 @@ import { Toaster } from "sonner";
 import Home from "./pages/user/Home.jsx";
 import Login from "./pages/admin/Login.jsx";
 import Footer from "./components/Footer.jsx"
+import TournamentList from "./pages/user/TournamentList.jsx";
+import GroupStageList from "./pages/user/GroupStageList.jsx";
+import KnockoutResult from  "./pages/user/KnockoutResult.jsx"
 function App() {
   const [count, setCount] = useState(0);
 
@@ -22,6 +25,12 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/teams" element={<TeamSetup />} />
+            <Route path="/tournamentList" element={<TournamentList />} />
+                        <Route path="/groupStageList/:tournamentId" element={<GroupStageList />} />
+                                                <Route path="/knockoutResult" element={<KnockoutResult />} />
+
+
+
 
             {/* Logins admin access */}
             {AdminRoutes()}
