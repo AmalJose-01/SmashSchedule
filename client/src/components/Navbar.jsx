@@ -61,18 +61,18 @@ const Navbar = () => {
             </div>
             <div
               className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors"
-              onClick={() => navigate("/create-tournament")}
+              onClick={() => navigate("/tournamentList")}
             >
               <Trophy
                 className={`${
-                  currentPage === "/create-tournament"
+                  currentPage === "/tournamentList"
                     ? "text-blue-500"
                     : "text-black"
                 } w-5 h-5`}
               />
               <span
                 className={`${
-                  currentPage === "/create-tournament"
+                  currentPage === "/tournamentList"
                     ? "text-blue-500"
                     : "text-black"
                 }`}
@@ -134,18 +134,18 @@ const Navbar = () => {
             </div>
             <div
               className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors"
-              onClick={() => navigate("/create-tournament")}
+              onClick={() => navigate("/tournamentList")}
             >
               <Trophy
                 className={`${
-                  currentPage === "/create-tournament"
+                  currentPage === "/tournamentList"
                     ? "text-blue-500"
                     : "text-black"
                 } w-5 h-5`}
               />
               <span
                 className={`${
-                  currentPage === "/create-tournament"
+                  currentPage === "/tournamentList"
                     ? "text-blue-500"
                     : "text-black"
                 }`}
