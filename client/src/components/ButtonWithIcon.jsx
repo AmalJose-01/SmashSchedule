@@ -1,6 +1,8 @@
 import React from "react";
 import { FaCalculator, FaPlus, FaSave, FaTimes, FaUserShield } from "react-icons/fa";
 import { BiLogIn, BiLogOut } from "react-icons/bi";
+import { Home, Trophy, LogIn } from "lucide-react";
+
 
 // Icon map
 const iconMap = {
@@ -11,6 +13,7 @@ const iconMap = {
   close: FaTimes,
   save: FaSave,
   admin: FaUserShield,
+  trophy : Trophy
 };
 
 const ButtonWithIcon = ({ title, icon, buttonBGColor, textColor, onClick, type = "button", }) => {

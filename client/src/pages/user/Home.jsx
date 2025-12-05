@@ -1,13 +1,15 @@
+import { useNavigate } from "react-router-dom";
+import ButtonWithIcon from "../../components/ButtonWithIcon";
 import Navbar from "../../components/Navbar";
 import bgImage from "/src/assets/icon/bg_Web.svg";
 
 const Home = () => {
-  return (
-    <>
-      <Navbar />
+    const navigate = useNavigate();
 
-      <div className="w-screen h-screen flex justify-center">
-        <div
+  return (
+    <div id="home" className="min-h-screen  bg-gray-50">
+      <Navbar />
+      {/* <div
           className="w-screen h-2/4 mt-0"
           style={{
             backgroundImage: `url(${bgImage})`,
@@ -16,9 +18,34 @@ const Home = () => {
           }}
         >
           <h1 className="text-white text-2xl">Hello World</h1>
+        </div> */}
+      <div className=" bg-white rounded-lg shadow-xl mt-10 px-[20px] py-[20px] mx-[20px]">
+        <div className="flex justify-between items-start">
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="font-bold text-lg text-blue-600">
+                Club Tournament Schedule
+              </h1>
+              <p className="text-gray-600 mb-4">
+                Date: Saturday, 10 January 2026 <br />
+                Time: 9:00 AM – 4:00 PM <br />
+                Venue: Ken Kay Badminton Stadium, Wendouree <br />
+                Event: Men’s Doubles (18+)
+              </p>
+            </div>
+          </div>
+          <div className="items-center justify-center">
+ <ButtonWithIcon
+              title="View Tournaments"
+              icon="trophy"
+              buttonBGColor="bg-green-600"
+              textColor="text-white"
+              onClick={() => navigate("/create-tournament")}
+            />
+          </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

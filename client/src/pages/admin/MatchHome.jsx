@@ -31,45 +31,10 @@ const MatchHome = () => {
 
   const tournamentDetail = handleTournamentDetail();
 
-  // const normalizeGroups = (groupsArray, matchesArray) => {
-  //   const groupObj = {};
-
-  //   groupsArray.forEach((g) => {
-  //     const key = g.groupName.replace("Group ", ""); // A, B, C, D
-  //     groupObj[key] = g.standings ?? g.teams ?? []; // depends on your structure
-  //   });
-
-  //   const matchesObj = {};
-
-  //   groupsArray.forEach((g) => {
-  //     const key = g.groupName.replace("Group ", "");
-  //     matchesObj[key] = matchesArray
-  //       .filter((m) => m.group === g._id)
-  //       .map((m) => ({
-  //         matchName: m.matchName || "",
-  //         matchId: m._id,
-  //         team1: m.teamsHome || "",
-  //         team2: m.teamsAway || "",
-  //         time: m.time || "",
-  //         court: m.court || "",
-  //         sets: m.sets || [
-  //           [0, 0],
-  //           [0, 0],
-  //           [0, 0],
-  //         ],
-  //       }));
-  //   });
-
-  //   return { groupObj, matchesObj };
-  // };
-
+  
   useEffect(() => {
     if (tournamentDetail?.groups && tournamentDetail?.matches) {
-      // const { groupObj, matchesObj } = normalizeGroups(
-      //   tournamentDetail.groups,
-      //   tournamentDetail.matches
-      // );
-
+     
       setGroups(tournamentDetail.groups); // now groups = { A: [...], B: [...], ... }
 
       setMatches(tournamentDetail.matches); // now matches = { A: [...], B: [...], ... }
@@ -116,6 +81,18 @@ const MatchHome = () => {
       toast.error("Match not found");
       return;
     }
+
+// Check for any set where home and away scores are the same and > 0
+  const hasSameScore = match.scores[0].sets.some(
+    (set) => set.home === set.away && set.home > 0
+  );
+
+  if (hasSameScore) {
+    toast.error("Cannot save: A set has the same score for both teams.");
+    return; // block saving
+  }
+
+
 
     try {
       const payload = {
@@ -255,6 +232,12 @@ const MatchHome = () => {
                               set.home === set.away &&
                               set.home > 0 &&
                               set.away > 0; // check if scores are equal
+
+                            const disableHome =
+                              m.status === "finished" && set.home === 0;
+                            const disableAway =
+                              m.status === "finished" && set.away === 0;
+
                             return (
                               <div
                                 key={set._id}
@@ -270,7 +253,8 @@ const MatchHome = () => {
                                         ? "border-red-500"
                                         : "border-gray-500"
                                     } `}
-                                    value={set.home === 0 ? "" : set.home }
+                                    value={set.home === 0 ? "" : set.home}
+                                    disabled={disableHome}
                                     // onFocus={(e) => {
                                     //   if (Number(e.target.value) === 0) {
                                     //     e.target.value = "";
@@ -300,7 +284,8 @@ const MatchHome = () => {
                                         ? "border-red-500"
                                         : "border-gray-500"
                                     } `}
-                                    value={set.away === 0 ? "" : set.away }
+                                    value={set.away === 0 ? "" : set.away}
+                                    disabled={disableAway}
                                     // onClick={(e) => {
                                     //   if (Number(e.target.value) === 0) {
                                     //     e.target.value = "";
