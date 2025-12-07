@@ -1,11 +1,15 @@
 // AdminRoutes.jsx
-import { Route } from "react-router-dom";
+import { Navigate, Route } from "react-router-dom";
 import ProtectedRoute from "../components/ProtectedRoute";
 import SetupTournament from "../pages/admin/SetupTournament";
 import MatchHome from "../pages/admin/MatchHome";
 import KnockoutFixtures from "../pages/admin/KnockoutFixtures";
+import { useSelector } from "react-redux";
+import Login from "../pages/admin/Login";
 
 const AdminRoutes = () => {
+    const user = useSelector((state) => state.user.user);
+
   return (
     <>
       <Route
@@ -35,7 +39,12 @@ const AdminRoutes = () => {
       />
 
 
-
+<Route
+  path="/login"
+  element={
+    !user ? <Login /> : <Navigate to="/create-tournament" replace />
+  }
+/>
 
 
 

@@ -111,6 +111,8 @@ const KnockoutFixtures = () => {
           </h2>
         </div>
 
+        <div className="flex gap-2">
+
        <ButtonWithIcon
           title="Shuffle Knockout Team"
           icon="shuffle"
@@ -118,6 +120,8 @@ const KnockoutFixtures = () => {
           textColor="text-white"
           onClick={handleCreateKnockout}
         />
+                  <Logout />
+</div>
       </div>
      
      

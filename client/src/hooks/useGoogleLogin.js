@@ -52,7 +52,9 @@ export const useGoogleLogin = () => {
             // } else
               
               if (user.accountType === "admin") {
-              navigate("/create-tournament");
+               navigate("/create-tournament");
+                                // navigate("/create-tournament", { replace: true });
+
             }
 
             dispatch(loginUser(res));

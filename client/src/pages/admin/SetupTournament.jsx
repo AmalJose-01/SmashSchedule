@@ -13,6 +13,7 @@ import { FaTrash, FaChevronDown, FaChevronUp } from "react-icons/fa"; // import 
 import { Calendar, Settings, Plus } from "lucide-react";
 import ButtonWithIcon from "../../components/ButtonWithIcon";
 import {useDeleteTournament} from "../../hooks/useDeleteTournament"
+import Logout from "../../components/Logout";
 
 const SetupTournament = () => {
   const navigate = useNavigate();
@@ -199,13 +200,15 @@ const SetupTournament = () => {
           </h2>
         </div>
 
-        <ButtonWithIcon
+<div className="flex gap-2"> <ButtonWithIcon
           title="Add Team"
           icon="plus"
           buttonBGColor="bg-green-600"
           textColor="text-white"
           onClick={() => navigate("/teams")}
         />
+           <Logout /></div>
+       
       </div>
 
       {/* Tournament List */}

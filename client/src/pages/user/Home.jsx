@@ -4,25 +4,16 @@ import Navbar from "../../components/Navbar";
 import bgImage from "/src/assets/icon/bg_Web.svg";
 
 const Home = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
   return (
     <div id="home" className="min-h-screen  bg-gray-50">
- <div className="sticky top-0 z-50 bg-white shadow">
+      <div className="sticky top-0 z-50 bg-white shadow">
         <Navbar />
       </div>
-      {/* <div
-          className="w-screen h-2/4 mt-0"
-          style={{
-            backgroundImage: `url(${bgImage})`,
-            backgroundRepeat: "no-repeat",
-            backgroundSize: "cover",
-          }}
-        >
-          <h1 className="text-white text-2xl">Hello World</h1>
-        </div> */}
+
       <div className=" bg-white rounded-lg shadow-xl mt-10 px-[20px] py-[20px] mx-[20px]">
-        <div className="flex justify-between items-start">
+        <div className="flex flex-col  md:flex-row justify-between items-start">
           <div className="flex justify-between items-start">
             <div>
               <h1 className="font-bold text-lg text-blue-600">
@@ -37,7 +28,7 @@ const Home = () => {
             </div>
           </div>
           <div className="items-center justify-center">
- <ButtonWithIcon
+            <ButtonWithIcon
               title="View Tournaments"
               icon="trophy"
               buttonBGColor="bg-green-600"

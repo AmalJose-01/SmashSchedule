@@ -10,6 +10,7 @@ import { useCreateKnockoutList } from "../../hooks/useCreateKnockoutList";
 import { useSelector } from "react-redux";
 import { FaSave } from "react-icons/fa";
 import { Settings, Table } from "lucide-react";
+import Logout from "../../components/Logout";
 
 const MatchHome = () => {
   const location = useLocation();
@@ -142,7 +143,7 @@ const MatchHome = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white ">
-     {/* Header */}
+      {/* Header */}
       <div className="flex justify-between items-center bg-white p-4  shadow-lg sticky top-0">
         <div className="flex items-center gap-4">
           <Table
@@ -150,22 +151,20 @@ const MatchHome = () => {
             onClick={() => navigate("/")}
           />
 
-          <h2 className="text-xl font-semibold text-blue-800">
-            Group Stage
-          </h2>
+          <h2 className="text-xl font-semibold text-blue-800">Group Stage</h2>
         </div>
 
-       <ButtonWithIcon
-          title="Go to Knockout"
-          icon="go"
-          buttonBGColor="bg-green-600"
-          textColor="text-white"
-          onClick={handleGotoKnockout}
-        />
+        <div className="flex gap-2">
+          <ButtonWithIcon
+            title="Go to Knockout"
+            icon="go"
+            buttonBGColor="bg-green-600"
+            textColor="text-white"
+            onClick={handleGotoKnockout}
+          />
+          <Logout />
+        </div>
       </div>
-     
-     
- 
 
       {/* Ticker */}
       {/* <div className="sticky top-0 z-50 bg-blue-700 text-white p-4 rounded-xl shadow-lg text-center text-lg font-semibold tracking-wide">
@@ -326,11 +325,9 @@ const MatchHome = () => {
                             className="flex w-full items-center gap-1  justify-center px-4 py-2 bg-green-600 text-white rounded hover:bg-blue-700 text-sm"
                             onClick={() => updateScore(m._id)}
                           >
-                               <FaSave size={18} />
-                         
+                            <FaSave size={18} />
                             Update Score
                           </button>
-                        
                         </div>
                       </div>
                     ))}
