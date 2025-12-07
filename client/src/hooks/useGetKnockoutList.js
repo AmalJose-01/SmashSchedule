@@ -18,11 +18,17 @@ export const useGetKnockoutList = (tournamentId) => {
   };
 
   useEffect(() => {
-    if (isLoading || isFetching) {
+    if (isLoading ) {
       toast.loading("Loading knockout schedule...", { id: "knockoutLoader" });
     } else {
       toast.dismiss("knockoutLoader");
     }
+  }, [isLoading]);
+
+    useEffect(() => {
+    if (!isLoading && !isFetching) {
+      toast.dismiss("Loading knockout schedule...", { id: "knockoutLoader" });
+    } 
   }, [isLoading, isFetching]);
 
   return {

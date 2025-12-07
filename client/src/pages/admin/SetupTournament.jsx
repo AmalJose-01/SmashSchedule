@@ -12,12 +12,22 @@ import { useDispatch } from "react-redux";
 import { FaTrash, FaChevronDown, FaChevronUp } from "react-icons/fa"; // import the trash icon
 import { Calendar, Settings, Plus } from "lucide-react";
 import ButtonWithIcon from "../../components/ButtonWithIcon";
+import {useDeleteTournament} from "../../hooks/useDeleteTournament"
 
 const SetupTournament = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { handleTournamentList, isLoading: isTournamentLoading } =
     useTournament();
+
+ const {
+    handleTournamentDelete,
+    isLoading: isScoreLoading,
+    isError: isScoreError,
+    isSuccess: isScoreSuccess,
+  } = useDeleteTournament();
+
+
   const queryClient = useQueryClient();
   const [isExpanded, setIsExpanded] = useState(false);
   const toggleExpand = () => setIsExpanded((prev) => !prev);
@@ -111,16 +121,6 @@ const SetupTournament = () => {
   // SCHEDULE TOURNAMENT
   // ---------------------------
   const onSubmit = async (saveData) => {
-    // const formValues = {
-    //   tournamentName: document.querySelector("input[name='tournamentName']")
-    //     .value,
-    //   teamsPerGroup: Number(
-    //     document.querySelector("input[name='teamsPerGroup']").value
-    //   ),
-    //   playType: document.querySelector("select[name='playType']").value,
-    //   numberOfPlayersQualifiedToKnockout: docu
-    // };
-
     console.log("saveData", saveData);
 
     if (selectedPlayers.length < saveData.teamsPerGroup) {
@@ -170,12 +170,16 @@ const SetupTournament = () => {
 
   // Trigger loading toast while fetching
   useEffect(() => {
-    if (isLoading || isFetching) {
+    if (isLoading) {
       loadingToast = toast.loading("Loading players...");
     } else if (!isLoading && !isFetching) {
       toast.dismiss(loadingToast);
     }
   }, [isLoading, isFetching]);
+
+  const handleDeleteTournament = (tournamentId) => {
+    handleTournamentDelete(tournamentId);
+  };
 
   // ---------------------------
   // RENDER UI

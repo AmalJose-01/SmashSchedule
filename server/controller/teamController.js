@@ -1,9 +1,13 @@
+const mongoose = require("mongoose");
+
 const Team = require("../model/team.js");
 const Tournament = require("../model/tournament.js");
 const Group = require("../model/groupTournament.js");
 const { get } = require("mongoose");
 const GroupMatch = require("../model/groupMatch.js");
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const KnockoutMatch = require("../model/knockoutMatch.js"); 
+const KnockoutTeam = require("../model/knockoutTeam.js"); 
 const {
   getTotalPoints,
   determineWinner,
@@ -169,7 +173,7 @@ const teamController = {
         const groupMatches = formattedTeams.flatMap((homeTeam, i) =>
           formattedTeams.slice(i + 1).map((awayTeam) => ({
             matchName: `${homeTeam.name}-vs-${awayTeam.name}`,
-            tournament: createTournament._id, // correct field name
+            tournamentId: createTournament._id, // correct field name
             group: saveGroup._id, // correct field name
             teamsHome: [homeTeam.teamId],
             teamsAway: [awayTeam.teamId],
@@ -244,7 +248,7 @@ const teamController = {
       const { tournamentId } = req.params;
       const tournamentGroup = await Group.find({ tournamentId: tournamentId });
       const tournamentMatches = await GroupMatch.find({
-        tournament: tournamentId,
+        tournamentId: tournamentId,
       });
 
       console.log("tournamentGroup:", tournamentGroup);
@@ -333,7 +337,7 @@ const teamController = {
         if (!isMatchPlayed) continue;
 
         // const matchWinner = determineWinner(matchScores);
-              let { winner, matchStatus } = determineWinner(matchScores);
+        let { winner, matchStatus } = determineWinner(matchScores);
         const matchWinner = winner;
 
         const matchPoints = getTotalPoints(matchScores);
@@ -383,6 +387,66 @@ const teamController = {
     } catch (error) {
       console.log("Save match score error", error);
       res.status(500).json({ message: "Server Error", error: error.message });
+    }
+  },
+  deleteTournament: async (req, res) => {
+    try {
+      const { tournamentId } = req.params;
+      console.log("Deleting tournament:", tournamentId);
+
+      // 1️⃣ Validate ID format (prevents CastError)
+      if (!mongoose.Types.ObjectId.isValid(tournamentId)) {
+        return res.status(400).json({ message: "Invalid tournamentId" });
+      }
+
+      // 2️⃣ Check if tournament exists
+      const existingTournament = await Tournament.findById(tournamentId);
+
+      if (!existingTournament) {
+        return res.status(404).json({ message: "Tournament not found" });
+      }
+
+      console.log("existingTournament:", existingTournament);
+
+      // 3️⃣ Get all groups under this tournament
+      const groups = await Group.find({ tournamentId });
+
+      console.log("Groups found:", groups.length);
+
+      // 4️⃣ Extract groupIds safely
+      const groupIds = groups.map((g) => g._id);
+
+      // 5️⃣ Delete group matches (safe check if model exists)
+      if (typeof GroupMatch !== "undefined") {
+        await GroupMatch.deleteMany({ groupId: { $in: groupIds } });
+        await GroupMatch.deleteMany({ tournamentId });
+      }
+
+      // 6️⃣ Delete knockout matches (safe)
+      if (typeof KnockoutMatch !== "undefined") {
+        await KnockoutMatch.deleteMany({ tournamentId });
+      }
+
+      // 7️⃣ Delete knockout teams (safe)
+      if (typeof KnockoutTeam !== "undefined") {
+        await KnockoutTeam.deleteMany({ tournamentId });
+      }
+
+      // 8️⃣ Delete groups
+      await Group.deleteMany({ tournamentId });
+
+      // 9️⃣ Delete tournament
+      await Tournament.findByIdAndDelete(tournamentId);
+
+      return res.status(200).json({
+        message: "Tournament and all related data deleted successfully",
+      });
+    } catch (error) {
+      console.error("deleteTournament error:", error);
+      return res.status(500).json({
+        message: "Server Error",
+        error: error.message,
+      });
     }
   },
 };

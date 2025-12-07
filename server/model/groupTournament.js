@@ -1,7 +1,13 @@
 const mongoose = require("mongoose");
 
 const GroupSchema = new mongoose.Schema({
-   tournamentId: {type: String, required: true},
+tournamentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Tournament",
+    required: true
+  },
+
+  //  tournamentId: {type: String, required: true},
   groupName:{ type: String, required: true }, // "Group A"
   teams: [{
     teamId: {type: String, required: true},

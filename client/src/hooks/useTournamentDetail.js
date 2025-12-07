@@ -12,12 +12,18 @@ export const useTournamentDetail = (tournamentId) => {
   });
 
 useEffect(() => {
-  if (isLoading || isFetching) {
+  if (isLoading ) {
     toast.loading("Loading matches...", { id: "matchLoader" });
   } else {
     toast.dismiss("matchLoader");
   }
-}, [isLoading, isFetching]);
+}, [isLoading]);
+
+   useEffect(() => {
+    if (!isLoading && !isFetching) {
+      toast.dismiss("Loading matches...", { id: "matchLoader" });
+    } 
+  }, [isLoading, isFetching]);
 
 
 

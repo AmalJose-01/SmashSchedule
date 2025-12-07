@@ -1,9 +1,11 @@
 import React, { use, useState } from "react";
 import { MdHome } from "react-icons/md";
-import { FaBars, FaTimes } from "react-icons/fa";
+import { FaBars, FaTimes, FaUserShield } from "react-icons/fa";
 import { useLocation, useNavigate } from "react-router-dom";
 import ButtonWithIcon from "./ButtonWithIcon";
 import { Home, Trophy, LogIn, Space } from "lucide-react";
+import { useSelector } from "react-redux";
+import { div } from "framer-motion/client";
 
 // import { useDispatch, useSelector } from "react-redux";
 // import { logOut } from "../redux/slices/userSlice";
@@ -24,10 +26,14 @@ const Navbar = () => {
     navigate("/login");
   };
 
+  const userData = useSelector((state) => state.user.user);
+
+  console.log("userData", userData);
+
   return (
     <>
       <div className="w-full bg-white shadow-md sticky top-0">
-        <div className="flex h-16 items-center justify-between ml-4 mr-4">
+        <div className="flex  h-18 md:h-16 items- justify-between ml-4 mr-4">
           <div className="flex items-center gap-2">
             <Trophy
               className="w-8 h-8 text-blue-600"
@@ -41,7 +47,7 @@ const Navbar = () => {
             </div>
           </div>
 
-          <div className="hidden md:flex items-center justify-center gap-6">
+          <div className="hidden md:flex  items-center justify-center gap-6">
             <div
               className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors"
               onClick={() => navigate("/")}
@@ -82,15 +88,7 @@ const Navbar = () => {
             </div>
           </div>
 
-          <div className="flex items-end justify-end">
-            {/* <ButtonWithIcon
-              title="Register Team"
-              icon="plus"
-              buttonBGColor="bg-green-600"
-              textColor="text-white"
-              onClick={() => navigate("/teams")}
-            /> */}
-
+          <div className="hidden md:flex items-center justify-end">
             {currentPage === "/" && (
               <ButtonWithIcon
                 title={"Admin"}
@@ -102,7 +100,16 @@ const Navbar = () => {
             )}
           </div>
 
-          <div className="md:hidden">
+          <div className="md:hidden flex items-center gap-3 ml-auto">
+            {currentPage === "/" && (
+              <button
+                onClick={handleLogin}
+                className="md:hidden ml-auto mr-3 flex w-10 h-10 bg-blue-600 text-white rounded-lg items-center justify-center"
+              >
+                <FaUserShield />
+              </button>
+            )}
+
             <button
               onClick={toggleMenu}
               className="text-blue focus:outline-none hover:text-blue-400"
@@ -114,8 +121,7 @@ const Navbar = () => {
 
         {isOpen && (
           <div className="md:hidden flex flex-col items-start  space-y-2 shadow-md mt-2 bg-slate-50 p-3">
-           
-           <div
+            <div
               className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors"
               onClick={() => navigate("/")}
             >
@@ -152,8 +158,8 @@ const Navbar = () => {
               >
                 Tournaments
               </span>
-            </div>        
-                     </div>
+            </div>
+          </div>
         )}
       </div>
     </>

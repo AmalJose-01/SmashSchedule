@@ -74,6 +74,19 @@ export const saveScoreAPI = async (scoreData) => {
   }
 };
 
+export const deleteTournamentAPI = async (tournamentId) => {
+  try {
+    const response = await axios.delete(
+      `${BASE_URL}/tournament/delete-tournament/${tournamentId}`
+    );
+    return response.data;
+  } catch (error) {
+     throw new Error(
+      error.response?.data?.message || "Failed to delete tournament"
+    );
+  }
+}
+
 
 
 export const createKnockoutScheduleAPI = async (tournament) => {
@@ -128,4 +141,6 @@ export const saveKnockoutScoreAPI = async (scoreData) => {
     );
   }
 };
+
+
 
