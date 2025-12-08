@@ -3,7 +3,7 @@ import {
   CardElement,
   useStripe,
   useElements,
-  PaymentRequestButtonElement,
+  
 } from "@stripe/react-stripe-js";
 import { toast } from "sonner";
 import { useSubscription } from "../../hooks/useAccountSubscription";
@@ -18,49 +18,49 @@ export default function CheckoutForm() {
   const [paymentRequest, setPaymentRequest] = useState(null);
 
   // Initialize Google Pay / Apple Pay
-  useEffect(() => {
-    if (!stripe) return;
+//   useEffect(() => {
+//     if (!stripe) return;
 
-    const pr = stripe.paymentRequest({
-      country: "AU",
-      currency: "aud",
-      total: { label: "Subscription", amount: 2900 }, // $29 AUD default
-      requestPayerName: true,
-      requestPayerEmail: true,
-    });
+//     const pr = stripe.paymentRequest({
+//       country: "AU",
+//       currency: "aud",
+//       total: { label: "Subscription", amount: 2900 }, // $29 AUD default
+//       requestPayerName: true,
+//       requestPayerEmail: true,
+//     });
 
-    pr.canMakePayment().then((result) => {
-      if (result) setPaymentRequest(pr);
-    });
+//     pr.canMakePayment().then((result) => {
+//       if (result) setPaymentRequest(pr);
+//     });
 
-    // Listen for PaymentRequest events
-    if (pr) {
-      pr.on("paymentmethod", async (ev) => {
-        try {
-          const clientSecret = await handleSubscription({
-            amount: 2900, // same amount as above
-            userEmail: ev.payerEmail,
-            metadata: { userId: "1234" },
-          });
+//     // Listen for PaymentRequest events
+//     if (pr) {
+//       pr.on("paymentmethod", async (ev) => {
+//         try {
+//           const clientSecret = await handleSubscription({
+//             amount: 2900, // same amount as above
+//             userEmail: ev.payerEmail,
+//             metadata: { userId: "1234" },
+//           });
 
-          const result = await stripe.confirmCardPayment(clientSecret, {
-            payment_method: ev.paymentMethod.id,
-          });
+//           const result = await stripe.confirmCardPayment(clientSecret, {
+//             payment_method: ev.paymentMethod.id,
+//           });
 
-          if (result.error) {
-            ev.complete("fail");
-            toast.error(result.error.message);
-          } else {
-            ev.complete("success");
-            toast.success("Payment successful!");
-          }
-        } catch (err) {
-          ev.complete("fail");
-          toast.error("Payment failed!");
-        }
-      });
-    }
-  }, [stripe, handleSubscription]);
+//           if (result.error) {
+//             ev.complete("fail");
+//             toast.error(result.error.message);
+//           } else {
+//             ev.complete("success");
+//             toast.success("Payment successful!");
+//           }
+//         } catch (err) {
+//           ev.complete("fail");
+//           toast.error("Payment failed!");
+//         }
+//       });
+//     }
+//   }, [stripe, handleSubscription]);
 
   // Handle normal Card payments
   const handleCardPayment = async (amount) => {
@@ -98,11 +98,11 @@ export default function CheckoutForm() {
   return (
     <div className="w-full space-y-4 p-6 bg-white rounded shadow">
       {/* PaymentRequestButton for Google Pay / Apple Pay */}
-      {paymentRequest && (
+      {/* {paymentRequest && (
         <div className="mb-4">
           <PaymentRequestButtonElement options={{ paymentRequest }} />
         </div>
-      )}
+      )} */}
 
       {/* CardElement */}
       <div className="border p-3 rounded mb-4">
