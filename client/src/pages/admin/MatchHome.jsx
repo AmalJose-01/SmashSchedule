@@ -251,7 +251,6 @@ const allFinished = groups.every((gp) => {
                           {m.matchName}
                         </div>
                         <div className="text-sm text-gray-600 mt-1">
-                          {/* {m.time} — {m.court} */}
                          {m.court} {/* 10:00 AM — Court 1 */}
                         </div>
                         <div className="mt-2 space-y-1 items-center justify-center">
