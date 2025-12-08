@@ -61,7 +61,7 @@ async function generateNextRound(tournamentId, round) {
   }
 }
 
-const knockoutController = {
+const adminKnockoutController = {
   createTeamsForKnockout: async (req, res) => {
     // console.log("Creating teams for knockout with data:", req.body);
 
@@ -292,4 +292,4 @@ const knockoutController = {
   },
 };
 
-module.exports = knockoutController;
+module.exports = adminKnockoutController;

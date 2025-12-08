@@ -3,7 +3,6 @@ import { toast } from "sonner";
 import { useTournamentDetail } from "../../hooks/useTournamentDetail";
 
 import { useParams } from "react-router-dom";
-import { useUpdateScore } from "../../hooks/useUpdateScore";
 import ButtonWithIcon from "../../components/ButtonWithIcon";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Table } from "lucide-react";
@@ -24,7 +23,7 @@ const GroupStageList = () => {
   const toggleExpand = () => setIsExpanded((prev) => !prev);
 
   const { handleTournamentDetail, isLoading: isTournamentDetailLoading } =
-    useTournamentDetail(tournamentId);
+    useTournamentDetail(tournamentId,"User");
 
   const tournamentDetail = handleTournamentDetail();
 

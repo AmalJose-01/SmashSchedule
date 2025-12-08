@@ -22,3 +22,22 @@ export const getUser = () => {
     return null;
   }
 };
+
+export const getAccessToken = () => {
+    return localStorage.getItem("accessToken") || null
+}
+
+export const getRefreshToken = () => {
+    return localStorage.getItem("refreshToken") || null
+
+}
+
+export const headerData =  () => {
+
+    return {
+        headers:{
+            Authorization: `Bearer ${getAccessToken()}`
+        }
+    }
+}
+

@@ -42,17 +42,13 @@ const AdminRoutes = () => {
 <Route
   path="/login"
   element={
-    !user ? <Login /> : <Navigate to="/create-tournament" replace />
+   !user ? <Login /> : <Navigate to="/create-tournament" replace />
+      // !user ? <Login /> : <Navigate to="/checkout" replace />
+
+  
   }
 />
 
-
-
- {/* <Route path="/match/:tournamentId" element={<MatchHome />} />
-
-            <Route path="/create-tournament" element={<SetupTournament />} />
-            <Route path="/teams" element={<TeamSetup />} />
-            <Route path="/knockout" element={<KnockoutFixtures />} /> */}
 
       {/* Add more admin routes here */}
     </>

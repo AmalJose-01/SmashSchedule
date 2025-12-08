@@ -23,7 +23,7 @@ const MatchHome = () => {
   const navigate = useNavigate();
 
   const { handleTournamentDetail, isLoading: isTournamentDetailLoading } =
-    useTournamentDetail(tournamentId);
+    useTournamentDetail(tournamentId,"Admin");
 
   const {
     handleScore,
@@ -113,12 +113,30 @@ const MatchHome = () => {
     // Navigate to knockout page with top teams
     // You can use react-router's useNavigate for navigation
     try {
-      const allFinished = groups.every((gp) => gp.status === "finished");
 
-      // if (!allFinished) {
-      //   toast.error("All groups must be finished before creating knockout stage.");
-      //   return;
-      // }
+console.log("groups",groups);
+
+
+
+
+      // const allFinished = groups.every((gp) => gp.status === "finished");
+
+      //         const groupMatches = matches.filter((m) => m.group === gp._id);
+
+const allFinished = groups.every((gp) => {
+  // Get all matches for this group
+  const groupMatches = matches.filter((m) => m.group === gp._id);
+
+  // Check if all matches in this group are finished
+  return groupMatches.every((match) => match.status === "finished");
+});
+
+
+
+      if (!allFinished) {
+        toast.error("All groups must be finished before creating knockout stage.");
+        return;
+      }
 
       navigate("/knockout", { state: { teams: topTeams, tournamentId } });
     } catch (error) {

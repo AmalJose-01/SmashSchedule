@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { getTeamListAPI, saveTournamentAPI } from "../../services/teamServices";
+import { getTeamListAPI } from "../../services/admin/adminTeamServices";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import tournamentSetupSchema from "../../../utils/validationSchemas";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -10,24 +11,24 @@ import { useTournament } from "../../hooks/useTournament";
 import { setTournamentData } from "../../redux/slices/tournamentSlice";
 import { useDispatch } from "react-redux";
 import { FaTrash, FaChevronDown, FaChevronUp } from "react-icons/fa"; // import the trash icon
-import { Calendar, Settings, Plus } from "lucide-react";
+import { Settings } from "lucide-react";
 import ButtonWithIcon from "../../components/ButtonWithIcon";
-import {useDeleteTournament} from "../../hooks/useDeleteTournament"
+import { useDeleteTournament } from "../../hooks/useDeleteTournament";
 import Logout from "../../components/Logout";
+import { saveTournamentAPI } from "../../services/admin/adminTeamServices";
 
 const SetupTournament = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { handleTournamentList, isLoading: isTournamentLoading } =
-    useTournament();
+  const { handleTournamentList, isLoading: isTournamentLoading , error:tournamentListError } =
+    useTournament("Admin");
 
- const {
+  const {
     handleTournamentDelete,
     isLoading: isScoreLoading,
     isError: isScoreError,
     isSuccess: isScoreSuccess,
   } = useDeleteTournament();
-
 
   const queryClient = useQueryClient();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -39,11 +40,12 @@ const SetupTournament = () => {
   const { mutateAsync } = useMutation({
     mutationKey: ["saveTournament"],
     mutationFn: saveTournamentAPI,
-    onMutate: () => toast.loading("Saving tournament..."),
+    onMutate: () =>
+      toast.loading("Saving tournament...", { id: "saveTournament" }),
     onSuccess: () => {
       toast.dismiss();
       toast.success("Tournament saved successfully!");
-      queryClient.invalidateQueries({ queryKey: ["tournamentList"] });
+      queryClient.invalidateQueries({ queryKey: ["adminTournamentList"] });
     },
     onError: (err) => {
       toast.dismiss();
@@ -113,10 +115,7 @@ const SetupTournament = () => {
   const tournaments = handleTournamentList();
 
   useEffect(() => {
-    // console.log("Tournaments updated:", tournaments);
   }, [tournaments]);
-
-  // console.log("Tournament List:", tournaments);
 
   // ---------------------------
   // SCHEDULE TOURNAMENT
@@ -155,7 +154,6 @@ const SetupTournament = () => {
       numberOfPlayersQualifiedToKnockout: saveData.playersToQualify,
       numberOfCourts: saveData.numberOfCourts,
 
-      // teams: selectedPlayers.map((p) => p.id),
     };
 
     console.log("Final tournamentData →", tournamentData);
@@ -164,6 +162,7 @@ const SetupTournament = () => {
       await mutateAsync(tournamentData);
     } catch (err) {
       console.error("Error:", err);
+      toast.dismiss("saveTournament");
     }
 
     setAssigning(false);
@@ -181,6 +180,10 @@ const SetupTournament = () => {
   const handleDeleteTournament = (tournamentId) => {
     handleTournamentDelete(tournamentId);
   };
+
+ 
+
+
 
   // ---------------------------
   // RENDER UI
@@ -200,15 +203,17 @@ const SetupTournament = () => {
           </h2>
         </div>
 
-<div className="flex gap-2"> <ButtonWithIcon
-          title="Add Team"
-          icon="plus"
-          buttonBGColor="bg-green-600"
-          textColor="text-white"
-          onClick={() => navigate("/teams")}
-        />
-           <Logout /></div>
-       
+        <div className="flex gap-2">
+          {" "}
+          <ButtonWithIcon
+            title="Add Team"
+            icon="plus"
+            buttonBGColor="bg-green-600"
+            textColor="text-white"
+            onClick={() => navigate("/teams")}
+          />
+          <Logout />
+        </div>
       </div>
 
       {/* Tournament List */}

@@ -41,16 +41,16 @@ function determineWinner(sets)  {
   const requiredWins = Math.ceil(totalSets / 2);
 
   let winner = null;
-  let status = "Ongoing";
+  let matchStatus = "Ongoing";
 
   if (homeSetWins >= requiredWins) {
       winner = "home";
-    status = "finished";
+    matchStatus = "finished";
   } else if (awaySetWins >= requiredWins) {
     winner = "away";
     matchStatus = "finished";
   }
-  return { winner, status };
+  return { winner, matchStatus };
 };
 
 function determineKnockoutWinnerAndStatus(scores, teamsHome, teamsAway) {

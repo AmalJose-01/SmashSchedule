@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
-import { createKnockoutScheduleAPI } from "../services/teamServices";
+import { createKnockoutScheduleAPI } from "../services/admin/adminTeamServices";
 
 export const useCreateKnockoutList = (tournament) => {
   let loadingToastId;

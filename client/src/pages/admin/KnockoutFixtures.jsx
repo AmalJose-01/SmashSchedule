@@ -2,9 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useGetKnockoutList } from "../../hooks/useGetKnockoutList";
 import ButtonWithIcon from "../../components/ButtonWithIcon";
-import { createKnockoutScheduleAPI } from "../../services/teamServices";
+import { createKnockoutScheduleAPI } from "../../services/admin/adminTeamServices";
 import { useKnockoutUpdateScore } from "../../hooks/useKnockoutUpdateScore";
 import { Table, Shuffle } from "lucide-react";
+import Logout from "../../components/Logout";
 
 export function getRoundName(round) {
   switch (round) {
@@ -31,7 +32,7 @@ const KnockoutFixtures = () => {
   );
 
   const { handleKnockoutList } = useGetKnockoutList(
-    tournamentData?.tournamentId
+    tournamentData?.tournamentId,"Admin"
   );
 
   const knockoutList = handleKnockoutList();

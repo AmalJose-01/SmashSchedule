@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { saveScoreAPI } from "../services/teamServices";
+import { saveScoreAPI } from "../services/admin/adminTeamServices";
 
 export const useUpdateScore = (input) => {
       const queryClient = useQueryClient();
@@ -12,7 +12,8 @@ export const useUpdateScore = (input) => {
     onSuccess: () => {
        toast.dismiss(); 
       toast.success("Score saved successfully!");
-      queryClient.invalidateQueries({ queryKey: ["tournamentDetail"] });
+queryClient.invalidateQueries({ queryKey: ["adminTournamentDetail"] });
+queryClient.invalidateQueries({ queryKey: ["tournamentDetail"] });
     },
     onError: (err) => {
        toast.dismiss(); 

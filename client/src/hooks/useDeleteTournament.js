@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { deleteTournamentAPI } from "../services/teamServices";
+import { deleteTournamentAPI } from "../services/admin/adminTeamServices";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
@@ -13,7 +13,7 @@ export const useDeleteTournament = (tournamentId) => {
     onSuccess: () => {
       toast.dismiss();
       toast.success("Delete tournament successfully!");
-      queryClient.invalidateQueries({ queryKey: ["tournamentList"] });
+      queryClient.invalidateQueries({ queryKey: ["adminTournamentList"] });
     },
     onError: (err) => {
       toast.dismiss();

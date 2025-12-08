@@ -51,13 +51,15 @@ export const useGoogleLogin = () => {
             //   navigate("/userdashboard");
             // } else
               
+            dispatch(loginUser(res));
+
+
               if (user.accountType === "admin") {
                navigate("/create-tournament");
-                                // navigate("/create-tournament", { replace: true });
+                            //  navigate("/checkout");
 
             }
 
-            dispatch(loginUser(res));
             return "Login successful!";
           },
           error: (err) => {
