@@ -317,7 +317,7 @@ const GroupStageList = () => {
                           </div>
                           <div className="text-sm text-gray-600 mt-1">
                             {/* {m.time} — {m.court} */}
-                            10:00 AM — Court 1
+                            {m.court} {/* 10:00 AM — Court 1 */}
                           </div>
                           <div className="mt-2 space-y-1 items-center justify-center">
                             {m.scores[0].sets.map((set, idx) => {
