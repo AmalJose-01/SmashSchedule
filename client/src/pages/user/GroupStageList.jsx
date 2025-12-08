@@ -1,4 +1,4 @@
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useTournamentDetail } from "../../hooks/useTournamentDetail";
 
@@ -6,17 +6,13 @@ import { useParams } from "react-router-dom";
 import { useUpdateScore } from "../../hooks/useUpdateScore";
 import ButtonWithIcon from "../../components/ButtonWithIcon";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useCreateKnockoutList } from "../../hooks/useCreateKnockoutList";
-import { useSelector } from "react-redux";
-import { FaSave } from "react-icons/fa";
-import { Settings, Table } from "lucide-react";
+import {  Table } from "lucide-react";
 
-const MatchHome = () => {
+const GroupStageList = () => {
   const location = useLocation();
   const state = location.state || {};
   const [groups, setGroups] = useState(null);
   const [matches, setMatches] = useState({});
-  const [tickerIndex, setTickerIndex] = useState(0);
   const [selectedGroup, setSelectedGroup] = useState("all"); // "all" = show all groups
   const { tournamentId } = useParams();
   const navigate = useNavigate();
@@ -24,12 +20,7 @@ const MatchHome = () => {
   const { handleTournamentDetail, isLoading: isTournamentDetailLoading } =
     useTournamentDetail(tournamentId);
 
-  const {
-    handleScore,
-    isLoading: isScoreLoading,
-    isError: isScoreError,
-    isSuccess: isScoreSuccess,
-  } = useUpdateScore();
+
 
   const tournamentDetail = handleTournamentDetail();
 
@@ -55,58 +46,8 @@ const MatchHome = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleSetChange = (matchId, setIdx, teamKey, value) => {
-    console.log("Handle Set Change Called:", matchId, setIdx, teamKey, value);
-    setMatches((prev) =>
-      prev.map((m) => {
-        if (m._id === matchId) {
-          const updatedScores = m.scores.map((scoreObj) => {
-            const updatedSets = scoreObj.sets.map((set, idx) =>
-              idx === setIdx ? { ...set, [teamKey]: Number(value) } : set
-            );
-            return { ...scoreObj, sets: updatedSets };
-          });
-          return { ...m, scores: updatedScores };
-        }
-        return m;
-      })
-    );
-  };
-
-  const updateScore = async (matchId) => {
-    const match = matches.find((m) => m._id === matchId);
-    console.log("updateScore called for match:", match);
-
-    if (!match) {
-      toast.error("Match not found");
-      return;
-    }
-
-    // Check for any set where home and away scores are the same and > 0
-    const hasSameScore = match.scores[0].sets.some(
-      (set) => set.home === set.away && set.home > 0
-    );
-
-    if (hasSameScore) {
-      toast.error("Cannot save: A set has the same score for both teams.");
-      return; // block saving
-    }
-
-    try {
-      const payload = {
-        ...match,
-        matchId: match._id,
-      };
-      delete payload._id; // remove _id to avoid confusion
-
-      // Call API to update score
-      handleScore(payload);
-    } catch (error) {
-      toast.error(
-        error?.response?.data?.message || "Failed to update match score"
-      );
-    }
-  };
+ 
+ 
 
   const handleGotoKnockout = async () => {
     // Navigate to knockout page with top teams
@@ -119,12 +60,11 @@ const MatchHome = () => {
       //   return;
       // }
 
-      navigate("/knockout", { state: { teams: topTeams, tournamentId } });
+      navigate("/knockoutResult", { state: { teams: topTeams, tournamentId } });
     } catch (error) {
       console.log("Navigation error:", error);
     }
 
-    // navigate(`/knockout/${tournamentId}`, { state: { teams: topTeams } });
   };
 
   // Top teams for knockout
@@ -245,9 +185,11 @@ const MatchHome = () => {
                               set.away > 0; // check if scores are equal
 
                             const disableHome =
-                              m.status === "finished" && set.home === 0;
+                              true;
                             const disableAway =
-                              m.status === "finished" && set.away === 0;
+                              true;
+                            
+
 
                             return (
                               <div
@@ -266,24 +208,7 @@ const MatchHome = () => {
                                     } `}
                                     value={set.home === 0 ? "" : set.home}
                                     disabled={disableHome}
-                                    // onFocus={(e) => {
-                                    //   if (Number(e.target.value) === 0) {
-                                    //     e.target.value = "";
-                                    //   }
-                                    // }}
-                                    onChange={(e) => {
-                                      let value = Number(e.target.value);
-
-                                      // Clamp value between 0 and 21
-                                      if (isNaN(value) || value < 0) value = 0;
-                                      if (value > 21) value = 21;
-                                      handleSetChange(
-                                        m._id,
-                                        idx,
-                                        "home",
-                                        value
-                                      );
-                                    }}
+                                   
                                   />
                                   <span>-</span>
                                   <input
@@ -297,22 +222,7 @@ const MatchHome = () => {
                                     } `}
                                     value={set.away === 0 ? "" : set.away}
                                     disabled={disableAway}
-                                    // onClick={(e) => {
-                                    //   if (Number(e.target.value) === 0) {
-                                    //     e.target.value = "";
-                                    //   }
-                                    // }}
-                                    onChange={(e) => {
-                                      let value = Number(e.target.value);
-                                      if (isNaN(value) || value < 0) value = 0;
-                                      if (value > 21) value = 21;
-                                      handleSetChange(
-                                        m._id,
-                                        idx,
-                                        "away",
-                                        value
-                                      );
-                                    }}
+                                   
                                   />
                                 </div>
                               </div>
@@ -320,18 +230,7 @@ const MatchHome = () => {
                           })}
                         </div>
 
-                        {/* Update Score Button */}
-                        <div className="w-full items-center justify-center mt-2 ">
-                          <button
-                            className="flex w-full items-center gap-1  justify-center px-4 py-2 bg-green-600 text-white rounded hover:bg-blue-700 text-sm"
-                            onClick={() => updateScore(m._id)}
-                          >
-                               <FaSave size={18} />
-                         
-                            Update Score
-                          </button>
-                        
-                        </div>
+                       
                       </div>
                     ))}
                   </div>
@@ -413,4 +312,4 @@ const MatchHome = () => {
   );
 };
 
-export default MatchHome;
+export default GroupStageList;

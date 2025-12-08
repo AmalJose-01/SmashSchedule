@@ -286,7 +286,7 @@ const teamController = {
       let { winner, matchStatus } = determineWinner(scoreObject.sets);
       console.log("Match Winner:", winner);
       let totalPoints = getTotalPoints(scoreObject.sets);
-      console.log("Total Points:", totalPoints);
+      console.log("matchStatus", matchStatus);
 
       // Save/update match scores
       const updatedMatch = await GroupMatch.findByIdAndUpdate(

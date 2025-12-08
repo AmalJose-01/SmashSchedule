@@ -1,6 +1,8 @@
 import React from "react";
 import { FaCalculator, FaPlus, FaSave, FaTimes, FaUserShield } from "react-icons/fa";
 import { BiLogIn, BiLogOut } from "react-icons/bi";
+import { Home, Trophy, LogIn, ArrowRight ,Shuffle} from "lucide-react";
+
 
 // Icon map
 const iconMap = {
@@ -11,6 +13,9 @@ const iconMap = {
   close: FaTimes,
   save: FaSave,
   admin: FaUserShield,
+  trophy : Trophy,
+  go : ArrowRight,
+  shuffle: Shuffle
 };
 
 const ButtonWithIcon = ({ title, icon, buttonBGColor, textColor, onClick, type = "button", }) => {
@@ -20,7 +25,7 @@ const ButtonWithIcon = ({ title, icon, buttonBGColor, textColor, onClick, type =
     <button
     type={type}
       onClick={onClick}
-      className={`flex items-center justify-center gap-2 h-8 px-4 rounded-lg border border-gray-300 shadow-md transition duration-200
+      className={`flex items-center justify-center gap-2 h-10 px-4 rounded-lg border border-gray-300 shadow-md transition duration-200
         ${buttonBGColor ? buttonBGColor : "bg-white"}
         ${textColor ? textColor : "text-black"}
         hover:bg-blue-800 hover:text-white`}
