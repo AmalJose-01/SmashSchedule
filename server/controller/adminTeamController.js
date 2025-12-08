@@ -6,8 +6,8 @@ const Group = require("../model/groupTournament.js");
 const { get } = require("mongoose");
 const GroupMatch = require("../model/groupMatch.js");
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-const KnockoutMatch = require("../model/knockoutMatch.js"); 
-const KnockoutTeam = require("../model/knockoutTeam.js"); 
+const KnockoutMatch = require("../model/knockoutMatch.js");
+const KnockoutTeam = require("../model/knockoutTeam.js");
 const {
   getTotalPoints,
   determineWinner,
@@ -32,7 +32,8 @@ const adminTeamController = {
         playerTwoDOB,
       } = req.body;
 
-      if (!userId||
+      if (
+        !userId ||
         !teamName ||
         !playerOneName ||
         !playerTwoName ||
@@ -109,7 +110,8 @@ const adminTeamController = {
         numberOfCourts,
       } = req.body;
 
-      if (!req.userId||
+      if (
+        !req.userId ||
         !tournamentName ||
         !playType ||
         !teamsPerGroup ||
@@ -134,7 +136,7 @@ const adminTeamController = {
         teamsPerGroup,
         numberOfPlayersQualifiedToKnockout,
         numberOfCourts,
-        adminId:req.userId
+        adminId: req.userId,
       });
 
       if (!createTournament) {
@@ -143,7 +145,39 @@ const adminTeamController = {
 
       let savedGroups = [];
 
-      // 2. Loop through each group
+      // COURT LIST
+      const courts = Array.from(
+        { length: numberOfCourts },
+        (_, idx) => `Court ${idx + 1}`
+      );
+ const totalGroups = groupData.length;
+    const baseCourts = Math.floor(numberOfCourts / totalGroups);
+    let extraCourts = numberOfCourts % totalGroups;
+
+    const groupCourts = []; // courts assigned per group
+
+   let courtIndex = 0;
+
+  for (let i = 0; i < totalGroups; i++) {
+      let courtCount = baseCourts;
+
+      if (extraCourts > 0) {
+        courtCount++;
+        extraCourts--;
+      }
+
+      const courtsForThisGroup = courts.slice(courtIndex, courtIndex + courtCount);
+
+      groupCourts.push(courtsForThisGroup);
+      courtIndex += courtCount;
+    }
+
+
+
+
+ // ----------------------------------------
+    // 2. CREATE GROUPS + MATCHES
+    // ----------------------------------------
       for (let i = 0; i < groupData.length; i++) {
         const groupInfo = groupData[i];
         const groupName = `Group ${alphabet[i]}`;
@@ -173,27 +207,35 @@ const adminTeamController = {
         });
         savedGroups.push(saveGroup._id);
 
-        // 2b. Generate matches for this group
-        const groupMatches = formattedTeams.flatMap((homeTeam, i) =>
-          formattedTeams.slice(i + 1).map((awayTeam) => ({
-            matchName: `${homeTeam.name}-vs-${awayTeam.name}`,
-            tournamentId: createTournament._id, // correct field name
-            group: saveGroup._id, // correct field name
-            teamsHome: [homeTeam.teamId],
-            teamsAway: [awayTeam.teamId],
-            scheduledTime: null,
-            scores: [
-              {
-                sets: [
-                  { home: 0, away: 0 },
-                  { home: 0, away: 0 },
-                  { home: 0, away: 0 },
-                ],
-              },
-            ],
-            status: "scheduled",
-          }))
-        );
+            const courtsAssigned = groupCourts[i];
+
+// 2b. Generate matches for this group
+let matchIndex = 0;
+const groupMatches = formattedTeams.flatMap((homeTeam, i) =>
+  formattedTeams.slice(i + 1).map((awayTeam) => {
+    const court = courtsAssigned[matchIndex % courtsAssigned.length];
+    matchIndex++;
+    return {
+      matchName: `${homeTeam.name}-vs-${awayTeam.name}`,
+      tournamentId: createTournament._id,
+      group: saveGroup._id,
+      teamsHome: [homeTeam.teamId],
+      teamsAway: [awayTeam.teamId],
+      scheduledTime: null,
+      court: court,
+      scores: [
+        {
+          sets: [
+            { home: 0, away: 0 },
+            { home: 0, away: 0 },
+            { home: 0, away: 0 },
+          ],
+        },
+      ],
+      status: "scheduled",
+    };
+  })
+);
 
         // 2c. Save all matches for this group
         await GroupMatch.insertMany(groupMatches);
@@ -213,15 +255,15 @@ const adminTeamController = {
       res.status(500).json({ message: "Server Error", error: error.message });
     }
   },
-// done
+  // done
   getTournaments: async (req, res) => {
-    console.log("eq.userId",req.userId);
-    
+    console.log("eq.userId", req.userId);
+
     try {
-      if(!req.userId){
+      if (!req.userId) {
         return res.status(400).json({ message: "Unable to retrieve data" });
       }
-      const tournaments = await Tournament.find({adminId: req.userId}).select(
+      const tournaments = await Tournament.find({ adminId: req.userId }).select(
         "_id tournamentName numberOfPlayersQualifiedToKnockout"
       );
       console.log(
@@ -238,10 +280,10 @@ const adminTeamController = {
     }
   },
 
-// Done
+  // Done
   getTournamentDetails: async (req, res) => {
     console.log("Call Admin");
-    
+
     try {
       console.log("getTournamentDetails called with params:", req.params);
 
@@ -273,10 +315,10 @@ const adminTeamController = {
     }
   },
 
-// Done
+  // Done
   saveMatchScore: async (req, res) => {
     console.log("Call Admin Save");
-    
+
     try {
       const {
         scores,
@@ -394,7 +436,7 @@ const adminTeamController = {
   },
   deleteTournament: async (req, res) => {
     console.log("Admin Delete");
-    
+
     try {
       const { tournamentId } = req.params;
       console.log("Deleting tournament:", tournamentId);

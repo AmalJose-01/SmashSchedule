@@ -37,7 +37,7 @@ export const saveTournamentAPI = async (tournamentData) => {
 export const getAdminTournamentListAPI = async () => {
 
   try {
-      console.log("getTournamentListAPI called"); // <--- should log when triggered
+      console.log("getAdminTournamentListAPI called"); // <--- should log when triggered
 
   const response = await axios.get(`${BASE_URL}/admin/get-tournaments`,headerData());
   console.log("getTournamentListAPI response:====", response); // <--- log the full response
@@ -54,7 +54,7 @@ export const getAdminTournamentListAPI = async () => {
 };
 
 export const getAdminTournamentDetailsAPI = async (tournamentId) => {
-  console.log("getTournamentDetailsAPI called with ID:", tournamentId); // <--- should log when triggered
+  console.log("getAdminTournamentDetailsAPI called with ID:", tournamentId); // <--- should log when triggered
 
   try {
     const response = await axios.get(
