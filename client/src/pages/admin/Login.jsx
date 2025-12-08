@@ -87,6 +87,9 @@ const Login = () => {
   return (
     <>
       <div className="flex w-full min-h-screen justify-center items-center bg-gray-400">
+       
+       
+       
         <div className="card w-full max-w-md mx-auto shadow-lg rounded-lg bg-blue-600">
           <div className="card-body rounded-lg ">
             <div className="flex flex-col items-center justify-center text-center p-4">

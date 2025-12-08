@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useGetKnockoutList } from "../../hooks/useGetKnockoutList";
-import ButtonWithIcon from "../../components/ButtonWithIcon";
-import { createKnockoutScheduleAPI } from "../../services/teamServices";
-import { useKnockoutUpdateScore } from "../../hooks/useKnockoutUpdateScore";
 import { Table } from "lucide-react";
 
 export function getRoundName(round) {
@@ -31,7 +28,7 @@ const KnockoutResult = () => {
   );
 
   const { handleKnockoutList } = useGetKnockoutList(
-    tournamentData?.tournamentId
+    tournamentData?.tournamentId,"User"
   );
 
   const knockoutList = handleKnockoutList();

@@ -11,7 +11,7 @@ const GameScoreSchema = new mongoose.Schema({
 
 const GroupMatchSchema = new mongoose.Schema({
   matchName: {type: String},
-  tournament: {
+  tournamentId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Tournament",
     required: true,

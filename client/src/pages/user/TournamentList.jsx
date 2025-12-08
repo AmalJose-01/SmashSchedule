@@ -11,8 +11,8 @@ import ButtonWithIcon from "../../components/ButtonWithIcon";
 const TournamentList = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { handleTournamentList, isLoading: isTournamentLoading } =
-    useTournament();
+  const { handleTournamentList, isLoading: isTournamentLoading, tournamentListError } =
+    useTournament("User");
   const queryClient = useQueryClient();
   const [isExpanded, setIsExpanded] = useState(false);
   const toggleExpand = () => setIsExpanded((prev) => !prev);
@@ -24,7 +24,6 @@ const TournamentList = () => {
     // console.log("Tournaments updated:", tournaments);
   }, [tournaments]);
 
-  // console.log("Tournament List:", tournaments);
 
   // ---------------------------
   // RENDER UI

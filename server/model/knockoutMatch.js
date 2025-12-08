@@ -1,4 +1,3 @@
-// models/KnockoutMatch.js
 const mongoose = require("mongoose");
 
 const SetSchema = new mongoose.Schema({
@@ -24,3 +23,4 @@ const KnockoutMatchSchema = new mongoose.Schema({
 
 const KnockoutMatch = mongoose.model("KnockoutMatch", KnockoutMatchSchema);
 module.exports = KnockoutMatch;
+

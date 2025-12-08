@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { saveKnockoutScoreAPI } from "../services/teamServices";
+import { saveKnockoutScoreAPI } from "../services/admin/adminTeamServices";
 
 export const useKnockoutUpdateScore = (input) => {
           const queryClient = useQueryClient();

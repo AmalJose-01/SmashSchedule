@@ -2,22 +2,32 @@ import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { getTournamentDetailsAPI } from "../services/teamServices";
 import { useEffect } from "react";
+import { getAdminTournamentDetailsAPI } from "../services/admin/adminTeamServices";
 
-export const useTournamentDetail = (tournamentId) => {
+export const useTournamentDetail = (tournamentId, userType) => {
+  console.log(userType);
+  
   const { data, isLoading, isFetching, error } = useQuery({
-    queryKey: ["tournamentDetail", tournamentId],
-    queryFn: () => getTournamentDetailsAPI(tournamentId),
+    queryKey:userType === "Admin" ? ["adminTournamentDetail", tournamentId] : ["tournamentDetail", tournamentId],
+    queryFn: () => userType === "Admin" ? getAdminTournamentDetailsAPI(tournamentId) : getTournamentDetailsAPI(tournamentId),
     onError: (err) =>
       toast.error(err?.response?.data?.message || "Error loading tournament details"),
   });
+  
 
 useEffect(() => {
-  if (isLoading || isFetching) {
+  if (isLoading ) {
     toast.loading("Loading matches...", { id: "matchLoader" });
   } else {
     toast.dismiss("matchLoader");
   }
-}, [isLoading, isFetching]);
+}, [isLoading]);
+
+   useEffect(() => {
+    if (!isLoading && !isFetching) {
+      toast.dismiss("Loading matches...", { id: "matchLoader" });
+    } 
+  }, [isLoading, isFetching]);
 
 
 
