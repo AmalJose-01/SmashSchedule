@@ -22,7 +22,7 @@ import * as Yup from "yup";
       tournamentName: Yup.string().required("Tournament name is required"), 
       teamsPerGroup: Yup.number().min(2).max(8).required("Teams per group is required"),
         playType: Yup.string().oneOf(["group", "knockout", "group-knockout"]).required("Play type is required"),
-        numberOfCourts: Yup.number().min(1).max(8).required("Number of courts is required"),
+        numberOfCourts: Yup.number().min(1).max(20).required("Number of courts is required"),
         // Number of players Qualified to knockout
         playersToQualify: Yup.number().min(1).required("Number of players to qualify is required"),
         email:  Yup.string().email("Invalid email format"),

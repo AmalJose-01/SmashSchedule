@@ -356,7 +356,7 @@ const SetupTournament = () => {
             <input
               type="number"
               min="2"
-              max="8"
+              max="20"
               {...register("numberOfCourts")}
               className="ml-2 w-20 p-1 border rounded"
             />
