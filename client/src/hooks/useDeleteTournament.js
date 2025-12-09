@@ -2,9 +2,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteTournamentAPI } from "../services/admin/adminTeamServices";
 import { useEffect } from "react";
 import { toast } from "sonner";
+import { useDispatch } from "react-redux";
 
 export const useDeleteTournament = (tournamentId) => {
           const queryClient = useQueryClient();
+  const dispatch = useDispatch();
 
   const mutation = useMutation({
     mutationKey: ["delete", tournamentId],
@@ -46,7 +48,14 @@ toast.promise(mutation.mutateAsync(data), {
       });      
     } catch (error) {
       console.log(error);
+      if(error?.status === 401){
+  console.log("handleTournamentList",error.response.data.message);
+  dispatch(logOut())
+  toast.error(error.response.data.message)
+
+}else{ 
       toast.error("Error delete tournament");
+}
       
     }
   };

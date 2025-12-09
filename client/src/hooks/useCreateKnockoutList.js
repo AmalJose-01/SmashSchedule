@@ -25,6 +25,13 @@ export const useCreateKnockoutList = (tournament) => {
     },
   });
   const handleCreateKnockoutList = () => {
+if(error?.status === 401){
+  console.log("handleTournamentList",error.response.data.message);
+  dispatch(logOut())
+  toast.error(error.response.data.message)
+
+}
+
     if (!data?.schedule) return [];
 
     return data.schedule;

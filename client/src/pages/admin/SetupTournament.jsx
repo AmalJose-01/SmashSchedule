@@ -16,6 +16,7 @@ import ButtonWithIcon from "../../components/ButtonWithIcon";
 import { useDeleteTournament } from "../../hooks/useDeleteTournament";
 import Logout from "../../components/Logout";
 import { saveTournamentAPI } from "../../services/admin/adminTeamServices";
+import { logOut } from "../../redux/slices/userSlice";
 
 const SetupTournament = () => {
   const navigate = useNavigate();
@@ -91,7 +92,7 @@ const SetupTournament = () => {
   // FETCH TEAMS
   // ---------------------------
   let loadingToast;
-  const { data, isLoading, isFetching } = useQuery({
+  const { data, isLoading, isFetching ,error} = useQuery({
     queryKey: ["teams"],
     queryFn: getTeamListAPI,
     onSuccess: (res) => toast.success("Teams loaded!"),
@@ -100,6 +101,12 @@ const SetupTournament = () => {
   });
 
   useEffect(() => {
+    if(error?.status === 401){
+  console.log("handleTournamentList",error.response.data.message);
+  dispatch(logOut())
+  toast.error(error.response.data.message)
+
+}
     if (data?.teams) {
       const players = data.teams
         .map((t) =>
@@ -115,6 +122,10 @@ const SetupTournament = () => {
   const tournaments = handleTournamentList();
 
   useEffect(() => {
+
+
+
+
   }, [tournaments]);
 
   // ---------------------------

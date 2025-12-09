@@ -3,9 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { getTournamentDetailsAPI } from "../services/teamServices";
 import { useEffect } from "react";
 import { getAdminTournamentDetailsAPI } from "../services/admin/adminTeamServices";
+import { useDispatch } from "react-redux";
 
 export const useTournamentDetail = (tournamentId, userType) => {
   console.log(userType);
+    const dispatch = useDispatch();
+
   
   const { data, isLoading, isFetching, error } = useQuery({
     queryKey:userType === "Admin" ? ["adminTournamentDetail", tournamentId] : ["tournamentDetail", tournamentId],
@@ -32,6 +35,16 @@ useEffect(() => {
 
 
   const handleTournamentDetail = () => {
+
+if(error?.status === 401){
+  console.log("handleTournamentList",error.response.data.message);
+  dispatch(logOut())
+  toast.error(error.response.data.message)
+
+}
+
+
+
     if (!data) return null;
 
     return data;
