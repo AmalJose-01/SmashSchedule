@@ -8,7 +8,7 @@ import { useSelector } from "react-redux";
 import Login from "../pages/admin/Login";
 
 const AdminRoutes = () => {
-    const user = useSelector((state) => state.user.user);
+  const user = useSelector((state) => state.user.user);
 
   return (
     <>
@@ -21,34 +21,30 @@ const AdminRoutes = () => {
         }
       />
       <Route
-      path="/match/:tournamentId"
-      element={
-         <ProtectedRoute role="admin">
+        path="/match/:tournamentId"
+        element={
+          <ProtectedRoute role="admin">
             <MatchHome />
           </ProtectedRoute>
-      }
+        }
       />
 
-       <Route
-      path="/knockout"
-      element={
-         <ProtectedRoute role="admin">
+      <Route
+        path="/knockout"
+        element={
+          <ProtectedRoute role="admin">
             <KnockoutFixtures />
           </ProtectedRoute>
-      }
+        }
       />
 
-
-<Route
-  path="/login"
-  element={
-   !user ? <Login /> : <Navigate to="/create-tournament" replace />
-      // !user ? <Login /> : <Navigate to="/checkout" replace />
-
-  
-  }
-/>
-
+      <Route
+        path="/login"
+        element={
+          !user ? <Login /> : <Navigate to="/create-tournament" replace />
+          // !user ? <Login /> : <Navigate to="/checkout" replace />
+        }
+      />
 
       {/* Add more admin routes here */}
     </>

@@ -151,7 +151,7 @@ const GroupStageList = () => {
               return (
                 <div
                   key={gp._id}
-                  className="bg-white rounded-3xl shadow-lg p-4 overflow-x-auto"
+                  className="bg-white rounded-3xl shadow-lg p-2 md:p-4 overflow-x-auto"
                 >
                   <h2 className="text-2xl font-bold mb-4 text-blue-800">
                     {gp.groupName}
@@ -168,61 +168,10 @@ const GroupStageList = () => {
                           {m.matchName}
                         </div>
                         <div className="text-sm text-gray-600 mt-1">
-                          {/* {m.time} — {m.court} */}
-                          10:00 AM — Court 1
+                         {m.court} 
+
                         </div>
-                        {/* <div className="mt-2 space-y-1 items-center justify-center">
-                          {m.scores[0].sets.map((set, idx) => {
-                            const isSameScore =
-                              set.home === set.away &&
-                              set.home > 0 &&
-                              set.away > 0; // check if scores are equal
-
-                            const disableHome =
-                              true;
-                            const disableAway =
-                              true;
-                            
-
-
-                            return (
-                              <div
-                                key={set._id}
-                                className="flex space-x-2 items-center"
-                              >
-                                <div className="flex flex-row">
-                                  <input
-                                    type="number"
-                                    min={0}
-                                    max={21} // maximum score allowed
-                                    className={`w-full p-1 border rounded text-center mr-2 ${
-                                      isSameScore
-                                        ? "border-red-500"
-                                        : "border-gray-500"
-                                    } `}
-                                    value={set.home === 0 ? "" : set.home}
-                                    disabled={disableHome}
-                                   
-                                  />
-                                  <span>-</span>
-                                  <input
-                                    type="number"
-                                    min={0}
-                                    max={21}
-                                    className={`w-max-full p-1 border rounded text-center ml-2 ${
-                                      isSameScore
-                                        ? "border-red-500"
-                                        : "border-gray-500"
-                                    } `}
-                                    value={set.away === 0 ? "" : set.away}
-                                    disabled={disableAway}
-                                   
-                                  />
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div> */}
+                      
                       </div>
                     ))}
                   </div>
@@ -231,14 +180,14 @@ const GroupStageList = () => {
                   <table className="w-full min-w-max table-auto border border-gray-300 text-gray-800">
                     <thead className="bg-blue-100">
                       <tr>
-                        <th className="p-3 border">Team</th>
-                        <th className="p-3 border">M</th>
-                        <th className="p-3 border">W</th>
-                        <th className="p-3 border">L</th>
-                        <th className="p-3 border">PF</th>
-                        <th className="p-3 border">PA</th>
-                        <th className="p-3 border">PD</th>
-                        <th className="p-3 border font-bold text-green-600">
+                        <th className="p-1 md:p-3 border text-sm md:text-base text-left">Team</th>
+                        <th className="p-1 md:p-3  border text-sm md:text-base">M</th>
+                        <th className="p-1 md:p-3  border text-sm md:text-base">W</th>
+                        <th className="p-1 md:p-3  border text-sm md:text-base">L</th>
+                        <th className="p-1 md:p-3  border text-sm md:text-base">PF</th>
+                        <th className="p-1 md:p-3  border text-sm md:text-base">PA</th>
+                        <th className="p-1 md:p-3  border text-sm md:text-base">PD</th>
+                        <th className="p-1 md:p-3  border font-bold text-green-600 text-sm md:text-base">
                           P
                         </th>
                       </tr>
@@ -268,22 +217,22 @@ const GroupStageList = () => {
                               key={idx}
                               className="even:bg-blue-50 hover:bg-blue-100 transition"
                             >
-                              <td className="p-2 font-semibold">
+                              <td className="p-1 md:p-2 font-semibold text-sm md:text-base text-left">
                                 {teamObj?.name || t.teamId}
                               </td>
-                              <td className="p-2 text-center">
+                              <td className="p-1 md:p-3  text-center">
                                 {t.matchesPlayed}
                               </td>
-                              <td className="p-2 text-center">{t.wins}</td>
-                              <td className="p-2 text-center">{t.losses}</td>
-                              <td className="p-2 text-center">{t.pointsFor}</td>
-                              <td className="p-2 text-center">
+                              <td className="p-1 md:p-3  text-center text-sm md:text-base">{t.wins}</td>
+                              <td className="p-1 md:p-3  text-center text-sm md:text-base">{t.losses}</td>
+                              <td className="p-1 md:p-3  text-center text-sm md:text-base">{t.pointsFor}</td>
+                              <td className="p-1 md:p-3  text-center text-sm md:text-base">
                                 {t.pointsAgainst}
                               </td>
-                              <td className="p-2 text-center font-bold text-blue-700">
+                              <td className="p-1 md:p-3  text-center font-bold text-blue-700 text-sm md:text-base">
                                 {t.pointsFor - t.pointsAgainst}
                               </td>
-                              <td className="p-2 text-center font-bold text-green-600">
+                              <td className="p-1 md:p-3  text-center font-bold text-green-600 text-sm md:text-base">
                                 {t.totalPoints}
                               </td>
                             </tr>
@@ -297,7 +246,9 @@ const GroupStageList = () => {
                     className="flex justify-between items-center cursor-pointer mt-1"
                     onClick={toggleExpand}
                   >
-                    <h2 className="text-md font-semibold mb-4">View Score</h2>
+                    <h2 className="text-md font-semibold mb-4">
+                       {isExpanded ? "Hide Score" : "View Score"}
+                      </h2>
                     {groupMatches.length > 0 && (
                       <span className="text-gray-600">
                         {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
@@ -316,8 +267,7 @@ const GroupStageList = () => {
                             {m.matchName}
                           </div>
                           <div className="text-sm text-gray-600 mt-1">
-                            {/* {m.time} — {m.court} */}
-                            {m.court} {/* 10:00 AM — Court 1 */}
+                            {m.court} 
                           </div>
                           <div className="mt-2 space-y-1 items-center justify-center">
                             {m.scores[0].sets.map((set, idx) => {

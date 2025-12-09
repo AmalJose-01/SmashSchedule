@@ -1,19 +1,15 @@
 import { useState } from "react";
 import AdminRoutes from "./routes/AdminRoutes.jsx";
 import "./App.css";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import TeamSetup from "./pages/admin/TeamSetup.jsx";
 import { Toaster } from "sonner";
 import Home from "./pages/user/Home.jsx";
-import Footer from "./components/Footer.jsx"
+import Footer from "./components/Footer.jsx";
 import TournamentList from "./pages/user/TournamentList.jsx";
 import GroupStageList from "./pages/user/GroupStageList.jsx";
-import KnockoutResult from  "./pages/user/KnockoutResult.jsx"
-import SaveTeamRegistration from "./pages/user/SaveTeamRegistration.jsx"
+import KnockoutResult from "./pages/user/KnockoutResult.jsx";
+import SaveTeamRegistration from "./pages/user/SaveTeamRegistration.jsx";
 import CheckoutPage from "./pages/admin/CheckoutPage.jsx";
 
 function App() {
@@ -25,23 +21,20 @@ function App() {
         <Router>
           <Routes>
             <Route path="/" element={<Home />} />
-            {/* <Route path="/login" element={<Login />} /> */}
             <Route path="/teams" element={<TeamSetup />} />
-                        <Route path="/save-teams" element={<SaveTeamRegistration />} />
-
+            <Route path="/save-teams" element={<SaveTeamRegistration />} />
             <Route path="/tournamentList" element={<TournamentList />} />
-                        <Route path="/groupStageList/:tournamentId" element={<GroupStageList />} />
-                                                <Route path="/knockoutResult" element={<KnockoutResult />} />
+            <Route
+              path="/groupStageList/:tournamentId"
+              element={<GroupStageList />}
+            />
+            <Route path="/knockoutResult" element={<KnockoutResult />} />
 
             {/* Stripe Checkout Page */}
-<Route path="/checkout" element={<CheckoutPage />} />
-
-
+            <Route path="/checkout" element={<CheckoutPage />} />
 
             {/* Logins admin access */}
             {AdminRoutes()}
-
-
           </Routes>
           <Footer />
         </Router>
