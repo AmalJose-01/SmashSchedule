@@ -17,14 +17,13 @@ export const useGoogleLogin = () => {
     onMutate: () => toast.loading("Loading...."),
 
     onSuccess: () => {
-       toast.dismiss(); 
+      toast.dismiss();
       toast.success("Login successfully!");
     },
     onError: (err) => {
-       toast.dismiss(); 
+      toast.dismiss();
       toast.error(err?.message || "Failed to save score");
     },
-
   });
 
   const handleLoginWithGoogle = async (inputData) => {
@@ -50,15 +49,17 @@ export const useGoogleLogin = () => {
             // } else if (user.accountType === "user") {
             //   navigate("/userdashboard");
             // } else
-              
+
             dispatch(loginUser(res));
 
-
-              if (user.accountType === "admin") {
-               navigate("/create-tournament");
-                            //  navigate("/checkout");
-
-            }
+            // if (user.accountType === "admin" && !user.isVerified) {
+            //   // navigate("/create-tournament");
+            //     navigate("/checkout");
+            // }
+            // // else  if (user.accountType === "admin") {
+            // //   navigate("/create-tournament");
+            // //   //  navigate("/checkout");
+            // // }
 
             return "Login successful!";
           },

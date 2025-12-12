@@ -38,9 +38,31 @@ const AdminRoutes = () => {
         }
       />
 
+
+
+
+
+{/* <Route
+  path="/login"
+  element={
+    !user ? (
+      <Login />
+    ) : user.accountType === "admin" && !user.isVerified ? (
+      <Navigate to="/checkout" replace />
+    ) : (
+      <Navigate to="/create-tournament" replace />
+    )
+  }
+/> */}
+
+
       <Route
         path="/login"
         element={
+
+
+
+          
           !user ? <Login /> : <Navigate to="/create-tournament" replace />
           // !user ? <Login /> : <Navigate to="/checkout" replace />
         }

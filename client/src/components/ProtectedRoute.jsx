@@ -20,6 +20,11 @@ const ProtectedRoute = ({ children, role }) => {
   if (role && user.accountType !== role) {
     return <Navigate to="/not-authorized" replace />;
   }
+   // Admin but NOT verified → redirect to checkout
+  if (user.accountType === "admin" && !user.isVerified) {
+    return <Navigate to="/checkout" replace />;
+  }
+
 
   return children;
 };

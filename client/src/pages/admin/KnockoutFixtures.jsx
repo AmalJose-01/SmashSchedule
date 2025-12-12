@@ -79,6 +79,32 @@ const KnockoutFixtures = () => {
     const match = matches.find((m) => m._id === matchId);
     if (!match) return;
 
+
+
+    // Check for any set where home and away scores are the same and > 0
+    const hasSameScore = match.scores[0].sets.some(
+      (set) => set.home === set.away && set.home > 0
+    );
+
+    if (hasSameScore) {
+      toast.error("Cannot save: A set has the same score for both teams.");
+      return; // block saving
+    }
+
+    // Check that every set has at least one team scoring 21 or more
+const isValidSetScore = match.scores[0].sets.every(
+  (set) => set.home >= 21 || set.away >= 21
+);
+
+if (!isValidSetScore) {
+  toast.error("Each set must have at least one team scoring 21 points.");
+  return; // block saving
+}
+
+
+
+
+
     const scoreData = {
       matchId: match._id,
       tournamentId: tournamentData.tournamentId,

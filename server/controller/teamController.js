@@ -16,7 +16,6 @@ const {
 // Create a new team
 const teamController = {
   createTeam: async (req, res) => {
-    console.log("dfghjkl", req.body);
 
     try {
       const {
