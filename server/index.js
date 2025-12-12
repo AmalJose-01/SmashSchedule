@@ -38,7 +38,6 @@ const PORT = process.env.PORT || 3000;
 connectToDatabase();
 
 
-app.use(cors(corsOptions))
 
 
 app.post(
@@ -50,6 +49,7 @@ app.post(
 // Middleware to parse JSON requests
 app.use(express.json());
 
+app.use(cors(corsOptions))
 
 
 
