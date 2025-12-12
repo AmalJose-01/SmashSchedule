@@ -3,6 +3,8 @@ const router = express.Router();
 const Stripe = require("stripe");
 const stripe = Stripe(process.env.STRIPE_KEY);
 const sendEmail = require("../utils/sendEmail");
+const AdminUser = require("../model/adminUser");  
+
 
 router.post("/", async (req, res) => {
   const sig = req.headers["stripe-signature"];
@@ -25,6 +27,22 @@ router.post("/", async (req, res) => {
   if (event.type === "payment_intent.succeeded") {
     const intent = event.data.object;
     const customerEmail = intent.receipt_email;
+      const userId = intent.metadata?.userId; 
+
+
+//  UPDATE USER VERIFIED STATUS
+    if (userId) {
+      try {
+        await AdminUser.findByIdAndUpdate(userId, { isVerified: true });
+        console.log(" User verified successfully:", userId);
+      } catch (dbErr) {
+        console.log(" Database update error:", dbErr);
+      }
+    } else {
+      console.log("⚠ No userId in metadata. Cannot update verification.");
+    }
+
+
 
     console.log("💰 Payment Success for:", customerEmail);
 
