@@ -144,5 +144,19 @@ export const getAdminKnockoutScheduleAPI = async (tournamentId) => {
   }
 };
 
+export const verifyUserAPI = async (data) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/user/verify`,
+      {},            // body optional
+      headerData()
+    );
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || "User verify failed");
+  }
+};
+
+
 
 

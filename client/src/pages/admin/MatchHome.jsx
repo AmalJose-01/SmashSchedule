@@ -23,7 +23,7 @@ const MatchHome = () => {
   const navigate = useNavigate();
 
   const { handleTournamentDetail, isLoading: isTournamentDetailLoading } =
-    useTournamentDetail(tournamentId,"Admin");
+    useTournamentDetail(tournamentId, "Admin");
 
   const {
     handleScore,
@@ -41,13 +41,6 @@ const MatchHome = () => {
       setMatches(tournamentDetail.matches); // now matches = { A: [...], B: [...], ... }
     }
   }, [tournamentDetail]);
-
-  const resultsTicker = [
-    "Team 1 def Team 2 (2-1)",
-    "Team 4 def Team 3 (2-0)",
-    "Team 1 def Team 3 (2-0)",
-    "Team 2 def Team 4 (2-1)",
-  ];
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -93,6 +86,19 @@ const MatchHome = () => {
       return; // block saving
     }
 
+    // Check that every set has at least one team scoring 21 or more
+    const isValidSetScore = match.scores[0].sets.every((set) => {
+      const bothZero = set.home === 0 && set.away === 0;
+      const oneReached21 = set.home >= 21 || set.away >= 21;
+
+      return bothZero || oneReached21;
+    });
+
+    if (!isValidSetScore) {
+      toast.error("Each set must have at least one team scoring 21 points.");
+      return; // block saving
+    }
+
     try {
       const payload = {
         ...match,
@@ -111,30 +117,24 @@ const MatchHome = () => {
 
   const handleGotoKnockout = async () => {
     // Navigate to knockout page with top teams
-    // You can use react-router's useNavigate for navigation
+  ion
     try {
-
-console.log("groups",groups);
-
+      console.log("groups", groups);
 
 
 
-      // const allFinished = groups.every((gp) => gp.status === "finished");
+      const allFinished = groups.every((gp) => {
+        // Get all matches for this group
+        const groupMatches = matches.filter((m) => m.group === gp._id);
 
-      //         const groupMatches = matches.filter((m) => m.group === gp._id);
-
-const allFinished = groups.every((gp) => {
-  // Get all matches for this group
-  const groupMatches = matches.filter((m) => m.group === gp._id);
-
-  // Check if all matches in this group are finished
-  return groupMatches.every((match) => match.status === "finished");
-});
-
-
+        // Check if all matches in this group are finished
+        return groupMatches.every((match) => match.status === "finished");
+      });
 
       if (!allFinished) {
-        toast.error("All groups must be finished before creating knockout stage.");
+        toast.error(
+          "All groups must be finished before creating knockout stage."
+        );
         return;
       }
 
@@ -150,6 +150,28 @@ const allFinished = groups.every((gp) => {
   const topTeams = groups
     ? Object.keys(groups).map((key) => groups[key][0])
     : [];
+
+  const isMatchDecided = (sets) => {
+    let homeWins = 0;
+    let awayWins = 0;
+
+    sets.forEach((set) => {
+      const home = Number(set.home);
+      const away = Number(set.away);
+
+      // Ignore incomplete sets (typing stage)
+      const isIncomplete =
+        (home >= 21 && away === 0) || (away >= 21 && home === 0);
+
+      if (isIncomplete) return; // DON'T count this set yet
+
+      // Valid win: 21+ AND 2-point difference
+      if (home >= 21 && home > away && home - away >= 1) homeWins++;
+      if (away >= 21 && away > home && away - home >= 1) awayWins++;
+    });
+
+    return homeWins === 2 || awayWins === 2;
+  };
 
   if (!groups) {
     return (
@@ -183,24 +205,6 @@ const allFinished = groups.every((gp) => {
           <Logout />
         </div>
       </div>
-
-      {/* Ticker */}
-      {/* <div className="sticky top-0 z-50 bg-blue-700 text-white p-4 rounded-xl shadow-lg text-center text-lg font-semibold tracking-wide">
-        <AnimatePresence>
-          {resultsTicker.slice(tickerIndex, tickerIndex + 3).map((res, idx) => (
-            <motion.div
-              key={tickerIndex + idx}
-              initial={{ opacity: 0, x: 100 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -100 }}
-              transition={{ duration: 0.6 }}
-              className="mb-1"
-            >
-              {res}
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div> */}
 
       {/* Dropdown to select group */}
       <div className="mb-6 mt-4 ml-4 mr-4 flex items-center">
@@ -251,19 +255,34 @@ const allFinished = groups.every((gp) => {
                           {m.matchName}
                         </div>
                         <div className="text-sm text-gray-600 mt-1">
-                         {m.court} {/* 10:00 AM — Court 1 */}
+                          {m.court} {/* 10:00 AM — Court 1 */}
                         </div>
                         <div className="mt-2 space-y-1 items-center justify-center">
                           {m.scores[0].sets.map((set, idx) => {
+                            const decided = isMatchDecided(m.scores[0].sets.slice(0, 2));
+
                             const isSameScore =
                               set.home === set.away &&
                               set.home > 0 &&
                               set.away > 0; // check if scores are equal
 
-                            const disableHome =
-                              m.status === "finished" && set.home === 0;
-                            const disableAway =
-                              m.status === "finished" && set.away === 0;
+                            let disableHome = false;
+                            let disableAway = false;
+
+                            if (m.status === "finished") {
+                              disableHome = true;
+                              disableAway = true;
+                            } else {
+                              // If match is decided AND this is 3rd set -> disable
+                              if (decided && idx === 2) {
+                                disableHome = true;
+                                disableAway = true;
+                              } else {
+                                // Otherwise keep enabled
+                                disableHome = false;
+                                disableAway = false;
+                              }
+                            }
 
                             return (
                               <div

@@ -25,13 +25,20 @@ const PORT = process.env.PORT || 3000;
 // Connect to the database
 connectToDatabase();
 
+app.use(
+  "/webhook",
+  express.raw({ type: "application/json" })
+);
+
 
 // Middleware to parse JSON requests
 app.use(express.json());
-// app.use(cors());
- app.use(cors(corsOptions))
+
+app.use(cors(corsOptions))
 app.use("/api/v1", routes);
 app.use(errorHandler)
+
+
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

@@ -11,6 +11,7 @@ import GroupStageList from "./pages/user/GroupStageList.jsx";
 import KnockoutResult from "./pages/user/KnockoutResult.jsx";
 import SaveTeamRegistration from "./pages/user/SaveTeamRegistration.jsx";
 import CheckoutPage from "./pages/admin/CheckoutPage.jsx";
+import Success from "./pages/common/Success.jsx";
 
 function App() {
   const [count, setCount] = useState(0);
@@ -19,8 +20,11 @@ function App() {
     <>
       <div className="w-full h-full bg-slate-200 overflow-x-hidden">
         <Router>
+          
           <Routes>
             <Route path="/" element={<Home />} />
+              <Route path="/success" element={<Success />} />
+
             <Route path="/teams" element={<TeamSetup />} />
             <Route path="/save-teams" element={<SaveTeamRegistration />} />
             <Route path="/tournamentList" element={<TournamentList />} />

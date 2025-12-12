@@ -1,9 +1,12 @@
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { createKnockoutScheduleAPI } from "../services/admin/adminTeamServices";
+import { useDispatch } from "react-redux";
 
 export const useCreateKnockoutList = (tournament) => {
   let loadingToastId;
+    const dispatch = useDispatch();
+
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["knockoutSchedule", tournament?.tournamentId],
