@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const Stripe = require("stripe");
 const stripe = Stripe(process.env.STRIPE_KEY);
-const AdminUser = require("../model/adminUser");
 const sendEmail = require("../utils/sendEmail");
 
 router.post("/", async (req, res) => {
@@ -25,23 +24,21 @@ router.post("/", async (req, res) => {
 
   if (event.type === "payment_intent.succeeded") {
     const intent = event.data.object;
-    console.log("💰 Payment Success for:", intent.receipt_email);
+    const customerEmail = intent.receipt_email;
 
+    console.log("💰 Payment Success for:", customerEmail);
 
     // Send email
     try {
       await sendEmail(
         customerEmail,
         "Payment Successful ✅",
-        `Hi, your payment of ${intent} was successful. Thank you!`
+        `Hi, your payment of $${(intent.amount_received / 100).toFixed(2)} was successful. Thank you!`
       );
       console.log("📧 Email sent successfully");
     } catch (emailError) {
       console.log("❌ Error sending email:", emailError);
     }
-
-
-
   }
 
   res.sendStatus(200);

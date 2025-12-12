@@ -4,19 +4,31 @@ const connectToDatabase = require("./connectioDB");
 const routes = require("./routes/index");
 const cors = require(`cors`);
 const errorHandler = require('./middleware/errorHandler');
+const stripeWebhook = require("./routes/stripeWebhook")
 
 
 const app = express();
 var whitelist = ['http://localhost:5173', 'http://localhost:5174', 'https://smash-schedule.vercel.app', 'http://localhost:5175']
+// var corsOptions = {
+//   origin: function (origin, callback) {
+//     if (whitelist.indexOf(origin) !== -1) {
+//       callback(null, true)
+//     } else {
+//       callback(new Error('Not allowed by CORS'))
+//     }
+//   }
+// }
+
 var corsOptions = {
   origin: function (origin, callback) {
-    if (whitelist.indexOf(origin) !== -1) {
-      callback(null, true)
+    // Allow Stripe Webhooks + Postman + Server-to-Server requests
+    if (!origin || whitelist.indexOf(origin) !== -1) {
+      callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'))
+      callback(new Error("Not allowed by CORS"));
     }
   }
-}
+};
  
 
 
@@ -25,16 +37,23 @@ const PORT = process.env.PORT || 3000;
 // Connect to the database
 connectToDatabase();
 
-app.use(
-  "/webhook",
-  express.raw({ type: "application/json" })
-);
 
+app.use(cors(corsOptions))
+
+
+app.post(
+  "/webhook",
+  express.raw({ type: "application/json" }),
+  stripeWebhook
+);
 
 // Middleware to parse JSON requests
 app.use(express.json());
 
-app.use(cors(corsOptions))
+
+
+
+
 app.use("/api/v1", routes);
 app.use(errorHandler)
 
