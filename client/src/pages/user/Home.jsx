@@ -2,17 +2,19 @@ import { useNavigate } from "react-router-dom";
 import ButtonWithIcon from "../../components/ButtonWithIcon";
 import Navbar from "../../components/Navbar";
 import bgImage from "/src/assets/icon/bg_Web.svg";
+import HeroBanner from "../user/HeroBanner";
 
 const Home = () => {
   const navigate = useNavigate();
 
   return (
-    <div id="home" className="min-h-screen  bg-gray-50">
+    <div id="home" className="min-h-screen  bg-gradient-to-r from-purple-300 to-purple-400">
       <div className="sticky top-0 z-50 bg-white shadow">
         <Navbar />
       </div>
-
-      <div className=" bg-white rounded-lg shadow-xl mt-10 px-[20px] py-[20px] mx-[20px]">
+      <div className="p-4">
+  <HeroBanner />
+      <div className=" bg-white rounded-lg shadow-xl p-4">
         <div className="flex flex-col  md:flex-row justify-between items-start">
           <div className="flex justify-between items-start">
             <div>
@@ -38,6 +40,10 @@ const Home = () => {
           </div>
         </div>
       </div>
+      </div>
+    
+
+  
     </div>
   );
 };

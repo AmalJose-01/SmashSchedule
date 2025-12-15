@@ -6,10 +6,19 @@ const router = express.Router();
 
  router.post("/create-tournament", auth,adminTeamController.createTournament);
  router.get("/get-tournaments",auth, adminTeamController.getTournaments);
+  router.get("/get-tournament-information/:tournamentId",auth, adminTeamController.getTournamentInformation);
+ router.post("/create-matches",auth, adminTeamController.createMatches);
+
+
+ 
+
  router.get("/get-tournamentDetails/:tournamentId",auth, adminTeamController.getTournamentDetails);
  router.post("/save-score",auth, adminTeamController.saveMatchScore);
+  router.post("/save-multiple-score",auth, adminTeamController.saveMultipleMatchScore);
+
 router.delete("/delete-tournament/:tournamentId",auth,adminTeamController.deleteTournament)
- router.get("/get-teams",auth, adminTeamController.getTeams);
+ router.get("/get-teams/:tournamentId",auth, adminTeamController.getTeams);
+
 
 
 

@@ -3,17 +3,19 @@ import { BASE_URL } from "../../../utils/config.js";
 import { headerData } from "../../../utils/storageHandler.js";
 
 
-export const getTeamListAPI = async () => {
+export const getTeamListAPI = async (tournamentId) => {
   console.log("getTeamListAPI called"); // <--- should log when triggered
 try {
-  const response = await axios.get(`${BASE_URL}/admin/get-teams`,headerData());
+
+ const response = await axios.get(
+      `${BASE_URL}/admin/get-teams/${tournamentId}`,headerData()
+    );
   console.log("getTeamListAPI response:====", response.data); // <--- log the full response
   return response.data;
    }catch (error) {
     throw error;
   }
 };
-
 
 
 export const saveTournamentAPI = async (tournamentData) => {
@@ -28,11 +30,34 @@ export const saveTournamentAPI = async (tournamentData) => {
     );
     return response.data;
   } catch (error) {
-    throw new Error(
-      error.response?.data?.message || "Failed to save team data"
-    );
+    console.log("saveTournamentAPI error",error);
+    
+    throw error
   }
 };
+
+export const saveMatchesAPI = async (tournamentData) => {
+  console.log("saveTournamentAPI called", tournamentData);
+  console.log("headerData", headerData());
+
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/admin/create-matches`,
+      tournamentData, { headers: headerData().headers }            
+                    
+    );
+    return response.data;
+  } catch (error) {
+    console.log("saveMatchesAPI error",error);
+    
+    throw error
+  }
+};
+
+
+
+
+
 
 export const getAdminTournamentListAPI = async () => {
 
@@ -53,6 +78,23 @@ export const getAdminTournamentListAPI = async () => {
 
 };
 
+export const getAdminTournamentInformationAPI = async (tournamentId) => {
+  console.log("getTournamentInformationAPI called with ID:", tournamentId); // <--- should log when triggered
+
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/admin/get-tournament-information/${tournamentId}`,headerData() 
+    );
+    console.log("getTournamentInformationAPI response:====", response.data); // <--- log the full response
+    return response.data;
+  } catch (error) {
+   console.log("getAdminTournamentListAPI error",error);
+    
+    throw error
+  }
+};
+
+
 export const getAdminTournamentDetailsAPI = async (tournamentId) => {
   console.log("getAdminTournamentDetailsAPI called with ID:", tournamentId); // <--- should log when triggered
 
@@ -69,6 +111,10 @@ export const getAdminTournamentDetailsAPI = async (tournamentId) => {
   }
 };
 
+
+
+
+
 export const saveScoreAPI = async (scoreData) => {
   console.log("saveScoreAPI called",scoreData);
   try {
@@ -81,6 +127,22 @@ export const saveScoreAPI = async (scoreData) => {
     throw new Error(
       error.response?.data?.message || "Failed to save team data"
     );
+  }
+};
+
+
+export const saveMultipleScoreAPI = async (scoreData) => {
+  console.log("saveMultipleScoreAPI called",scoreData);
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/admin/save-multiple-score`,
+      scoreData,headerData()
+    );
+    return response.data;
+  } catch (error) {
+   console.log("saveMultipleScoreAPI error",error);
+    
+    throw error
   }
 };
 export const deleteTournamentAPI = async (tournamentId) => {

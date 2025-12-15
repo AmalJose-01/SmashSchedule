@@ -31,7 +31,7 @@ export const useKnockoutUpdateScore = (input) => {
     } catch (error) {
       console.log(error);
       if (error?.status === 401) {
-        console.log("handleTournamentList", error.response.data.message);
+        console.log("handleKnockoutScore", error.response.data.message);
         dispatch(logOut());
         toast.error(error.response.data.message);
       } else {

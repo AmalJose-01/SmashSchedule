@@ -25,8 +25,8 @@ export const useLogin = () => {
             let user = res.user;
 
              if (user.accountType === "admin") {
-               navigate("/create-tournament");
-                  // navigate("/create-tournament", { replace: true });
+              //  navigate("/tournament-list");
+                  navigate("/tournament-list", { replace: true });
 
             }
 

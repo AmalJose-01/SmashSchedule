@@ -16,6 +16,7 @@ const {
 // Create a new team
 const teamController = {
   createTeam: async (req, res) => {
+    console.log("dfghjkl", req.body);
 
     try {
       const {
@@ -28,6 +29,8 @@ const teamController = {
         playerTwoContact,
         playerOneDOB,
         playerTwoDOB,
+                tournamentId,
+
       } = req.body;
 
       if (
@@ -39,7 +42,8 @@ const teamController = {
         !playerOneContact ||
         !playerTwoContact ||
         !playerOneDOB ||
-        !playerTwoDOB
+        !playerTwoDOB||
+        !tournamentId
       ) {
         return res.status(400).json({ message: "All fields are required" });
       }
@@ -67,6 +71,8 @@ const teamController = {
         playerTwoContact,
         playerOneDOB,
         playerTwoDOB,
+        tournamentId,
+
       });
 
       if (!newTeam) {
@@ -87,7 +93,7 @@ const teamController = {
   getTournaments: async (req, res) => {
     try {
       const tournaments = await Tournament.find().select(
-        "_id tournamentName numberOfPlayersQualifiedToKnockout"
+        "_id tournamentName numberOfPlayersQualifiedToKnockout date time status registrationFee"
       );
       console.log(
         "Tournaments fetched===========================================================================:",
@@ -102,6 +108,7 @@ const teamController = {
       res.status(500).json({ message: "Server Error", error: error.message });
     }
   },
+  
   // getTournamentWithGroups: async (req, res) => {
   //   try {
   //     const tournaments = await Tournament.find().populate("groups");

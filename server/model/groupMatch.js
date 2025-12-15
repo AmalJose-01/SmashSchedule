@@ -29,7 +29,7 @@ const GroupMatchSchema = new mongoose.Schema({
   
   scheduledTime: Date,
   scores: [GameScoreSchema],
-  status: { type: String, enum: ["scheduled","Ongoing", "finished"], default: "scheduled" },
+  status: { type: String, enum: ["scheduled","ongoing", "finished"], default: "scheduled" },
   court: {type: String}
 });
 

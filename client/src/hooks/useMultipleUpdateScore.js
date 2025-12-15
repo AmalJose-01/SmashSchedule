@@ -1,16 +1,16 @@
 import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { saveScoreAPI } from "../services/admin/adminTeamServices";
+import { saveMultipleScoreAPI } from "../services/admin/adminTeamServices";
 import { useDispatch } from "react-redux";
 
-export const useUpdateScore = (input) => {
+export const useMultipleUpdateScore = (input) => {
       const queryClient = useQueryClient();
         const dispatch = useDispatch();
 
 
   const mutation = useMutation({
     mutationKey: ["tournament"],
-    mutationFn: saveScoreAPI,
+    mutationFn: saveMultipleScoreAPI,
     onMutate: () => toast.loading("Saving score..."),
     onSuccess: () => {
        toast.dismiss(); 
@@ -23,7 +23,7 @@ queryClient.invalidateQueries({ queryKey: ["tournamentDetail"] });
       toast.error(err?.message || "Failed to save score");
     },
   });
-  const handleScore = (data) => {
+  const handleMultipleScore = (data) => {
 
     try {
 toast.promise(mutation.mutateAsync(data), {
@@ -45,7 +45,7 @@ if(error?.status === 401){
       
     }
   };
-  return { handleScore,
+  return { handleMultipleScore,
     isLoading: mutation.isLoading,
     isError: mutation.isError,
     isSuccess: mutation.isSuccess

@@ -17,7 +17,7 @@ const KnockoutMatchSchema = new mongoose.Schema({
     teamName: { type: String, required: true }
   },
   scores: { type: [SetSchema], default: [] },
-  status: { type: String, enum: ["scheduled","Ongoing", "finished"], default: "scheduled" },
+  status: { type: String, enum: ["scheduled","ongoing", "finished"], default: "scheduled" },
   winner: { type: String, default: null }
 });
 

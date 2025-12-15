@@ -6,6 +6,8 @@ import MatchHome from "../pages/admin/MatchHome";
 import KnockoutFixtures from "../pages/admin/KnockoutFixtures";
 import { useSelector } from "react-redux";
 import Login from "../pages/admin/Login";
+import CreateTournament from "../pages/admin/CreateTournament";
+import AdminTournamentList from "../pages/admin/AdminTournamentList";
 
 const AdminRoutes = () => {
   const user = useSelector((state) => state.user.user);
@@ -13,13 +15,22 @@ const AdminRoutes = () => {
   return (
     <>
       <Route
-        path="/create-tournament"
+        path="/tournament-list"
+        element={
+          <ProtectedRoute role="admin">
+            <AdminTournamentList />
+          </ProtectedRoute>
+        }
+      />
+       <Route
+        path="/setup-tournament"
         element={
           <ProtectedRoute role="admin">
             <SetupTournament />
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/match/:tournamentId"
         element={
@@ -38,6 +49,15 @@ const AdminRoutes = () => {
         }
       />
 
+       <Route
+        path="/create-tournament"
+        element={
+          <ProtectedRoute role="admin">
+            <CreateTournament />
+          </ProtectedRoute>
+        }
+      />
+
 
 
 
@@ -50,7 +70,7 @@ const AdminRoutes = () => {
     ) : user.accountType === "admin" && !user.isVerified ? (
       <Navigate to="/checkout" replace />
     ) : (
-      <Navigate to="/create-tournament" replace />
+      <Navigate to="/tournament-list" replace />
     )
   }
 /> */}
@@ -63,7 +83,7 @@ const AdminRoutes = () => {
 
 
           
-          !user ? <Login /> : <Navigate to="/create-tournament" replace />
+          !user ? <Login /> : <Navigate to="/tournament-list" replace />
           // !user ? <Login /> : <Navigate to="/checkout" replace />
         }
       />
