@@ -9,15 +9,6 @@ const stripeWebhook = require("./routes/stripeWebhook")
 
 const app = express();
 var whitelist = ['http://localhost:5173', 'http://localhost:5174', 'https://smash-schedule.vercel.app', 'http://localhost:5175']
-// var corsOptions = {
-//   origin: function (origin, callback) {
-//     if (whitelist.indexOf(origin) !== -1) {
-//       callback(null, true)
-//     } else {
-//       callback(new Error('Not allowed by CORS'))
-//     }
-//   }
-// }
 
 var corsOptions = {
   origin: function (origin, callback) {
@@ -34,17 +25,19 @@ var corsOptions = {
 
 const PORT = process.env.PORT || 3000;
 
-// Connect to the database
-connectToDatabase();
 
 
 
 
-app.post(
+app.use(
   "/webhook",
   express.raw({ type: "application/json" }),
   stripeWebhook
 );
+
+
+// Connect to the database
+connectToDatabase();
 
 // Middleware to parse JSON requests
 app.use(express.json());
