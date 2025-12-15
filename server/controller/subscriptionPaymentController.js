@@ -45,6 +45,9 @@ const subscriptionPaymentController = {
           .json({ status: false, message: "User not found" });
       }
 
+
+      console.log("user",user);
+      
       const session = await stripe.checkout.sessions.create({
         mode: "subscription",
         line_items: [{ price: "price_1Sd70SAGJ8rZb74kQKnxRd7m", quantity: 1 }],
