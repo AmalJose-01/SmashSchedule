@@ -7,43 +7,43 @@ import { useDispatch } from "react-redux";
 
 export const useTournamentDetail = (tournamentId, userType) => {
   console.log(userType);
-    const dispatch = useDispatch();
+  const dispatch = useDispatch();
 
-  
   const { data, isLoading, isFetching, error } = useQuery({
-    queryKey:userType === "Admin" ? ["adminTournamentDetail", tournamentId] : ["tournamentDetail", tournamentId],
-    queryFn: () => userType === "Admin" ? getAdminTournamentDetailsAPI(tournamentId) : getTournamentDetailsAPI(tournamentId),
+    queryKey:
+      userType === "Admin"
+        ? ["adminTournamentDetail", tournamentId]
+        : ["tournamentDetail", tournamentId],
+    queryFn: () =>
+      userType === "Admin"
+        ? getAdminTournamentDetailsAPI(tournamentId)
+        : getTournamentDetailsAPI(tournamentId),
     onError: (err) =>
-      toast.error(err?.response?.data?.message || "Error loading tournament details"),
+      toast.error(
+        err?.response?.data?.message || "Error loading tournament details"
+      ),
   });
-  
 
-useEffect(() => {
-  if (isLoading ) {
-    toast.loading("Loading matches...", { id: "matchLoader" });
-  } else {
-    toast.dismiss("matchLoader");
-  }
-}, [isLoading]);
+  useEffect(() => {
+    if (isLoading) {
+      toast.loading("Loading matches...", { id: "matchLoader" });
+    } else {
+      toast.dismiss("matchLoader");
+    }
+  }, [isLoading]);
 
-   useEffect(() => {
+  useEffect(() => {
     if (!isLoading && !isFetching) {
       toast.dismiss("Loading matches...", { id: "matchLoader" });
-    } 
+    }
   }, [isLoading, isFetching]);
 
-
-
   const handleTournamentDetail = () => {
-
-if(error?.status === 401){
-  console.log("handleTournamentList",error.response.data.message);
-  dispatch(logOut())
-  toast.error(error.response.data.message)
-
-}
-
-
+    if (error?.status === 401) {
+      console.log("handleTournamentDetail", error.response.data.message);
+      dispatch(logOut());
+      toast.error(error.response.data.message);
+    }
 
     if (!data) return null;
 

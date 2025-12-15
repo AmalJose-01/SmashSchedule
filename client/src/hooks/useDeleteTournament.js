@@ -47,7 +47,7 @@ export const useDeleteTournament = (tournamentId) => {
     } catch (error) {
       console.log(error);
       if (error?.status === 401) {
-        console.log("handleTournamentList", error.response.data.message);
+        console.log("handleTournamentDelete", error.response.data.message);
         dispatch(logOut());
         toast.error(error.response.data.message);
       } else {

@@ -5,8 +5,19 @@ import { useTournamentDetail } from "../../hooks/useTournamentDetail";
 import { useParams } from "react-router-dom";
 import ButtonWithIcon from "../../components/ButtonWithIcon";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Table } from "lucide-react";
+import {
+  Award,
+  Calendar,
+  ChevronDown,
+  Table,
+  Target,
+  Trophy,
+  BarChart2,
+  MapPin,
+  Flame,
+} from "lucide-react";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+import { div } from "framer-motion/client";
 
 const GroupStageList = () => {
   const location = useLocation();
@@ -23,7 +34,7 @@ const GroupStageList = () => {
   const toggleExpand = () => setIsExpanded((prev) => !prev);
 
   const { handleTournamentDetail, isLoading: isTournamentDetailLoading } =
-    useTournamentDetail(tournamentId,"User");
+    useTournamentDetail(tournamentId, "User");
 
   const tournamentDetail = handleTournamentDetail();
 
@@ -34,20 +45,6 @@ const GroupStageList = () => {
       setMatches(tournamentDetail.matches); // now matches = { A: [...], B: [...], ... }
     }
   }, [tournamentDetail]);
-
-  const resultsTicker = [
-    "Team 1 def Team 2 (2-1)",
-    "Team 4 def Team 3 (2-0)",
-    "Team 1 def Team 3 (2-0)",
-    "Team 2 def Team 4 (2-1)",
-  ];
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTickerIndex((prev) => (prev + 3) % resultsTicker.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
 
   const handleGotoKnockout = async () => {
     // Navigate to knockout page with top teams
@@ -70,6 +67,29 @@ const GroupStageList = () => {
   const topTeams = groups
     ? Object.keys(groups).map((key) => groups[key][0])
     : [];
+
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case "finished":
+        return (
+          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs">
+            Finished
+          </span>
+        );
+      case "ongoing":
+        return (
+          <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs flex items-center gap-1">
+            <Flame className="w-3 h-3" /> Live
+          </span>
+        );
+      default:
+        return (
+          <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
+            Scheduled
+          </span>
+        );
+    }
+  };
 
   if (!groups) {
     return (
@@ -101,47 +121,36 @@ const GroupStageList = () => {
         />
       </div>
 
-      {/* Ticker */}
-      {/* <div className="sticky top-0 z-50 bg-blue-700 text-white p-4 rounded-xl shadow-lg text-center text-lg font-semibold tracking-wide">
-        <AnimatePresence>
-          {resultsTicker.slice(tickerIndex, tickerIndex + 3).map((res, idx) => (
-            <motion.div
-              key={tickerIndex + idx}
-              initial={{ opacity: 0, x: 100 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -100 }}
-              transition={{ duration: 0.6 }}
-              className="mb-1"
-            >
-              {res}
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div> */}
+<div className="p-4">
 
-      {/* Dropdown to select group */}
-      <div className="mb-6 mt-4 ml-4 mr-4 flex items-center">
-        <label className="mr-2 font-semibold text-gray-700">
-          Select Group:
+      {/* Group Filter */}
+      <div className="mb-6 bg-white rounded-lg shadow-md p-4 flex items-center gap-4 m-4">
+        <label className="flex items-center gap-2">
+          <Target className="w-5 h-5 text-blue-600" />
+          <span>Filter by Group:</span>
         </label>
-        <select
-          className="p-2 border rounded"
-          value={selectedGroup}
-          onChange={(e) => setSelectedGroup(e.target.value)}
-        >
-          <option value="all">All Groups</option>
-          {groups.map((gp) => (
-            <option key={gp._id} value={gp.groupName}>
-              {gp.groupName}
-            </option>
-          ))}
-        </select>
+        <div className="relative">
+          <select
+            className="appearance-none px-4 py-2 pr-10 border-2 border-blue-200 rounded-lg focus:outline-none focus:border-blue-500 bg-white cursor-pointer "
+            value={selectedGroup}
+            onChange={(e) => setSelectedGroup(e.target.value)}
+          >
+            <option value="all">All Groups</option>
+            {groups.map((gp) => (
+              <option key={gp._id} value={gp.groupName}>
+                {gp.groupName}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+        </div>
       </div>
 
       {/* Group Stage */}
       {groups.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-4 mr-4 mb-4">
-          {groups
+        <div className={`grid grid-cols-1  ${groups.length > 1 ? "md:grid-cols-2" : "md:grid-cols-1"}  gap-6 ml-4 mr-4 mb-6`}>
+
+{groups
             .filter(
               (gp) => selectedGroup === "all" || selectedGroup === gp.groupName
             )
@@ -151,14 +160,23 @@ const GroupStageList = () => {
               return (
                 <div
                   key={gp._id}
-                  className="bg-white rounded-3xl shadow-lg p-2 md:p-4 overflow-x-auto"
+                  className="bg-white rounded-3xl shadow-lg   overflow-x-auto"
                 >
-                  <h2 className="text-2xl font-bold mb-4 text-blue-800">
-                    {gp.groupName}
-                  </h2>
+                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6">
+                    <h2 className="text-2xl text-white flex items-center gap-2">
+                      <Trophy className="w-6 h-6" />
+                      {gp.groupName}
+                    </h2>
+                  </div>
+
+                  {/* Matches */}
+                  <h3 className="mb-4 flex items-center gap-2 text-gray-700 m-4">
+                    <Calendar className="w-5 h-5" />
+                    Matches
+                  </h3>
 
                   {/* Schedule And court */}
-                  <div className="mb-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                  <div className={`mb-6 grid grid-cols-1  ${groups.length > 1 ? "lg:grid-cols-2" : "lg:grid-cols-3"}   ${groups.length > 1 ? "md:grid-cols-2" : "md:grid-cols-2"}  gap-4 m-4`}>
                     {groupMatches.map((m) => (
                       <div
                         key={m._id}
@@ -168,87 +186,143 @@ const GroupStageList = () => {
                           {m.matchName}
                         </div>
                         <div className="text-sm text-gray-600 mt-1">
-                         {m.court} 
-
+                          {m.court}
                         </div>
-                      
                       </div>
                     ))}
                   </div>
 
                   {/* Points Table */}
-                  <table className="w-full min-w-max table-auto border border-gray-300 text-gray-800">
-                    <thead className="bg-blue-100">
-                      <tr>
-                        <th className="p-1 md:p-3 border text-sm md:text-base text-left">Team</th>
-                        <th className="p-1 md:p-3  border text-sm md:text-base">M</th>
-                        <th className="p-1 md:p-3  border text-sm md:text-base">W</th>
-                        <th className="p-1 md:p-3  border text-sm md:text-base">L</th>
-                        <th className="p-1 md:p-3  border text-sm md:text-base">PF</th>
-                        <th className="p-1 md:p-3  border text-sm md:text-base">PA</th>
-                        <th className="p-1 md:p-3  border text-sm md:text-base">PD</th>
-                        <th className="p-1 md:p-3  border font-bold text-green-600 text-sm md:text-base">
-                          P
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {gp.standings
-                        .slice()
-                        .sort((a, b) => {
-                          // Sort by totalPoints descending
-                          if (b.totalPoints !== a.totalPoints) {
-                            return b.totalPoints - a.totalPoints;
-                          }
-                          // If totalPoints are equal, sort by points difference descending
-                          const diffA = a.pointsFor - a.pointsAgainst;
-                          const diffB = b.pointsFor - b.pointsAgainst;
-                          return diffB - diffA;
-                        })
 
-                        .map((t, idx) => {
-                          // Find the team object that matches the teamId
-                          const teamObj = gp.teams.find(
-                            (team) => team.teamId === t.teamId
-                          );
+                  <div>
+                    <h3 className="mb-3 flex items-center gap-2 text-gray-700 m-4">
+                      <Award className="w-5 h-5" />
+                      Standings
+                    </h3>
 
-                          return (
-                            <tr
-                              key={idx}
-                              className="even:bg-blue-50 hover:bg-blue-100 transition"
-                            >
-                              <td className="p-1 md:p-2 font-semibold text-sm md:text-base text-left">
-                                {teamObj?.name || t.teamId}
-                              </td>
-                              <td className="p-1 md:p-3  text-center">
-                                {t.matchesPlayed}
-                              </td>
-                              <td className="p-1 md:p-3  text-center text-sm md:text-base">{t.wins}</td>
-                              <td className="p-1 md:p-3  text-center text-sm md:text-base">{t.losses}</td>
-                              <td className="p-1 md:p-3  text-center text-sm md:text-base">{t.pointsFor}</td>
-                              <td className="p-1 md:p-3  text-center text-sm md:text-base">
-                                {t.pointsAgainst}
-                              </td>
-                              <td className="p-1 md:p-3  text-center font-bold text-blue-700 text-sm md:text-base">
-                                {t.pointsFor - t.pointsAgainst}
-                              </td>
-                              <td className="p-1 md:p-3  text-center font-bold text-green-600 text-sm md:text-base">
-                                {t.totalPoints}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                    </tbody>
-                  </table>
+                    <div className="overflow-x-auto rounded-lg border-2 border-gray-200 m-4">
+                      <table className="w-full">
+                        <thead className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+                          <tr>
+                            <th className="p-3 text-left text-sm">#</th>
+                            <th className="p-3 text-sm">Team</th>
+                            <th className="p-3 text-sm">M</th>
+                            <th className="p-3 text-sm">W</th>
+                            <th className="p-3 text-sm">L</th>
+                            <th className="p-3 text-sm">PF</th>
+                            <th className="p-3 text-sm">PA</th>
+                            <th className="p-3 text-sm">PD</th>
+                            <th className="p-3  text-sm  text-green-600">
+                              Pts
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {gp.standings
+                            .slice()
+                            .sort((a, b) => {
+                              // Sort by totalPoints descending
+                              if (b.totalPoints !== a.totalPoints) {
+                                return b.totalPoints - a.totalPoints;
+                              }
+                              // If totalPoints are equal, sort by points difference descending
+                              const diffA = a.pointsFor - a.pointsAgainst;
+                              const diffB = b.pointsFor - b.pointsAgainst;
+                              return diffB - diffA;
+                            })
+
+                            .map((t, idx) => {
+                              // Find the team object that matches the teamId
+                              const teamObj = gp.teams.find(
+                                (team) => team.teamId === t.teamId
+                              );
+                              const isQualified = idx < 2;
+
+                              return (
+                                <tr
+                                  key={idx}
+                                  className={`border-b hover:bg-blue-50 transition-colors ${
+                                    isQualified ? "bg-green-50" : ""
+                                  }`}
+                                >
+                                  <td className="p-3">
+                                    <span
+                                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+                                        isQualified
+                                          ? "bg-green-600 text-white"
+                                          : "bg-gray-200 text-gray-600"
+                                      }`}
+                                    >
+                                      {idx + 1}
+                                    </span>
+                                  </td>
+
+                                  <td className="p-2 text-sm">
+                                    {teamObj?.name || t.teamId}
+                                  </td>
+                                  <td className="p-2 text-center text-sm">
+                                    {t.matchesPlayed}
+                                  </td>
+                                  <td className="p-2 text-center text-sm">
+                                    {t.wins}
+                                  </td>
+                                  <td className="p-2 text-center text-sm">
+                                    {t.losses}
+                                  </td>
+                                  <td className="p-2 text-center text-sm">
+                                    {t.pointsFor}
+                                  </td>
+                                  <td className="p-2 text-center text-sm">
+                                    {t.pointsAgainst}
+                                  </td>
+
+                                  <td className="p-3 text-center text-sm">
+                                    <span
+                                      className={
+                                        t.pointsFor - t.pointsAgainst >= 0
+                                          ? "text-green-600"
+                                          : "text-red-600"
+                                      }
+                                    >
+                                      {t.pointsFor - t.pointsAgainst > 0
+                                        ? "+"
+                                        : ""}
+                                      {t.pointsFor - t.pointsAgainst}
+                                    </span>
+                                  </td>
+
+                                  <td className="p-3 text-center text-sm">
+                                    <span className="px-2 py-1 bg-blue-600 text-white rounded">
+                                      {t.totalPoints}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                        </tbody>
+                      </table>
+                    </div>
+                    {gp.standings.length > 0 && (
+                      <p className="text-xs text-gray-500 mt-2 flex items-center gap-1 m-4">
+                        <Trophy className="w-3 h-3 text-green-600" />
+                        Top 2 teams qualify for knockout stage
+                      </p>
+                    )}
+                  </div>
 
                   {/* Schedule And court */}
                   <div
-                    className="flex justify-between items-center cursor-pointer mt-1"
+                    className="flex justify-between items-center cursor-pointer m-4"
                     onClick={toggleExpand}
                   >
-                    <h2 className="text-md font-semibold mb-4">
-                       {isExpanded ? "Hide Score" : "View Score"}
+                    <div className="flex gap-2">
+                      <BarChart2 className="w-5 h-5" />
+
+                      <h2 className="text-md font-semibold mb-4">
+                        {isExpanded ? "Hide Score" : "View Score"}
                       </h2>
+                    </div>
+
                     {groupMatches.length > 0 && (
                       <span className="text-gray-600">
                         {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
@@ -257,66 +331,81 @@ const GroupStageList = () => {
                   </div>
 
                   {isExpanded && (
-                    <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
-                      {groupMatches.map((m) => (
-                        <div
-                          key={m._id}
-                          className="card p-4 border border-gray-200 rounded-xl bg-blue-50 hover:bg-blue-100 transition flex flex-col items-center justify-center"
-                        >
-                          <div className="font-semibold text-sm text-gray-800 text-center">
-                            {m.matchName}
-                          </div>
-                          <div className="text-sm text-gray-600 mt-1">
-                            {m.court} 
-                          </div>
-                          <div className="mt-2 space-y-1 items-center justify-center">
-                            {m.scores[0].sets.map((set, idx) => {
-                              const isSameScore =
-                                set.home === set.away &&
-                                set.home > 0 &&
-                                set.away > 0; // check if scores are equal
+                    <div>
+                      {/* Matches */}
+                      <h3 className="mb-4 flex items-center gap-2 text-gray-700 m-4">
+                        <Calendar className="w-5 h-5" />
+                        Matches
+                      </h3>
 
-                              const disableHome = true;
-                              const disableAway = true;
-
-                              return (
-                                <div
-                                  key={set._id}
-                                  className="flex space-x-2 items-center"
-                                >
-                                  <div className="flex flex-row">
-                                    <input
-                                      type="number"
-                                      min={0}
-                                      max={21} // maximum score allowed
-                                      className={`w-full p-1 border rounded text-center mr-2 ${
-                                        isSameScore
-                                          ? "border-red-500"
-                                          : "border-gray-500"
-                                      } `}
-                                      value={set.home === 0 ? "" : set.home}
-                                      disabled={disableHome}
-                                    />
-                                    <span>-</span>
-                                    <input
-                                      type="number"
-                                      min={0}
-                                      max={21}
-                                      className={`w-max-full p-1 border rounded text-center ml-2 ${
-                                        isSameScore
-                                          ? "border-red-500"
-                                          : "border-gray-500"
-                                      } `}
-                                      value={set.away === 0 ? "" : set.away}
-                                      disabled={disableAway}
-                                    />
-                                  </div>
+                  <div className={`mb-6 grid grid-cols-1  ${groups.length > 1 ? "lg:grid-cols-2" : "lg:grid-cols-3"}   ${groups.length > 1 ? "md:grid-cols-2" : "md:grid-cols-2"}  gap-4 m-4`}>
+                        {groupMatches.map((m) => (
+                          <div
+                            key={m._id}
+                            className="card bg-gradient-to-br from-blue-50 to-purple-50 p-4 rounded-xl border-2 border-blue-100 hover:shadow-lg transition-all"
+                          >
+                            <div className="w-full flex items-center justify-between mb-3">
+                              <div className="flex-1">
+                                <div className="font-semibold text-gray-800">
+                                  {m.matchName}
                                 </div>
-                              );
-                            })}
+                                <div className="text-sm text-gray-600 flex items-center gap-2 mt-1">
+                                  <MapPin className="w-4 h-4" />
+                                  {m.court === "" ? "Court" : m.court}
+                                </div>
+                              </div>
+                              {getStatusBadge(m.status)}
+                            </div>
+                
+                            <div className="mt-2 space-y-1 items-center justify-center">
+                              {m.scores[0].sets.map((set, idx) => {
+                                const isSameScore =
+                                  set.home === set.away &&
+                                  set.home > 0 &&
+                                  set.away > 0; // check if scores are equal
+
+                                const disableHome = true;
+                                const disableAway = true;
+
+                                return (
+                                  <div
+                                    key={set._id}
+                                    className="flex space-x-2 items-center justify-center"
+                                  >
+                                    <div className="flex flex-row">
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        max={21} // maximum score allowed
+                                        className={`w-full p-1 border rounded text-center mr-2 ${
+                                          isSameScore
+                                            ? "border-red-500"
+                                            : "border-gray-500"
+                                        } `}
+                                        value={set.home === 0 ? "" : set.home}
+                                        disabled={disableHome}
+                                      />
+                                      <span>:</span>
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        max={21}
+                                        className={`w-max-full p-1 border rounded text-center ml-2 ${
+                                          isSameScore
+                                            ? "border-red-500"
+                                            : "border-gray-500"
+                                        } `}
+                                        value={set.away === 0 ? "" : set.away}
+                                        disabled={disableAway}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -328,6 +417,7 @@ const GroupStageList = () => {
           <h2 className="text-xl font-semibold mb-4">No groups available.</h2>
         </div>
       )}
+    </div>
     </div>
   );
 };

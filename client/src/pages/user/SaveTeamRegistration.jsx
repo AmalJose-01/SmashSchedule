@@ -74,7 +74,7 @@ const SaveTeamRegistration = () => {
     }
   };
   const onClose = () => {
-    navigate("/create-tournament");
+    navigate("/tournament-list");
   };
 
   return (

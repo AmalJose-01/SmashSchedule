@@ -22,6 +22,23 @@ const getTotalPoints = (sets) => {
   return { homeTotal, awayTotal, totalSets };
 };
 
+
+const isValidScore = (sets) => {
+  return sets.every((set) => {
+    // Same score > 0 not allowed
+    if (set.home === set.away && set.home > 0) return false;
+
+    // Allow empty set
+    if (set.home === 0 && set.away === 0) return true;
+
+    // One side must reach 21
+    return set.home >= 21 || set.away >= 21;
+  });
+};
+
+
+
+
 /**
  * Determine winner based on best of 3 sets
  * @param {Array} sets - Array of sets [{home, away}]
@@ -41,7 +58,7 @@ function determineWinner(sets)  {
   const requiredWins = Math.ceil(totalSets / 2);
 
   let winner = null;
-  let matchStatus = "Ongoing";
+  let matchStatus = "ongoing";
 
   if (homeSetWins >= requiredWins) {
       winner = "home";
@@ -64,7 +81,7 @@ function determineKnockoutWinnerAndStatus(scores, teamsHome, teamsAway) {
 
   const requiredWins = Math.ceil(scores.length / 2);
   let winner = null;
-  let status = "Ongoing";
+  let status = "ongoing";
 
   if (homeWins >= requiredWins) {
     winner = teamsHome;
@@ -78,4 +95,4 @@ function determineKnockoutWinnerAndStatus(scores, teamsHome, teamsAway) {
 }
 
 
-module.exports = { getTotalPoints, determineWinner, determineKnockoutWinnerAndStatus };
+module.exports = { getTotalPoints, determineWinner, determineKnockoutWinnerAndStatus, isValidScore};

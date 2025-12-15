@@ -2,89 +2,89 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { getTeamListAPI } from "../../services/admin/adminTeamServices";
+import ConfirmModal from "../../components/AlertView";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import tournamentSetupSchema from "../../../utils/validationSchemas";
-import { yupResolver } from "@hookform/resolvers/yup";
-import { useForm } from "react-hook-form";
-import { useTournament } from "../../hooks/useTournament";
 import { setTournamentData } from "../../redux/slices/tournamentSlice";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { FaTrash, FaChevronDown, FaChevronUp } from "react-icons/fa"; // import the trash icon
-import { Settings } from "lucide-react";
+import {
+  ListChecks,
+  Edit,
+  UserPlus,
+  Trophy,
+  FileText,
+  Calendar,
+  Clock,
+  MapPin,
+  Users,
+  Layers,
+  Grid3x3,
+  Eye,
+} from "lucide-react";
 import ButtonWithIcon from "../../components/ButtonWithIcon";
-import { useDeleteTournament } from "../../hooks/useDeleteTournament";
 import Logout from "../../components/Logout";
-import { saveTournamentAPI } from "../../services/admin/adminTeamServices";
 import { logOut } from "../../redux/slices/userSlice";
+import { useTournamentInformation } from "../../hooks/useTournamentInformation";
+import { useMatchSave } from "../../hooks/useMatchSave";
+import { useDeleteTournament } from "../../hooks/useDeleteTournament";
 
 const SetupTournament = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { handleTournamentList, isLoading: isTournamentLoading , error:tournamentListError } =
-    useTournament("Admin");
 
-  const {
-    handleTournamentDelete,
-    isLoading: isScoreLoading,
-    isError: isScoreError,
-    isSuccess: isScoreSuccess,
-  } = useDeleteTournament();
+  const tournament = useSelector((state) => state.tournament.tournamentData);
+  const [tournamentDetail, setTournamentDetail] = useState(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [deleteTournamentId, setDeleteTournamentId] = useState(null);
+
+  const { tournamentInfo } = useTournamentInformation(
+    tournament._id,
+    "Admin"
+  );
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "Scheduled":
+        return "bg-blue-100 text-blue-800";
+      case "Ongoing":
+        return "bg-green-100 text-green-800";
+      case "GroupStage":
+        return "bg-yellow-100 text-yellow-800";
+      case "KnockoutStage":
+        return "bg-orange-100 text-orange-800";
+      case "finished":
+        return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getPlayTypeDisplay = (playType) => {
+    switch (playType) {
+      case "group":
+        return "Group Stage Only";
+      case "knockout":
+        return "Knockout Only";
+      case "group-knockout":
+        return "Group + Knockout";
+      default:
+        return playType;
+    }
+  };
 
   const queryClient = useQueryClient();
   const [isExpanded, setIsExpanded] = useState(false);
   const toggleExpand = () => setIsExpanded((prev) => !prev);
 
   // ---------------------------
-  // SAVE TOURNAMENT MUTATION
+  // LOCAL STATES
   // ---------------------------
-  const { mutateAsync } = useMutation({
-    mutationKey: ["saveTournament"],
-    mutationFn: saveTournamentAPI,
-    onMutate: () =>
-      toast.loading("Saving tournament...", { id: "saveTournament" }),
-    onSuccess: () => {
-      toast.dismiss();
-      toast.success("Tournament saved successfully!");
-      queryClient.invalidateQueries({ queryKey: ["adminTournamentList"] });
-    },
-    onError: (err) => {
-      toast.dismiss();
-      toast.error(err?.message || "Failed to save tournament");
-    },
-  });
-
-  // ---------------------------
-  // FORM VALIDATION (YUP)
-  // ---------------------------
-  const schema = tournamentSetupSchema.pick([
-    "tournamentName",
-    "teamsPerGroup",
-    "playType",
-    "playersToQualify",
-    "numberOfCourts",
-  ]);
-
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    formState: { errors },
-  } = useForm({
-    resolver: yupResolver(schema),
-    defaultValues: {
-      tournamentName: "My Tournament",
-      teamsPerGroup: 4,
-      playType: "group-knockout",
-      playersToQualify: 2,
-      numberOfCourts: 1,
-    },
-  });
+  const { handleUseMatchScheduling } = useMatchSave(tournament?._id);
 
   // ---------------------------
   // LOCAL STATES
   // ---------------------------
-  const [allPlayers, setAllPlayers] = useState([]);
+  // const [allPlayers, setAllPlayers] = useState([]);
   const [selectedPlayers, setSelectedPlayers] = useState([]);
   const [assigning, setAssigning] = useState(false);
 
@@ -92,21 +92,34 @@ const SetupTournament = () => {
   // FETCH TEAMS
   // ---------------------------
   let loadingToast;
-  const { data, isLoading, isFetching ,error} = useQuery({
+  const { data, isLoading, isFetching, error } = useQuery({
     queryKey: ["teams"],
-    queryFn: getTeamListAPI,
+    queryFn: () => getTeamListAPI(tournament._id),
     onSuccess: (res) => toast.success("Teams loaded!"),
-    onError: (err) =>
-      toast.error(err?.response?.data?.message || "Error loading teams"),
+    onError: (error) => {
+      console.log("MUTATION ERROR:", error);
+      toast.dismiss();
+      if (error?.response?.status === 401) {
+        toast.error(error.response.data.message || "Session expired");
+
+        dispatch(logOut());
+        navigate("/");
+
+        return;
+      }
+
+      // Fallback for other errors
+      toast.error(error?.response?.data?.message || error.message);
+    },
   });
 
   useEffect(() => {
-    if(error?.status === 401){
-  console.log("handleTournamentList",error.response.data.message);
-  dispatch(logOut())
-  toast.error(error.response.data.message)
+    if (error?.status === 401) {
+      console.log("handleTournamentList", error.response.data.message);
+      dispatch(logOut());
+      toast.error(error.response.data.message);
+    }
 
-}
     if (data?.teams) {
       const players = data.teams
         .map((t) =>
@@ -114,68 +127,71 @@ const SetupTournament = () => {
         )
         .filter(Boolean);
 
-      setAllPlayers(players);
+      //  setAllPlayers(players);
       setSelectedPlayers(players);
     }
   }, [data]);
 
-  const tournaments = handleTournamentList();
-
   useEffect(() => {
-
-
-
-
-  }, [tournaments]);
+    if (!tournament?._id) return;
+    try {
+      if (!tournamentInfo) return;
+      setTournamentDetail(tournamentInfo.tournaments ?? tournamentInfo);
+    } catch (err) {
+      console.error("Error fetching tournament detail:", err);
+      toast.error("Failed to load tournament details");
+    }
+  }, [tournamentInfo]);
 
   // ---------------------------
   // SCHEDULE TOURNAMENT
   // ---------------------------
-  const onSubmit = async (saveData) => {
-    console.log("saveData", saveData);
+  const onSubmit = async () => {
+    if (tournamentDetail.status === "Create") {
+      if (selectedPlayers.length < tournamentDetail.teamsPerGroup) {
+        toast.error("Not enough teams to form groups");
+        return;
+      }
 
-    if (selectedPlayers.length < saveData.teamsPerGroup) {
-      toast.error("Not enough teams to form groups");
-      return;
+      setAssigning(true);
+
+      // Shuffle teams
+      const shuffledTeams = [...selectedPlayers].sort(
+        () => Math.random() - 0.5
+      );
+
+      // Create groups
+      const groups = [];
+      const groupCount = Math.ceil(
+        shuffledTeams.length / tournamentDetail.teamsPerGroup
+      );
+
+      for (let i = 0; i < groupCount; i++) groups.push([]);
+
+      shuffledTeams.forEach((team, i) => {
+        groups[i % groupCount].push(team);
+      });
+
+      console.log("Generated Groups:", groups);
+
+      // Prepare object for DB
+      const tournamentSaveData = {
+        tournamentName: tournamentDetail.tournamentName,
+        groups,
+        tournamentID: tournamentDetail._id,
+        numberOfCourts: tournamentDetail.numberOfCourts,
+      };
+
+      console.log("Final tournamentData →", tournamentSaveData);
+
+      try {
+        handleUseMatchScheduling(tournamentSaveData);
+      } catch (err) {
+        console.error("Error:", err);
+      }
+    } else {
+      navigate(`/match/${tournamentDetail._id}`);
     }
-
-    setAssigning(true);
-
-    // Shuffle teams
-    const shuffledTeams = [...selectedPlayers].sort(() => Math.random() - 0.5);
-
-    // Create groups
-    const groups = [];
-    const groupCount = Math.ceil(shuffledTeams.length / saveData.teamsPerGroup);
-
-    for (let i = 0; i < groupCount; i++) groups.push([]);
-
-    shuffledTeams.forEach((team, i) => {
-      groups[i % groupCount].push(team);
-    });
-
-    console.log("Generated Groups:", groups);
-
-    // Prepare object for DB
-    const tournamentData = {
-      tournamentName: saveData.tournamentName,
-      teamsPerGroup: saveData.teamsPerGroup,
-      playType: saveData.playType,
-      groups,
-      numberOfPlayersQualifiedToKnockout: saveData.playersToQualify,
-      numberOfCourts: saveData.numberOfCourts,
-
-    };
-
-    console.log("Final tournamentData →", tournamentData);
-
-    try {
-      await mutateAsync(tournamentData);
-    } catch (err) {
-      console.error("Error:", err);
-      toast.dismiss("saveTournament");
-    }
-
     setAssigning(false);
   };
 
@@ -188,207 +204,339 @@ const SetupTournament = () => {
     }
   }, [isLoading, isFetching]);
 
-  const handleDeleteTournament = (tournamentId) => {
-    handleTournamentDelete(tournamentId);
+  // Delete Session
+  const {
+    handleTournamentDelete,
+    isLoading: isScoreLoading,
+    isError: isScoreError,
+    isSuccess: isScoreSuccess,
+  } = useDeleteTournament();
+
+  const handleDeleteTournament = () => {
+    if (!deleteTournamentId) return;
+    handleTournamentDelete(deleteTournamentId);
+    setShowConfirm(false);
   };
 
- 
+  // ⬇️ Navigate back on success
+  useEffect(() => {
+    if (isScoreSuccess) {
+      toast.success("Tournament deleted successfully");
 
+      navigate("/tournament-list", { replace: true });
+    }
+  }, [isScoreSuccess, navigate]);
 
-
+  // Wait until tournamentDetail is loaded
+  if (!tournamentDetail) {
+    return <div>Loading tournament...</div>;
+  }
   // ---------------------------
   // RENDER UI
   // ---------------------------
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white ">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       {/* HEADER */}
       <div className="flex justify-between items-center bg-white p-4  shadow-lg sticky top-0">
         <div className="flex items-center gap-4">
-          <Settings
+          <ListChecks
             className="w-8 h-8 text-blue-600"
             onClick={() => navigate("/")}
           />
 
           <h2 className="text-xl font-semibold text-blue-800">
-            Setup Tournament
+            Tournament List
           </h2>
         </div>
 
         <div className="flex gap-2">
-          {" "}
-          <ButtonWithIcon
-            title="Add Team"
-            icon="plus"
+          {/* <ButtonWithIcon
+            title="Register Team"
+            icon="register"
             buttonBGColor="bg-green-600"
             textColor="text-white"
             onClick={() => navigate("/teams")}
-          />
+          /> */}
+          <button
+            onClick={() =>
+              navigate("/teams", {
+                replace: true,
+                state: {
+                  from: `/setup-tournament`,
+                },
+              })
+            }
+            className={`${
+              tournamentDetail.status != "Create" ? "hidden" : ""
+            } flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors`}
+          >
+            <UserPlus className="w-5 h-5" />
+            <span className="hidden md:flex">Add Players</span>
+          </button>
+          <button
+            // onClick={() => onEdit(tournament)}
+            className={`${
+              tournamentDetail.status != "Create" ? "hidden" : ""
+            } flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors`}
+          >
+            <Edit className="w-5 h-5" />
+            <span className="hidden md:flex">Edit Tournament</span>
+          </button>
           <Logout />
         </div>
       </div>
 
-      {/* Tournament List */}
-      {tournaments?.length > 0 ? (
-        <div className="bg-white rounded-3xl shadow-lg p-6 mt-4 ml-4 mr-4">
-          <h2 className="text-xl font-semibold mb-4">Existing Tournaments</h2>
-          <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {tournaments.map((tournament) => (
-              <li
-                key={tournament.tournamentId}
-                className="p-4 bg-blue-50 rounded-lg border border-gray-200 text-bold"
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white p-3">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg shadow-lg p-8 mb-6 text-white m-4">
+          <div className="flex items-start justify-between flex-wrap gap-4">
+            <div>
+              <h1 className="text-3xl mb-2">
+                {tournamentDetail.tournamentName}
+              </h1>
+              <div className="flex items-center gap-4 flex-wrap">
+                <span
+                  className={`px-3 py-1 rounded-full text-sm ${getStatusColor(
+                    tournamentDetail.status
+                  )} bg-white`}
+                >
+                  {tournamentDetail.status}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Trophy className="w-4 h-4" />
+                  {tournamentDetail.matchType}
+                </span>
+                <span
+                  className={`px-3 py-1 rounded-full text-sm ${
+                    tournamentDetail.isPublic ? "bg-green-500" : "bg-gray-500"
+                  }`}
+                >
+                  {tournamentDetail.isPublic ? "Public" : "Private"}
+                </span>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm text-blue-100 mb-1">Participants</div>
+              <div className="text-3xl">
+                {data?.teams?.length ? data?.teams?.length : "0"} /{""}
+                {tournamentDetail.maximumParticipants}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/*  */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 m-4">
+          <div className="lg:col-span-2 space-y-6">
+            {/* Basic Information */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="mb-4 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-blue-600" />
+                Tournament Information
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-start gap-3">
+                  <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div>
+                    <div className="text-sm text-gray-600">Date</div>
+                    <div>{tournamentDetail.date || "Not set"}</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Clock className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div>
+                    <div className="text-sm text-gray-600">Time</div>
+                    <div>{tournamentDetail.time || "Not set"}</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div>
+                    <div className="text-sm text-gray-600">Location</div>
+                    <div>{tournamentDetail.location || "Not set"}</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Users className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div>
+                    <div className="text-sm text-gray-600">
+                      Max Participants
+                    </div>
+                    <div>{tournamentDetail.maximumParticipants}</div>
+                  </div>
+                </div>
+              </div>
+              {tournamentDetail.description && (
+                <div className="mt-4 pt-4 border-t">
+                  <div className="text-sm text-gray-600 mb-1">Description</div>
+                  <p className="text-gray-700">{tournamentDetail.description}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Tournament Format */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="mb-4 flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-blue-600" />
+                Tournament Format
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-start gap-3">
+                  <Layers className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div>
+                    <div className="text-sm text-gray-600">Play Type</div>
+                    <div>{getPlayTypeDisplay(tournamentDetail.playType)}</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Users className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div>
+                    <div className="text-sm text-gray-600">Match Type</div>
+                    <div>{tournamentDetail.matchType}</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Grid3x3 className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div>
+                    <div className="text-sm text-gray-600">Teams per Group</div>
+                    <div>{tournamentDetail.teamsPerGroup}</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Trophy className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div>
+                    <div className="text-sm text-gray-600">
+                      Qualified to Knockout
+                    </div>
+                    <div>
+                      {tournamentDetail.numberOfPlayersQualifiedToKnockout}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div>
+                    <div className="text-sm text-gray-600">
+                      Number of Courts
+                    </div>
+                    <div>{tournamentDetail.numberOfCourts}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* TEAM LIST */}
+            {data?.teams?.length > 0 ? (
+              <div className="bg-white rounded-3xl shadow-lg p-6 max-h-96 overflow-y-auto mt-4">
+                <div
+                  className="flex justify-between items-center cursor-pointer"
+                  onClick={toggleExpand}
+                >
+                  <div className="flex items-center gap-3">
+                    <Users className="w-5 h-5 text-blue-600" />
+
+                    <h2>Registered Players ({data?.teams?.length})</h2>
+                  </div>
+                  {data?.teams?.length > 0 && (
+                    <span className="text-gray-600">
+                      {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
+                    </span>
+                  )}
+                </div>
+                {isExpanded && data?.teams?.length > 0 ? (
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-2 mt-4">
+                    {data?.teams?.map((team) => (
+                      <li
+                        key={team._id}
+                        className="flex items-center gap-3 p-2 bg-blue-50 rounded-lg border border-gray-200"
+                      >
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <span className="text-blue-600">
+                            {team.teamName.charAt(0)}
+                          </span>
+                        </div>
+
+                        {team.teamName}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            ) : (
+              <div className="bg-white rounded-3xl shadow-lg p-6 max-h-96 overflow-y-auto mt-4 ml-4 mr-4">
+                <h2 className="text-xl font-semibold mb-4">
+                  No Teams Available. Please add teams to schedule a tournament.
+                </h2>
+              </div>
+            )}
+          </div>
+          {/* Right Side */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h3 className="mb-4">Actions</h3>
+            <div className="space-y-2">
+              <button
+                onClick={() => navigate("/teams")}
+                className={`w-full px-4 py-2 transition-colors flex items-center justify-center gap-2 ${
+                  tournamentDetail.status === "Create"
+                    ? "bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                    : "bg-purple-200 text-white rounded-lg hover:bg-purple-200"
+                }`}
+                disabled={tournamentDetail.status === "Create" ? false : true}
+              >
+                <UserPlus className="w-4 h-4" />
+                Add Players
+              </button>
+              <button
+                onClick={() => navigate("/teams")}
+                className={`w-full px-4 py-2 transition-colors flex items-center justify-center gap-2 ${
+                  tournamentDetail.status === "Create"
+                    ? "bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    : "bg-blue-200 text-white rounded-lg hover:bg-blue-200"
+                }`}
+                disabled={tournamentDetail.status === "Create" ? false : true}
+              >
+                <Edit className="w-4 h-4" />
+                Edit Details
+              </button>
+              <button
+                className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                onClick={() => onSubmit()}
+              >
+                {tournamentDetail.status === "Create" ? (
+                  <Trophy className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+                {tournamentDetail.status === "Create"
+                  ? "Start Tournament"
+                  : "View Matches"}
+              </button>
+
+              <button
+                className="w-full px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
                 onClick={() => {
-                  console.log("tournament", tournament);
-
-                  dispatch(setTournamentData(tournament));
-
-                  navigate(`/match/${tournament.tournamentId}`);
+                  setDeleteTournamentId(tournamentDetail._id);
+                  setShowConfirm(true);
                 }}
               >
-                <div className="flex flex-row justify-between">
-                  <h4>{tournament.name}</h4>
-                  <button
-                    className="p-2 bg-red-500 text-white rounded hover:bg-red-600 flex items-center justify-center"
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent li click
-                      handleDeleteTournament(tournament.tournamentId);
-                    }}
-                  >
-                    <FaTrash />
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : (
-        <div className="bg-white rounded-3xl shadow-lg p-6 max-h-96 overflow-y-auto mt-4 ml-4 mr-4">
-          <h2 className="text-xl font-semibold mb-4">
-            No tournaments available.
-          </h2>
-        </div>
-      )}
-
-      {/* TEAM LIST */}
-      {data?.teams?.length > 0 ? (
-        <div className="bg-white rounded-3xl shadow-lg p-6 max-h-96 overflow-y-auto mt-4 ml-4 mr-4">
-          <div
-            className="flex justify-between items-center cursor-pointer"
-            onClick={toggleExpand}
-          >
-            <h2 className="text-xl font-semibold mb-4">
-              All Teams ({data?.teams?.length})
-            </h2>
-            {data?.teams?.length > 0 && (
-              <span className="text-gray-600">
-                {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
-              </span>
-            )}
-          </div>
-          {isExpanded && data?.teams?.length > 0 ? (
-            <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-              {data?.teams?.map((team) => (
-                <li
-                  key={team._id}
-                  className="p-2 bg-blue-50 rounded-lg border border-gray-200 text-center"
-                >
-                  {team.teamName}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
-      ) : (
-        <div className="bg-white rounded-3xl shadow-lg p-6 max-h-96 overflow-y-auto mt-4 ml-4 mr-4">
-          <h2 className="text-xl font-semibold mb-4">
-            No Teams Available. Please add teams to schedule a tournament.
-          </h2>
-        </div>
-      )}
-
-      {/* SETTINGS */}
-      <div className="bg-white rounded-3xl shadow-lg p-6 space-y-4 mt-4 ml-4 mr-4 mb-8">
-        <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
-          {/* Tournament Name */}
-          <div>
-            <label className="font-semibold">Tournament Name:</label>
-            <input
-              type="text"
-              {...register("tournamentName")}
-              className=" w-full p-1 border rounded"
-            />
-            {errors.tournamentName && (
-              <p className="text-red-600 text-sm">
-                {errors.tournamentName.message}
-              </p>
-            )}
-          </div>
-
-          {/* Teams per group */}
-          <div>
-            <label className="font-semibold">Teams per Group:</label>
-            <input
-              type="number"
-              min="2"
-              max="8"
-              {...register("teamsPerGroup")}
-              className="ml-2 w-20 p-1 border rounded"
-            />
-          </div>
-
-          {/* Play type */}
-          <div>
-            <label className="font-semibold">Play Type:</label>
-            <select
-              {...register("playType")}
-              className="ml-2 p-1 border rounded"
-            >
-              <option value="group">Group Stage</option>
-              <option value="knockout">Knockout</option>
-              <option value="group-knockout">Group + Knockout</option>
-            </select>
-          </div>
-
-          {/* Number of players Qualified to knockout */}
-          <div>
-            <label className="font-semibold">
-              Number of players Qualified to knockout:
-            </label>
-            <input
-              type="number"
-              min="2"
-              max="8"
-              {...register("playersToQualify")}
-              className="ml-2 w-20 p-1 border rounded"
-            />
-          </div>
-          {/* Number of players Qualified to knockout */}
-          <div>
-            <label className="font-semibold">Number of courts available:</label>
-            <input
-              type="number"
-              min="2"
-              max="20"
-              {...register("numberOfCourts")}
-              className="ml-2 w-20 p-1 border rounded"
-            />
-          </div>
-
-          {/* Button */}
-          <button
-            type="submit"
-            // onClick={handleSchedule}
-            disabled={assigning}
-            className="bg-blue-700 text-white p-3 rounded-xl font-bold hover:bg-blue-800 transition w-full"
-          >
-            {assigning ? "Assigning Groups..." : "Schedule Tournament"}
-          </button>
-
-          {assigning && (
-            <div className="mt-4 p-4 bg-blue-100 rounded-xl text-center font-semibold animate-pulse">
-              Creating groups, please wait...
+                Delete Tournament
+              </button>
             </div>
-          )}
-        </form>
+          </div>
+        </div>
+        {/*  */}
+        {/* CONFIRM DELETE MODAL */}
+        <ConfirmModal
+          isOpen={showConfirm}
+          title="Delete Tournament"
+          message="This action cannot be undone. Do you want to proceed?"
+          confirmText="YES"
+          cancelText="NO"
+          danger
+          loading={isScoreLoading}
+          onConfirm={handleDeleteTournament} // call delete function here
+          onCancel={() => setShowConfirm(false)} // close modal
+        />
       </div>
     </div>
   );

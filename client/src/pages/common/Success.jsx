@@ -65,7 +65,7 @@ export default function Success() {
           </div>
          <button
   className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
-  onClick={() => navigate("/create-tournament", { replace: true })}
+  onClick={() => navigate("/tournament-list", { replace: true })}
 >
   Return to Dashboard
 </button>

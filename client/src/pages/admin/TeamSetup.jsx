@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import tournamentSetupSchema from "../../../utils/validationSchemas";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useForm } from "react-hook-form";
@@ -7,10 +7,13 @@ import { saveTeamAPI } from "../../services/teamServices";
 import { toast } from "sonner"; // make sure react-toastify is installed
 import Navbar from "../../components/Navbar";
 import { X, Users, Mail, Phone, Trophy, Upload, UserPlus ,Save } from "lucide-react";
+import { useSelector } from "react-redux";
 
 const TeamSetup = () => {
   const navigate = useNavigate();
-   
+     const location = useLocation();
+
+  const tournament = useSelector((state) => state.tournament.tournamentData);
 
   const { mutateAsync, isLoading } = useMutation({
     mutationKey: ["saveTeam"],
@@ -21,6 +24,7 @@ const TeamSetup = () => {
     onSuccess: () => {
       toast.dismiss();
       toast.success("Team saved successfully!");
+      onClose()
       // navigate("/");
     },
     onError: (err) => {
@@ -57,6 +61,8 @@ const TeamSetup = () => {
       playerTwoContact: "",
       playerOneDOB: "",
       playerTwoDOB: "",
+              tournamentId:tournament.tournamentId ,
+
     },
   });
 
@@ -73,14 +79,19 @@ const TeamSetup = () => {
       // handled in onError
     }
   };
-  const onClose = () => {
-    navigate("/create-tournament");
-  };
+ const onClose = () => {
+  navigate(location.state?.from || "/setup-tournament", {
+    replace: true,
+  });
+};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white ">
       <Navbar />
-      <div className="card w-full max-w-xl mx-auto shadow-lg rounded-lg bg-blue-600 items-center mt-5 ">
+            <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white p-3">
+
+      <div className="card w-full max-w-xl mx-auto shadow-lg rounded-lg bg-blue-600 items-center mt-2">
         <div className="flex  items-center justify-between p-4">
           <div className="flex  items-center gap-3">
             <Users className="w-6 h-6 text-white" />
@@ -249,7 +260,7 @@ const TeamSetup = () => {
         <button
           type="submit"
           disabled={isLoading}
-          className="flex items-center gap-4  justify-center bg-blue-700 text-white p-3 rounded-xl font-bold hover:bg-blue-800 transition w-full mt-4"
+          className="flex items-center gap-4  justify-center bg-green-700 text-white p-3 rounded-xl font-bold hover:bg-green-800 transition w-full mt-4"
         >
             <Save className="w-5 h-5" />
           {isLoading ? "Saving..." : "Save Teams"}
@@ -260,7 +271,7 @@ const TeamSetup = () => {
           </form>
         </div>
       </div>
-
+   </div>
      
     </div>
   );

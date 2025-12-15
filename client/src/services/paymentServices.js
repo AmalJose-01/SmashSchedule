@@ -15,9 +15,7 @@ export const subscriptionAPI = async (paymentData) => {
     console.log("subscriptionAPI response:====", response.data); // <--- log the full response
     return response.data;
   } catch (error) {
-    throw new Error(
-      error.response?.data?.message || "Failed to fetch tournament details"
-    );
+       throw error;
   }
 };
 

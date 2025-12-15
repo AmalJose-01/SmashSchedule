@@ -53,11 +53,11 @@ export const useGoogleLogin = () => {
             dispatch(loginUser(res));
 
             // if (user.accountType === "admin" && !user.isVerified) {
-            //   // navigate("/create-tournament");
+            //   // navigate("/tournament-list");
             //     navigate("/checkout");
             // }
             // // else  if (user.accountType === "admin") {
-            // //   navigate("/create-tournament");
+            // //   navigate("/tournament-list");
             // //   //  navigate("/checkout");
             // // }
 

@@ -30,6 +30,7 @@ const adminTeamController = {
         playerTwoContact,
         playerOneDOB,
         playerTwoDOB,
+        tournamentId,
       } = req.body;
 
       if (
@@ -42,7 +43,8 @@ const adminTeamController = {
         !playerOneContact ||
         !playerTwoContact ||
         !playerOneDOB ||
-        !playerTwoDOB
+        !playerTwoDOB ||
+        !tournamentId
       ) {
         return res.status(400).json({ message: "All fields are required" });
       }
@@ -61,7 +63,7 @@ const adminTeamController = {
           .json({ message: "Email or Contact already exists" });
       }
       const newTeam = await Team.create({
-        userId,
+        adminId: userId,
         teamName,
         playerOneName,
         playerTwoName,
@@ -71,6 +73,7 @@ const adminTeamController = {
         playerTwoContact,
         playerOneDOB,
         playerTwoDOB,
+        tournamentId,
       });
 
       if (!newTeam) {
@@ -87,7 +90,9 @@ const adminTeamController = {
   },
   getTeams: async (req, res) => {
     try {
-      const teams = await Team.find();
+      const { tournamentId } = req.params;
+
+      const teams = await Team.find({ tournamentId: tournamentId });
       res
         .status(200)
         .json({ message: "Teams retrieved successfully", teams: teams });
@@ -97,17 +102,24 @@ const adminTeamController = {
     }
   },
   // done
+
   createTournament: async (req, res) => {
-    console.log("createTournament called  ", req.userId);
+    console.log("createTournament called  ", req.body);
 
     try {
       const {
         tournamentName,
         playType,
         teamsPerGroup,
-        groups: groupData,
         numberOfPlayersQualifiedToKnockout,
         numberOfCourts,
+        date,
+        time,
+        location,
+        maximumParticipants,
+        matchType,
+        description,
+        registrationFee
       } = req.body;
 
       if (
@@ -115,7 +127,6 @@ const adminTeamController = {
         !tournamentName ||
         !playType ||
         !teamsPerGroup ||
-        !groupData ||
         !numberOfPlayersQualifiedToKnockout ||
         !numberOfCourts
       ) {
@@ -137,10 +148,52 @@ const adminTeamController = {
         numberOfPlayersQualifiedToKnockout,
         numberOfCourts,
         adminId: req.userId,
+        date,
+        time,
+        location,
+        maximumParticipants,
+        matchType,
+        description,
+        status: "Create",
+        registrationFee
       });
 
       if (!createTournament) {
         return res.status(500).json({ message: "Failed to create tournament" });
+      }
+
+      console.log("New Tournament Created: ", createTournament);
+      res.status(201).json({
+        message: "Tournament created successfully",
+        tournament: createTournament,
+      });
+    } catch (error) {
+      console.log("Create tournament error", error);
+      res.status(500).json({ message: "Server Error", error: error.message });
+    }
+  },
+
+  createMatches: async (req, res) => {
+    console.log("createMatches called  ", req.body);
+
+    try {
+      const { tournamentName, groups, tournamentID, numberOfCourts } = req.body;
+
+      if (
+        !req.userId ||
+        !tournamentName ||
+        !groups ||
+        !tournamentID ||
+        !numberOfCourts
+      ) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+
+      const existingTournament = await Tournament.findOne({
+        _id: tournamentID,
+      });
+      if (!existingTournament) {
+        return res.status(400).json({ message: "Tournament not found" });
       }
 
       let savedGroups = [];
@@ -150,38 +203,38 @@ const adminTeamController = {
         { length: numberOfCourts },
         (_, idx) => `Court ${idx + 1}`
       );
- const totalGroups = groupData.length;
-    const baseCourts = Math.floor(numberOfCourts / totalGroups);
-    let extraCourts = numberOfCourts % totalGroups;
+      const totalGroups = groups.length;
+      const baseCourts = Math.floor(numberOfCourts / totalGroups);
+      let extraCourts = numberOfCourts % totalGroups;
 
-    const groupCourts = []; // courts assigned per group
+      const groupCourts = []; // courts assigned per group
 
-   let courtIndex = 0;
+      let courtIndex = 0;
 
-  for (let i = 0; i < totalGroups; i++) {
-      let courtCount = baseCourts;
+      for (let i = 0; i < totalGroups; i++) {
+        let courtCount = baseCourts;
 
-      if (extraCourts > 0) {
-        courtCount++;
-        extraCourts--;
+        if (extraCourts > 0) {
+          courtCount++;
+          extraCourts--;
+        }
+
+        const courtsForThisGroup = courts.slice(
+          courtIndex,
+          courtIndex + courtCount
+        );
+
+        groupCourts.push(courtsForThisGroup);
+        courtIndex += courtCount;
       }
 
-      const courtsForThisGroup = courts.slice(courtIndex, courtIndex + courtCount);
-
-      groupCourts.push(courtsForThisGroup);
-      courtIndex += courtCount;
-    }
-
-
-
-
- // ----------------------------------------
-    // 2. CREATE GROUPS + MATCHES
-    // ----------------------------------------
-      for (let i = 0; i < groupData.length; i++) {
-        const groupInfo = groupData[i];
+      // ----------------------------------------
+      // 2. CREATE GROUPS + MATCHES
+      // ----------------------------------------
+      for (let i = 0; i < groups.length; i++) {
+        const groupInfo = groups[i];
         const groupName = `Group ${alphabet[i]}`;
-        const tournamentId = createTournament._id;
+        const tournamentId = existingTournament._id;
         const formattedTeams = groupInfo.map((t) => ({
           teamId: t.teamId,
           name: t.name,
@@ -207,51 +260,52 @@ const adminTeamController = {
         });
         savedGroups.push(saveGroup._id);
 
-            const courtsAssigned = groupCourts[i];
+        const courtsAssigned = groupCourts[i];
 
-// 2b. Generate matches for this group
-let matchIndex = 0;
-const groupMatches = formattedTeams.flatMap((homeTeam, i) =>
-  formattedTeams.slice(i + 1).map((awayTeam) => {
-    const court = courtsAssigned[matchIndex % courtsAssigned.length];
-    matchIndex++;
-    return {
-      matchName: `${homeTeam.name}-vs-${awayTeam.name}`,
-      tournamentId: createTournament._id,
-      group: saveGroup._id,
-      teamsHome: [homeTeam.teamId],
-      teamsAway: [awayTeam.teamId],
-      scheduledTime: null,
-      court: court,
-      scores: [
-        {
-          sets: [
-            { home: 0, away: 0 },
-            { home: 0, away: 0 },
-            { home: 0, away: 0 },
-          ],
-        },
-      ],
-      status: "scheduled",
-    };
-  })
-);
+        // 2b. Generate matches for this group
+        let matchIndex = 0;
+        const groupMatches = formattedTeams.flatMap((homeTeam, i) =>
+          formattedTeams.slice(i + 1).map((awayTeam) => {
+            const court = courtsAssigned[matchIndex % courtsAssigned.length];
+            matchIndex++;
+            return {
+              matchName: `${homeTeam.name}-vs-${awayTeam.name}`,
+              tournamentId: existingTournament._id,
+              group: saveGroup._id,
+              teamsHome: [homeTeam.teamId],
+              teamsAway: [awayTeam.teamId],
+              scheduledTime: null,
+              court: court,
+              scores: [
+                {
+                  sets: [
+                    { home: 0, away: 0 },
+                    { home: 0, away: 0 },
+                    { home: 0, away: 0 },
+                  ],
+                },
+              ],
+              status: "scheduled",
+            };
+          })
+        );
 
         // 2c. Save all matches for this group
         await GroupMatch.insertMany(groupMatches);
       }
 
       // 3. Link all groups to tournament
-      createTournament.groups = savedGroups;
-      await createTournament.save();
+      existingTournament.groups = savedGroups;
+      existingTournament.status = "Scheduled";
+      await existingTournament.save();
 
-      console.log("New Tournament Created: ", createTournament);
+      console.log("scheduled ", existingTournament);
       res.status(201).json({
-        message: "Tournament created successfully",
-        tournament: createTournament,
+        message: "Match scheduled successfully",
+        tournament: existingTournament,
       });
     } catch (error) {
-      console.log("Create tournament error", error);
+      console.log("Match scheduled  error", error);
       res.status(500).json({ message: "Server Error", error: error.message });
     }
   },
@@ -273,6 +327,35 @@ const groupMatches = formattedTeams.flatMap((homeTeam, i) =>
       res.status(200).json({
         message: "Tournaments retrieved successfully",
         tournaments: tournaments,
+      });
+    } catch (error) {
+      console.log("Get tournaments error", error);
+      res.status(500).json({ message: "Server Error", error: error.message });
+    }
+  },
+
+  // done
+  getTournamentInformation: async (req, res) => {
+    console.log("eq.userId", req.userId);
+
+    try {
+      if (!req.userId) {
+        return res.status(400).json({ message: "Unable to retrieve data" });
+      }
+      const { tournamentId } = req.params;
+
+      const tournament = await Tournament.findOne({
+        _id: tournamentId,
+        adminId: req.userId, // only allow access if the admin owns it
+      });
+
+      console.log(
+        "Tournaments fetched===========================================================================:",
+        tournament
+      );
+      res.status(200).json({
+        message: "Tournaments retrieved successfully",
+        tournaments: tournament,
       });
     } catch (error) {
       console.log("Get tournaments error", error);
@@ -320,21 +403,12 @@ const groupMatches = formattedTeams.flatMap((homeTeam, i) =>
     console.log("Call Admin Save");
 
     try {
-      const {
-        scores,
-        status,
-        matchName,
-        matchId,
-        group,
-        teamsHome,
-        teamsAway,
-      } = req.body;
+      const { scores, status, matchId, group } = req.body;
 
       const scoreObject = scores[0];
 
       let { winner, matchStatus } = determineWinner(scoreObject.sets);
       console.log("Match Winner:", winner);
-      let totalPoints = getTotalPoints(scoreObject.sets);
       console.log("matchStatus", matchStatus);
 
       // Save/update match scores
@@ -429,6 +503,121 @@ const groupMatches = formattedTeams.flatMap((homeTeam, i) =>
         match: updatedMatch,
         group: savedGroup,
       });
+    } catch (error) {
+      console.log("Save match score error", error);
+      res.status(500).json({ message: "Server Error", error: error.message });
+    }
+  },
+  saveMultipleMatchScore: async (req, res) => {
+    try {
+      const { matches } = req.body;
+
+      if (!matches || !Array.isArray(matches) || matches.length === 0) {
+        return res.status(400).json({ message: "No matches provided" });
+      }
+
+      console.log("Call Admin Save", matches);
+
+      for (const match of matches) {
+        const { matchId, scores } = match;
+        if (!matchId || !scores || scores.length === 0) continue;
+        const scoreObject = scores[0];
+        let { winner, matchStatus } = determineWinner(scoreObject.sets);
+        // Save/update match scores
+        await GroupMatch.findByIdAndUpdate(
+          matchId,
+          {
+            $set: {
+              "scores.0.sets": scoreObject.sets,
+              status: matchStatus,
+            },
+          },
+          { new: true }
+        );
+        /* --------------------------------------------------
+       2️⃣ Collect UNIQUE group IDs
+    -------------------------------------------------- */
+        const groupIds = [...new Set(matches.map((m) => m.group))];
+
+        const updatedGroups = [];
+
+        for (const groupId of groupIds) {
+          const groupDoc = await Group.findById(groupId);
+          if (!groupDoc) continue;
+
+          // Reset standings
+          groupDoc.standings.forEach((s) => {
+            s.matchesPlayed = 0;
+            s.wins = 0;
+            s.losses = 0;
+            s.pointsFor = 0;
+            s.pointsAgainst = 0;
+            s.pointsDiff = 0;
+            s.totalPoints = 0;
+          });
+          const groupMatches = await GroupMatch.find({ group: groupId });
+          for (const match of groupMatches) {
+            if (!match.scores || match.scores.length === 0) continue;
+
+            const sets = match.scores[0].sets;
+            const isPlayed = sets.some((set) => set.home > 0 || set.away > 0);
+            if (!isPlayed) continue;
+
+            const { winner } = determineWinner(sets);
+            const points = getTotalPoints(sets);
+
+            const homeId = match.teamsHome.toString();
+            const awayId = match.teamsAway.toString();
+
+            const homeStanding = groupDoc.standings.find(
+              (s) => s.teamId === homeId
+            );
+            const awayStanding = groupDoc.standings.find(
+              (s) => s.teamId === awayId
+            );
+
+            if (!homeStanding || !awayStanding) continue;
+
+            homeStanding.matchesPlayed += 1;
+            awayStanding.matchesPlayed += 1;
+
+            if (winner === "home") {
+              homeStanding.wins += 1;
+              awayStanding.losses += 1;
+              homeStanding.totalPoints += 3;
+                        groupDoc.status = "finished";
+
+            } else if (winner === "away") {
+              awayStanding.wins += 1;
+              homeStanding.losses += 1;
+              awayStanding.totalPoints += 3;
+                        groupDoc.status = "finished";
+
+            }
+
+            homeStanding.pointsFor += points.homeTotal;
+            homeStanding.pointsAgainst += points.awayTotal;
+            homeStanding.pointsDiff =
+              homeStanding.pointsFor - homeStanding.pointsAgainst;
+
+            awayStanding.pointsFor += points.awayTotal;
+            awayStanding.pointsAgainst += points.homeTotal;
+            awayStanding.pointsDiff =
+              awayStanding.pointsFor - awayStanding.pointsAgainst;
+          }
+
+          const savedGroup = await groupDoc.save();
+          updatedGroups.push(savedGroup);
+        }
+      }
+
+     return res.status(200).json({
+      message: "Multiple match scores saved successfully",
+      totalMatchesUpdated: matches.length,
+      groupsUpdated: updatedGroups.length,
+      groups: updatedGroups,
+    });
+
     } catch (error) {
       console.log("Save match score error", error);
       res.status(500).json({ message: "Server Error", error: error.message });

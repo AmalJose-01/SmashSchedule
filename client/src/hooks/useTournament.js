@@ -7,8 +7,6 @@ import { getAdminTournamentListAPI } from "../services/admin/adminTeamServices";
 import { getTournamentListAPI } from "../services/teamServices";
 import { useEffect } from "react";
 
-
-
 export const useTournament = (userType) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -36,29 +34,21 @@ export const useTournament = (userType) => {
   }, [isLoading]);
 
   const handleTournamentList = () => {
-
-
-
-
-if(error?.status === 401){
-  console.log("handleTournamentList",error.response.data.message);
-  dispatch(logOut())
-  toast.error(error.response.data.message)
-
-}
-
-
+    if (error?.status === 401) {
+      console.log("handleTournamentList", error.response.data.message);
+      dispatch(logOut());
+      toast.error(error.response.data.message);
+    }
 
     if (!data?.tournaments) return [];
-    
 
     return data.tournaments
-      .map((t) =>
-        t.tournamentName && t._id
-          ? { tournamentId: t._id, name: t.tournamentName }
-          : null
-      )
-      .filter(Boolean);
+      // .map((t) =>
+      //   t.tournamentName && t._id
+      //     ? { tournamentId: t._id, name: t.tournamentName }
+      //     : null
+      // )
+      // .filter(Boolean);
   };
 
   return {

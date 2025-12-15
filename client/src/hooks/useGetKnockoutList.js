@@ -17,7 +17,7 @@ export const useGetKnockoutList = (tournamentId,userType) => {
   });
     const handleKnockoutList = () => {
       if(error?.status === 401){
-  console.log("handleTournamentList",error.response.data.message);
+  console.log("handleKnockoutList",error.response.data.message);
   dispatch(logOut())
   toast.error(error.response.data.message)
 

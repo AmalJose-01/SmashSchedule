@@ -9,15 +9,26 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useCreateKnockoutList } from "../../hooks/useCreateKnockoutList";
 import { useSelector } from "react-redux";
 import { FaSave } from "react-icons/fa";
-import { Settings, Table } from "lucide-react";
+import {
+  Award,
+  Calendar,
+  ChevronDown,
+  Flame,
+  MapPin,
+  Settings,
+  Table,
+  Target,
+  Trophy,
+} from "lucide-react";
 import Logout from "../../components/Logout";
+import { useMultipleUpdateScore } from "../../hooks/useMultipleUpdateScore";
 
 const MatchHome = () => {
   const location = useLocation();
   const state = location.state || {};
   const [groups, setGroups] = useState(null);
   const [matches, setMatches] = useState({});
-  const [tickerIndex, setTickerIndex] = useState(0);
+
   const [selectedGroup, setSelectedGroup] = useState("all"); // "all" = show all groups
   const { tournamentId } = useParams();
   const navigate = useNavigate();
@@ -32,6 +43,11 @@ const MatchHome = () => {
     isSuccess: isScoreSuccess,
   } = useUpdateScore();
 
+    const {
+    handleMultipleScore,
+   
+  } = useMultipleUpdateScore();
+
   const tournamentDetail = handleTournamentDetail();
 
   useEffect(() => {
@@ -41,13 +57,6 @@ const MatchHome = () => {
       setMatches(tournamentDetail.matches); // now matches = { A: [...], B: [...], ... }
     }
   }, [tournamentDetail]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTickerIndex((prev) => (prev + 3) % resultsTicker.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
 
   const handleSetChange = (matchId, setIdx, teamKey, value) => {
     console.log("Handle Set Change Called:", matchId, setIdx, teamKey, value);
@@ -67,7 +76,74 @@ const MatchHome = () => {
     );
   };
 
+  const updateAllScore = async () => {
+    if (!matches) {
+      toast.error("Match not found");
+      return;
+    }
+    console.log("All MAtch", matches);
+
+    const payloadMatches = [];
+    for (const match of matches) {
+      // Check for any set where home and away scores are the same and > 0
+      const hasSameScore = match.scores[0].sets.some(
+        (set) => set.home === set.away && set.home > 0
+      );
+
+      if (hasSameScore) {
+        toast.error("Cannot save: A set has the same score for both teams.");
+        return; // block saving
+      }
+      // Check that every set has at least one team scoring 21 or more
+      const isValidSetScore = match.scores[0].sets.every((set) => {
+        const bothZero = set.home === 0 && set.away === 0;
+        const oneReached21 = set.home >= 21 || set.away >= 21;
+
+        return bothZero || oneReached21;
+      });
+
+      if (!isValidSetScore) {
+        toast.error("Each set must have at least one team scoring 21 points.");
+        return; // block saving
+      }
+
+      if (match.status != "finished") {
+        match.scores[0].sets.every((set) => {
+          if (set.home > 0 || set.away > 0) {
+            payloadMatches.push({
+              matchId: match._id,
+              scores: match.scores,
+              group: match.group,
+              teamsHome: match.teamsHome,
+              teamsAway: match.teamsAway,
+            });
+          }
+        });
+      }
+    }
+
+    console.log("Group save objects", payloadMatches);
+
+  try {
+      // const payload = {
+      //   ...match,
+      //   matchId: match._id,
+      // };
+      // delete payload._id; // remove _id to avoid confusion
+
+      handleMultipleScore({matches: payloadMatches});
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message || "Failed to update match score"
+      );
+    }
+
+
+  };
+
   const updateScore = async (matchId) => {
+    console.log("updateScore called for match:", matches);
+
     const match = matches.find((m) => m._id === matchId);
     console.log("updateScore called for match:", match);
 
@@ -117,11 +193,8 @@ const MatchHome = () => {
 
   const handleGotoKnockout = async () => {
     // Navigate to knockout page with top teams
-  ion
     try {
       console.log("groups", groups);
-
-
 
       const allFinished = groups.every((gp) => {
         // Get all matches for this group
@@ -173,6 +246,29 @@ const MatchHome = () => {
     return homeWins === 2 || awayWins === 2;
   };
 
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case "finished":
+        return (
+          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs">
+            Finished
+          </span>
+        );
+      case "ongoing":
+        return (
+          <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs flex items-center gap-1">
+            <Flame className="w-3 h-3" /> Live
+          </span>
+        );
+      default:
+        return (
+          <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
+            Scheduled
+          </span>
+        );
+    }
+  };
+
   if (!groups) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -197,7 +293,7 @@ const MatchHome = () => {
         <div className="flex gap-2">
           <ButtonWithIcon
             title="Go to Knockout"
-            icon="go"
+            icon="award"
             buttonBGColor="bg-green-600"
             textColor="text-white"
             onClick={handleGotoKnockout}
@@ -206,28 +302,49 @@ const MatchHome = () => {
         </div>
       </div>
 
-      {/* Dropdown to select group */}
-      <div className="mb-6 mt-4 ml-4 mr-4 flex items-center">
-        <label className="mr-2 font-semibold text-gray-700">
-          Select Group:
-        </label>
-        <select
-          className="p-2 border rounded"
-          value={selectedGroup}
-          onChange={(e) => setSelectedGroup(e.target.value)}
-        >
-          <option value="all">All Groups</option>
-          {groups.map((gp) => (
-            <option key={gp._id} value={gp.groupName}>
-              {gp.groupName}
-            </option>
-          ))}
-        </select>
+<div className="p-4">
+
+
+
+
+      {/* Group Filter */}
+
+      <div className="mb-6 bg-white rounded-lg shadow-md p-4 flex items-center gap-4 m-4 sticky top-0 justify-between">
+        <div className="flex gap-3">
+          <label className="flex items-center gap-2">
+            <Target className="w-5 h-5 text-blue-600" />
+            <span>Filter by Group:</span>
+          </label>
+          <div className="relative">
+            <select
+              className="appearance-none px-4 py-2 pr-10 border-2 border-blue-200 rounded-lg focus:outline-none focus:border-blue-500 bg-white cursor-pointer "
+              value={selectedGroup}
+              onChange={(e) => setSelectedGroup(e.target.value)}
+            >
+              <option value="all">All Groups</option>
+              {groups.map((gp) => (
+                <option key={gp._id} value={gp.groupName}>
+                  {gp.groupName}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+        </div>
+        <ButtonWithIcon
+          title="Update All Score"
+          icon="save"
+          buttonBGColor="bg-blue-600"
+          textColor="text-white"
+          onClick={updateAllScore}
+        />
       </div>
 
       {/* Group Stage */}
       {groups.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 ml-4 mr-4 mb-6">
+        <div className={`grid grid-cols-1  ${groups.length > 1 ? "md:grid-cols-2" : "md:grid-cols-1"}  gap-6 ml-4 mr-4 mb-6`}>
+        
+        
           {groups
             .filter(
               (gp) => selectedGroup === "all" || selectedGroup === gp.groupName
@@ -238,28 +355,45 @@ const MatchHome = () => {
               return (
                 <div
                   key={gp._id}
-                  className="bg-white rounded-3xl shadow-lg p-6 overflow-x-auto"
+                  className="bg-white rounded-3xl shadow-lg  overflow-x-auto"
                 >
-                  <h2 className="text-2xl font-bold mb-4 text-blue-800">
-                    {gp.groupName}
-                  </h2>
+                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6">
+                    <h2 className="text-2xl text-white flex items-center gap-2">
+                      <Trophy className="w-6 h-6" />
+                      {gp.groupName}
+                    </h2>
+                  </div>
 
                   {/* Matches */}
-                  <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <h3 className="mb-4 flex items-center gap-2 text-gray-700 m-4">
+                    <Calendar className="w-5 h-5" />
+                    Matches
+                  </h3>
+
+                  <div className={`mb-6 grid grid-cols-1  ${groups.length > 1 ? "lg:grid-cols-2" : "lg:grid-cols-3"}   ${groups.length > 1 ? "md:grid-cols-2" : "md:grid-cols-2"}  gap-4 m-4`}>
                     {groupMatches.map((m) => (
                       <div
                         key={m._id}
                         className="card p-4 border border-gray-200 rounded-xl bg-blue-50 hover:bg-blue-100 transition flex flex-col items-center justify-center"
                       >
-                        <div className="font-semibold text-sm text-gray-800 text-center">
-                          {m.matchName}
+                        <div className="w-full flex items-center justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="font-semibold text-gray-800">
+                              {m.matchName}
+                            </div>
+                            <div className="text-sm text-gray-600 flex items-center gap-2 mt-1">
+                              <MapPin className="w-4 h-4" />
+                              {m.court === "" ? "Court" : m.court}
+                            </div>
+                          </div>
+                          {getStatusBadge(m.status)}
                         </div>
-                        <div className="text-sm text-gray-600 mt-1">
-                          {m.court} {/* 10:00 AM — Court 1 */}
-                        </div>
+
                         <div className="mt-2 space-y-1 items-center justify-center">
                           {m.scores[0].sets.map((set, idx) => {
-                            const decided = isMatchDecided(m.scores[0].sets.slice(0, 2));
+                            const decided = isMatchDecided(
+                              m.scores[0].sets.slice(0, 2)
+                            );
 
                             const isSameScore =
                               set.home === set.away &&
@@ -320,7 +454,7 @@ const MatchHome = () => {
                                       );
                                     }}
                                   />
-                                  <span>-</span>
+                                  <span>:</span>
                                   <input
                                     type="number"
                                     min={0}
@@ -370,69 +504,122 @@ const MatchHome = () => {
                   </div>
 
                   {/* Points Table */}
-                  <table className="w-full min-w-max table-auto border border-gray-300 text-gray-800">
-                    <thead className="bg-blue-100">
-                      <tr>
-                        <th className="p-3 border">Team</th>
-                        <th className="p-3 border">M</th>
-                        <th className="p-3 border">W</th>
-                        <th className="p-3 border">L</th>
-                        <th className="p-3 border">PF</th>
-                        <th className="p-3 border">PA</th>
-                        <th className="p-3 border">PD</th>
-                        <th className="p-3 border font-bold text-green-600">
-                          P
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {gp.standings
-                        .slice()
-                        .sort((a, b) => {
-                          // Sort by totalPoints descending
-                          if (b.totalPoints !== a.totalPoints) {
-                            return b.totalPoints - a.totalPoints;
-                          }
-                          // If totalPoints are equal, sort by points difference descending
-                          const diffA = a.pointsFor - a.pointsAgainst;
-                          const diffB = b.pointsFor - b.pointsAgainst;
-                          return diffB - diffA;
-                        })
 
-                        .map((t, idx) => {
-                          // Find the team object that matches the teamId
-                          const teamObj = gp.teams.find(
-                            (team) => team.teamId === t.teamId
-                          );
+                  <div>
+                    <h3 className="mb-3 flex items-center gap-2 text-gray-700 m-4">
+                      <Award className="w-5 h-5" />
+                      Standings
+                    </h3>
 
-                          return (
-                            <tr
-                              key={idx}
-                              className="even:bg-blue-50 hover:bg-blue-100 transition"
-                            >
-                              <td className="p-2 font-semibold">
-                                {teamObj?.name || t.teamId}
-                              </td>
-                              <td className="p-2 text-center">
-                                {t.matchesPlayed}
-                              </td>
-                              <td className="p-2 text-center">{t.wins}</td>
-                              <td className="p-2 text-center">{t.losses}</td>
-                              <td className="p-2 text-center">{t.pointsFor}</td>
-                              <td className="p-2 text-center">
-                                {t.pointsAgainst}
-                              </td>
-                              <td className="p-2 text-center font-bold text-blue-700">
-                                {t.pointsFor - t.pointsAgainst}
-                              </td>
-                              <td className="p-2 text-center font-bold text-green-600">
-                                {t.totalPoints}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                    </tbody>
-                  </table>
+                    <div className="overflow-x-auto rounded-lg border-2 border-gray-200 m-4">
+                      <table className="w-full">
+                        <thead className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+                          <tr>
+                            <th className="p-3 text-left text-sm">#</th>
+                            <th className="p-3 text-sm">Team</th>
+                            <th className="p-3 text-sm">M</th>
+                            <th className="p-3 text-sm">W</th>
+                            <th className="p-3 text-sm">L</th>
+                            <th className="p-3 text-sm">PF</th>
+                            <th className="p-3 text-sm">PA</th>
+                            <th className="p-3 text-sm">PD</th>
+                            <th className="p-3  text-sm  text-green-600">
+                              Pts
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {gp.standings
+                            .slice()
+                            .sort((a, b) => {
+                              // Sort by totalPoints descending
+                              if (b.totalPoints !== a.totalPoints) {
+                                return b.totalPoints - a.totalPoints;
+                              }
+                              // If totalPoints are equal, sort by points difference descending
+                              const diffA = a.pointsFor - a.pointsAgainst;
+                              const diffB = b.pointsFor - b.pointsAgainst;
+                              return diffB - diffA;
+                            })
+
+                            .map((t, idx) => {
+                              // Find the team object that matches the teamId
+                              const teamObj = gp.teams.find(
+                                (team) => team.teamId === t.teamId
+                              );
+                              const isQualified = idx < 2;
+
+                              return (
+                                <tr
+                                  key={idx}
+                                  className={`border-b hover:bg-blue-50 transition-colors ${
+                                    isQualified ? "bg-green-50" : ""
+                                  }`}
+                                >
+                                  <td className="p-3">
+                                    <span
+                                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+                                        isQualified
+                                          ? "bg-green-600 text-white"
+                                          : "bg-gray-200 text-gray-600"
+                                      }`}
+                                    >
+                                      {idx + 1}
+                                    </span>
+                                  </td>
+
+                                  <td className="p-2 text-sm">
+                                    {teamObj?.name || t.teamId}
+                                  </td>
+                                  <td className="p-2 text-center text-sm">
+                                    {t.matchesPlayed}
+                                  </td>
+                                  <td className="p-2 text-center text-sm">
+                                    {t.wins}
+                                  </td>
+                                  <td className="p-2 text-center text-sm">
+                                    {t.losses}
+                                  </td>
+                                  <td className="p-2 text-center text-sm">
+                                    {t.pointsFor}
+                                  </td>
+                                  <td className="p-2 text-center text-sm">
+                                    {t.pointsAgainst}
+                                  </td>
+
+                                  <td className="p-3 text-center text-sm">
+                                    <span
+                                      className={
+                                        t.pointsFor - t.pointsAgainst >= 0
+                                          ? "text-green-600"
+                                          : "text-red-600"
+                                      }
+                                    >
+                                      {t.pointsFor - t.pointsAgainst > 0
+                                        ? "+"
+                                        : ""}
+                                      {t.pointsFor - t.pointsAgainst}
+                                    </span>
+                                  </td>
+
+                                  <td className="p-3 text-center text-sm">
+                                    <span className="px-2 py-1 bg-blue-600 text-white rounded">
+                                      {t.totalPoints}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                        </tbody>
+                      </table>
+                    </div>
+                    {gp.standings.length > 0 && (
+                      <p className="text-xs text-gray-500 mt-2 flex items-center gap-1 m-4">
+                        <Trophy className="w-3 h-3 text-green-600" />
+                        Top 2 teams qualify for knockout stage
+                      </p>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -442,6 +629,7 @@ const MatchHome = () => {
           <h2 className="text-xl font-semibold mb-4">No groups available.</h2>
         </div>
       )}
+    </div>
     </div>
   );
 };
