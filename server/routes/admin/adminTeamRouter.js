@@ -9,6 +9,7 @@ const router = express.Router();
   router.get("/get-tournament-information/:tournamentId",auth, adminTeamController.getTournamentInformation);
  router.post("/create-matches",auth, adminTeamController.createMatches);
 
+ router.post("/teams", auth,adminTeamController.createMultipleTeam);
 
  
 

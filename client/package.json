@@ -24,11 +24,13 @@
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.68.0",
     "react-icons": "^5.5.0",
+    "react-papaparse": "^4.4.0",
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.9.6",
     "sonner": "^2.0.7",
     "tanstack": "^1.0.3",
     "toast": "^0.5.4",
+    "xlsx": "^0.18.5",
     "yup": "^1.7.1"
   },
   "devDependencies": {

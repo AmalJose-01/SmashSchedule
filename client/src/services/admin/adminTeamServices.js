@@ -3,6 +3,19 @@ import { BASE_URL } from "../../../utils/config.js";
 import { headerData } from "../../../utils/storageHandler.js";
 
 
+
+export const importTeamAPI = async (teamData) => {
+  try {
+    const response = await axios.post(`${BASE_URL}/admin/teams`, teamData,headerData());
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+
+
 export const getTeamListAPI = async (tournamentId) => {
   console.log("getTeamListAPI called"); // <--- should log when triggered
 try {
@@ -25,7 +38,7 @@ export const saveTournamentAPI = async (tournamentData) => {
   try {
     const response = await axios.post(
       `${BASE_URL}/admin/create-tournament`,
-      tournamentData, { headers: headerData().headers }            
+      tournamentData, headerData()           
                     
     );
     return response.data;

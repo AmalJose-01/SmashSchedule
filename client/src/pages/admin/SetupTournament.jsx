@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { getTeamListAPI } from "../../services/admin/adminTeamServices";
@@ -21,6 +21,7 @@ import {
   Layers,
   Grid3x3,
   Eye,
+  Upload,
 } from "lucide-react";
 import ButtonWithIcon from "../../components/ButtonWithIcon";
 import Logout from "../../components/Logout";
@@ -28,8 +29,18 @@ import { logOut } from "../../redux/slices/userSlice";
 import { useTournamentInformation } from "../../hooks/useTournamentInformation";
 import { useMatchSave } from "../../hooks/useMatchSave";
 import { useDeleteTournament } from "../../hooks/useDeleteTournament";
+import Papa from "papaparse";
+import { useImportTeam } from "../../hooks/useImportTeam";
+
+import { readExcelFile, readCsvFile } from "../../../utils/fileReaders";
+
+import { convertToTeamsPayload } from "../../../utils/converters/convertToTeamsPayload";
 
 const SetupTournament = () => {
+  // ---------------------------
+  // LOCAL STATES
+  // ---------------------------
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -38,10 +49,21 @@ const SetupTournament = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [deleteTournamentId, setDeleteTournamentId] = useState(null);
 
-  const { tournamentInfo } = useTournamentInformation(
-    tournament._id,
-    "Admin"
-  );
+  const [selectedPlayers, setSelectedPlayers] = useState([]);
+  const [assigning, setAssigning] = useState(false);
+  const [teamFile, setTeamFile] = useState(null);
+  const [papaData, setData] = useState([]);
+  const [headers, setHeaders] = useState([]);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const queryClient = useQueryClient();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const toggleExpand = () => setIsExpanded((prev) => !prev);
+
+  const { handleUseMatchScheduling } = useMatchSave(tournament?._id);
+  const { handleUseImportTeam, successImportTeam } = useImportTeam();
+
+  const { tournamentInfo } = useTournamentInformation(tournament._id, "Admin");
   const getStatusColor = (status) => {
     switch (status) {
       case "Scheduled":
@@ -71,22 +93,6 @@ const SetupTournament = () => {
         return playType;
     }
   };
-
-  const queryClient = useQueryClient();
-  const [isExpanded, setIsExpanded] = useState(false);
-  const toggleExpand = () => setIsExpanded((prev) => !prev);
-
-  // ---------------------------
-  // LOCAL STATES
-  // ---------------------------
-  const { handleUseMatchScheduling } = useMatchSave(tournament?._id);
-
-  // ---------------------------
-  // LOCAL STATES
-  // ---------------------------
-  // const [allPlayers, setAllPlayers] = useState([]);
-  const [selectedPlayers, setSelectedPlayers] = useState([]);
-  const [assigning, setAssigning] = useState(false);
 
   // ---------------------------
   // FETCH TEAMS
@@ -129,6 +135,7 @@ const SetupTournament = () => {
 
       //  setAllPlayers(players);
       setSelectedPlayers(players);
+      setData([]);
     }
   }, [data]);
 
@@ -227,6 +234,75 @@ const SetupTournament = () => {
     }
   }, [isScoreSuccess, navigate]);
 
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const allowedTypes = ["csv", "xls", "xlsx"];
+    const ext = file.name.split(".").pop().toLowerCase();
+
+    if (!allowedTypes.includes(ext)) {
+      alert("Only CSV or Excel files are allowed");
+      return;
+    }
+
+    if (file) {
+      setTeamFile(file);
+
+      const ext = file.name.split(".").pop().toLowerCase();
+
+      let rows = [];
+      console.log("ext==============", ext);
+
+      if (ext === "csv") {
+        rows = await readCsvFile(file);
+      } else {
+        rows = await readExcelFile(file);
+      }
+
+      console.log("papaData", rows);
+
+      setData(rows);
+    }
+  };
+
+  useEffect(() => {
+    if (papaData.length === 0) return;
+
+    console.log("papaData after setData:", papaData);
+
+    // Convert to payload or do other processing
+    const payload = convertToTeamsPayload(papaData, tournamentDetail._id);
+    console.log("convertToTeamsPayloadsetData:", payload);
+
+    try {
+      handleUseImportTeam(payload);
+    } catch (err) {
+      console.error("Error:", err);
+    }
+  }, [papaData]);
+
+  useEffect(() => {
+    if (successImportTeam) {
+      setData([]); // clear parsed data
+      setTeamFile(null); // clear uploaded file
+      toast.success("Teams imported successfully!"); // optional
+    }
+  }, [successImportTeam]);
+
+  const handleSyncTeams = () => {
+    if (!papaData.length || !tournamentDetail._id) return;
+
+    const payload = convertToTeamsPayload(papaData);
+    console.log("payload", payload);
+
+    try {
+      handleUseImportTeam(payload);
+    } catch (err) {
+      console.error("Error:", err);
+    }
+  };
+
   // Wait until tournamentDetail is loaded
   if (!tournamentDetail) {
     return <div>Loading tournament...</div>;
@@ -251,13 +327,6 @@ const SetupTournament = () => {
         </div>
 
         <div className="flex gap-2">
-          {/* <ButtonWithIcon
-            title="Register Team"
-            icon="register"
-            buttonBGColor="bg-green-600"
-            textColor="text-white"
-            onClick={() => navigate("/teams")}
-          /> */}
           <button
             onClick={() =>
               navigate("/teams", {
@@ -369,7 +438,9 @@ const SetupTournament = () => {
               {tournamentDetail.description && (
                 <div className="mt-4 pt-4 border-t">
                   <div className="text-sm text-gray-600 mb-1">Description</div>
-                  <p className="text-gray-700">{tournamentDetail.description}</p>
+                  <p className="text-gray-700">
+                    {tournamentDetail.description}
+                  </p>
                 </div>
               )}
             </div>
@@ -474,6 +545,62 @@ const SetupTournament = () => {
           <div className="bg-white rounded-lg shadow-md p-6">
             <h3 className="mb-4">Actions</h3>
             <div className="space-y-2">
+              <div className="mt-5">
+                <div className="flex justify-between">
+                  <div>
+                    <label className="flex items-center gap-2 text-gray-700 mb-2">
+                      <Upload className="w-4 h-4" />
+                      Import Team
+                    </label>
+                    <p className="text-sm text-gray-500 mb-3">
+                      {teamFile
+                        ? teamFile.name
+                        : "Supported formats: .csv, .xls, .xlsx"}
+                    </p>
+                  </div>
+
+                  <ButtonWithIcon
+                    title="Import"
+                    icon="sync"
+                    buttonBGColor="bg-green-600"
+                    textColor="text-white"
+                    onClick={handleSyncTeams}
+                  />
+                </div>
+                {/* <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsDragging(true);
+        }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setIsDragging(false);
+          handleLogoUpload(e.dataTransfer.files[0]);
+        }}
+        className={`flex flex-col items-center justify-center px-6 py-6 border-2 border-dashed rounded-lg cursor-pointer transition
+          ${
+            isDragging
+              ? "border-blue-500 bg-blue-50"
+              : "border-gray-300 bg-gray-100"
+          }`}
+      ></div> */}
+                 
+                <div className="flex items-center gap-4">
+                  <label className="flex-1 cursor-pointer">
+                    <div className="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors text-center">
+                      {"Upload team"}
+                    </div>
+                    <input
+                      type="file"
+                      accept=".csv,.xls,.xlsx"
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+
               <button
                 onClick={() => navigate("/teams")}
                 className={`w-full px-4 py-2 transition-colors flex items-center justify-center gap-2 ${
