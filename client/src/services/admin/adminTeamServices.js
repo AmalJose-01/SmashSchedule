@@ -118,9 +118,7 @@ export const getAdminTournamentDetailsAPI = async (tournamentId) => {
     console.log("getTournamentDetailsAPI response:====", response.data); // <--- log the full response
     return response.data;
   } catch (error) {
-    throw new Error(
-      error.response?.data?.message || "Failed to fetch tournament details"
-    );
+     throw error
   }
 };
 
@@ -171,6 +169,17 @@ export const deleteTournamentAPI = async (tournamentId) => {
   }
 };
 
+export const deleteTeamAPI = async (teamId) => {
+  try {
+    const response = await axios.delete(
+      `${BASE_URL}/admin/delete-team/${teamId}`,headerData()
+    );
+    return response.data;
+  } catch (error) {
+      throw error
+  }
+};
+
 export const createKnockoutScheduleAPI = async (tournament) => {
   console.log("createKnockoutScheduleAPI called with ID:", tournament); // <--- should log when triggered
 
@@ -181,9 +190,7 @@ export const createKnockoutScheduleAPI = async (tournament) => {
     console.log("createKnockoutScheduleAPI response:====", response.data); // <--- log the full response
     return response.data;
   } catch (error) {
-    throw new Error(
-      error.response?.data?.message || "Failed to fetch tournament details"
-    );
+      throw error
   }
 };
 
@@ -213,9 +220,7 @@ export const getAdminKnockoutScheduleAPI = async (tournamentId) => {
     console.log("getKnockoutScheduleAPI response:====", response.data); // <--- log the full response
     return response.data;
   } catch (error) {
-    throw new Error(
-      error.response?.data?.message || "Failed to fetch tournament details"
-    );
+     throw error
   }
 };
 

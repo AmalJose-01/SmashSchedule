@@ -9,6 +9,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useCreateKnockoutList } from "../../hooks/useCreateKnockoutList";
 import { useSelector } from "react-redux";
 import { FaSave } from "react-icons/fa";
+import StatusBadge from "../../components/StatusBadge";
+
 import {
   Award,
   Calendar,
@@ -19,10 +21,12 @@ import {
   Table,
   Target,
   Trophy,
+  CheckCircle, Clock,
 } from "lucide-react";
 import Logout from "../../components/Logout";
 import { useMultipleUpdateScore } from "../../hooks/useMultipleUpdateScore";
 import ConfirmModal from "../../components/AlertView";
+import { isMatchDecided } from "../../../utils/helpers/matchUtils";
 
 const MatchHome = () => {
   const location = useLocation();
@@ -141,6 +145,29 @@ const MatchHome = () => {
       return;
     }
 
+ const hasSameScore = match.scores[0].sets.some(
+        (set) => set.home === set.away && set.home > 0
+      );
+
+      if (hasSameScore) {
+        toast.error("Cannot save: A set has the same score for both teams.");
+        return; // block saving
+      }
+      // Check that every set has at least one team scoring 21 or more
+      const isValidSetScore = match.scores[0].sets.every((set) => {
+        const bothZero = set.home === 0 && set.away === 0;
+        const oneReached21 = set.home >= 21 || set.away >= 21;
+
+        return bothZero || oneReached21;
+      });
+
+      if (!isValidSetScore) {
+        toast.error("Each set must have at least one team scoring 21 points.");
+        return; // block saving
+      }
+
+
+
     const hasZeroButOpponentScored = match.scores[0].sets.some(
       ({ home, away }) => (home === 0 && away > 0) || (away === 0 && home > 0)
     );
@@ -181,48 +208,7 @@ const MatchHome = () => {
     handleScore(payload);
   };
 
-  // const handleSaveMatch = (matchId = saveMatchID) => {
-  //   const match = matches.find((m) => m._id === matchId);
 
-  //   if (!match) {
-  //     toast.error("Match not found");
-  //     return;
-  //   }
-
-  //   if (!match.scores?.[0]?.sets) {
-  //     toast.error("Scores not available");
-  //     return;
-  //   }
-
-  //   const isValidSetScore = match.scores[0].sets.every((set) => {
-  //     const bothZero = set.home === 0 && set.away === 0;
-  //     const oneReached21 = set.home >= 21 || set.away >= 21;
-  //     return bothZero || oneReached21;
-  //   });
-
-  //   if (!isValidSetScore) {
-  //     toast.error("Each set must have at least one team scoring 21 points.");
-  //     return;
-  //   }
-
-  //   try {
-  //     const payload = {
-  //       ...match,
-  //       matchId: match._id,
-  //     };
-
-  //     delete payload._id;
-
-  //     handleScore(payload);
-
-  //     setSaveMatchID("");
-  //     setShowConfirm(false);
-  //   } catch (error) {
-  //     toast.error(
-  //       error?.response?.data?.message || "Failed to update match score"
-  //     );
-  //   }
-  // };
 
   const handleGotoKnockout = async () => {
     // Navigate to knockout page with top teams
@@ -248,8 +234,6 @@ const MatchHome = () => {
     } catch (error) {
       console.log("Navigation error:", error);
     }
-
-    // navigate(`/knockout/${tournamentId}`, { state: { teams: topTeams } });
   };
 
   // Top teams for knockout
@@ -257,50 +241,8 @@ const MatchHome = () => {
     ? Object.keys(groups).map((key) => groups[key][0])
     : [];
 
-  const isMatchDecided = (sets) => {
-    let homeWins = 0;
-    let awayWins = 0;
 
-    sets.forEach((set) => {
-      const home = Number(set.home);
-      const away = Number(set.away);
-
-      // Ignore incomplete sets (typing stage)
-      const isIncomplete =
-        (home >= 21 && away === 0) || (away >= 21 && home === 0);
-
-      if (isIncomplete) return; // DON'T count this set yet
-
-      // Valid win: 21+ AND 2-point difference
-      if (home >= 21 && home > away && home - away >= 1) homeWins++;
-      if (away >= 21 && away > home && away - home >= 1) awayWins++;
-    });
-
-    return homeWins === 2 || awayWins === 2;
-  };
-
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case "finished":
-        return (
-          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs">
-            Finished
-          </span>
-        );
-      case "ongoing":
-        return (
-          <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs flex items-center gap-1">
-            <Flame className="w-3 h-3" /> Live
-          </span>
-        );
-      default:
-        return (
-          <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
-            Scheduled
-          </span>
-        );
-    }
-  };
+  
 
   if (!groups) {
     return (
@@ -426,14 +368,17 @@ const MatchHome = () => {
                                 {m.court === "" ? "Court" : m.court}
                               </div>
                             </div>
-                            {getStatusBadge(m.status)}
+                            <StatusBadge status={m.status} />
                           </div>
 
                           <div className="mt-2 space-y-1 items-center justify-center">
                             {m.scores[0].sets.map((set, idx) => {
-                              const decided = isMatchDecided(
-                                m.scores[0].sets.slice(0, 2)
-                              );
+                              // const decided = isMatchDecided(
+                                
+                              // );
+
+                              const decided = isMatchDecided(m.scores[0].sets.slice(0, 2));
+                              
 
                               const isSameScore =
                                 set.home === set.away &&

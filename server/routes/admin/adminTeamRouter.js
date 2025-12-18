@@ -19,6 +19,7 @@ const router = express.Router();
 
 router.delete("/delete-tournament/:tournamentId",auth,adminTeamController.deleteTournament)
  router.get("/get-teams/:tournamentId",auth, adminTeamController.getTeams);
+router.delete("/delete-team/:teamId",auth,adminTeamController.deleteTeam)
 
 
 

@@ -86,61 +86,37 @@ createMultipleTeam: async (req, res) => {
 },
 
  deleteTeam: async (req, res) => {
-    console.log("Admin Delete");
+    console.log("Admin deleteTeam Delete");
 
     try {
-      const { tournamentId } = req.params;
-      console.log("Deleting tournament:", tournamentId);
+      const { teamId } = req.params;
+      console.log("Deleting team:", teamId);
 
       // 1️⃣ Validate ID format (prevents CastError)
-      if (!mongoose.Types.ObjectId.isValid(tournamentId)) {
-        return res.status(400).json({ message: "Invalid tournamentId" });
+      if (!mongoose.Types.ObjectId.isValid(teamId)) {
+        return res.status(400).json({ message: "Invalid teamId" });
       }
 
       // 2️⃣ Check if tournament exists
-      const existingTournament = await Tournament.findById(tournamentId);
+      const existingTournament = await Team.findById(teamId);
 
       if (!existingTournament) {
         return res.status(404).json({ message: "Tournament not found" });
       }
 
-      console.log("existingTournament:", existingTournament);
+      
+     
+     
 
-      // 3️⃣ Get all groups under this tournament
-      const groups = await Group.find({ tournamentId });
-
-      console.log("Groups found:", groups.length);
-
-      // 4️⃣ Extract groupIds safely
-      const groupIds = groups.map((g) => g._id);
-
-      // 5️⃣ Delete group matches (safe check if model exists)
-      if (typeof GroupMatch !== "undefined") {
-        await GroupMatch.deleteMany({ groupId: { $in: groupIds } });
-        await GroupMatch.deleteMany({ tournamentId });
-      }
-
-      // 6️⃣ Delete knockout matches (safe)
-      if (typeof KnockoutMatch !== "undefined") {
-        await KnockoutMatch.deleteMany({ tournamentId });
-      }
-
-      // 7️⃣ Delete knockout teams (safe)
-      if (typeof KnockoutTeam !== "undefined") {
-        await KnockoutTeam.deleteMany({ tournamentId });
-      }
-
-      // 8️⃣ Delete groups
-      await Group.deleteMany({ tournamentId });
 
       // 9️⃣ Delete tournament
-      await Tournament.findByIdAndDelete(tournamentId);
+      await Team.findByIdAndDelete(teamId);
 
       return res.status(200).json({
-        message: "Tournament and all related data deleted successfully",
+        message: "Team deleted successfully",
       });
     } catch (error) {
-      console.error("deleteTournament error:", error);
+      console.error("deleteTeam error:", error);
       return res.status(500).json({
         message: "Server Error",
         error: error.message,

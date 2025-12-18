@@ -35,6 +35,7 @@ import { useImportTeam } from "../../hooks/useImportTeam";
 import { readExcelFile, readCsvFile } from "../../../utils/fileReaders";
 
 import { convertToTeamsPayload } from "../../../utils/converters/convertToTeamsPayload";
+import { useDeleteTeam } from "../../hooks/useDeleteTeam";
 
 const SetupTournament = () => {
   // ---------------------------
@@ -46,8 +47,23 @@ const SetupTournament = () => {
 
   const tournament = useSelector((state) => state.tournament.tournamentData);
   const [tournamentDetail, setTournamentDetail] = useState(null);
-  const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState({
+    open: false,
+    type: null,
+    id: null,
+    name: "",
+  });
+
+  const confirmTitle =
+    confirmConfig.type === "team" ? "Delete Team" : "Delete Tournament";
+
+  const confirmMessage =
+    confirmConfig.type === "team"
+      ? "Are you sure you want to delete this team? This action cannot be undone."
+      : "This will permanently delete the tournament and all related data. Do you want to continue?";
+
   const [deleteTournamentId, setDeleteTournamentId] = useState(null);
+  const [deleteTeamId, setDeleteTeamId] = useState(null);
 
   const [selectedPlayers, setSelectedPlayers] = useState([]);
   const [assigning, setAssigning] = useState(false);
@@ -219,10 +235,26 @@ const SetupTournament = () => {
     isSuccess: isScoreSuccess,
   } = useDeleteTournament();
 
-  const handleDeleteTournament = () => {
-    if (!deleteTournamentId) return;
-    handleTournamentDelete(deleteTournamentId);
-    setShowConfirm(false);
+  const { handleTeamDelete } = useDeleteTeam();
+
+  // const handleDeleteTournament = () => {
+  //   if (!deleteTournamentId) return;
+  //   handleTournamentDelete(deleteTournamentId);
+  //   setShowConfirm(false);
+  // };
+
+  const handleConfirmDelete = () => {
+    if (!confirmConfig.id || !confirmConfig.type) return;
+
+    if (confirmConfig.type === "tournament") {
+      handleTournamentDelete(confirmConfig.id);
+    }
+
+    if (confirmConfig.type === "team") {
+      handleTeamDelete(confirmConfig.id); //
+    }
+
+    setConfirmConfig({ open: false, type: null, id: null });
   };
 
   // ⬇️ Navigate back on success
@@ -521,13 +553,36 @@ const SetupTournament = () => {
                         key={team._id}
                         className="flex items-center gap-3 p-2 bg-blue-50 rounded-lg border border-gray-200"
                       >
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-blue-600">
-                            {team.teamName.charAt(0)}
-                          </span>
-                        </div>
+                        <div className="flex items-center w-full">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                              <span className="text-blue-600">
+                                {team.teamName.charAt(0)}
+                              </span>
+                            </div>
 
-                        {team.teamName}
+                            {team.teamName}
+                          </div>
+
+                          <button
+                            className={`${tournamentDetail.status != "Create" ? "hidden" : ""} ml-auto p-2 bg-red-500 text-white rounded hover:bg-red-600 flex items-center justify-center`}
+                            // onClick={(e) => {
+                            //   e.stopPropagation(); // Prevent li click
+                            //   setDeleteTeamId(team._id);
+                            //   setShowConfirm(true);
+                            // }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmConfig({
+                                open: true,
+                                type: "team",
+                                id: team._id,
+                              });
+                            }}
+                          >
+                            <FaTrash />
+                          </button>
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -641,10 +696,18 @@ const SetupTournament = () => {
 
               <button
                 className="w-full px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                onClick={() => {
-                  setDeleteTournamentId(tournamentDetail._id);
-                  setShowConfirm(true);
-                }}
+                // onClick={() => {
+                //   setDeleteTournamentId(tournamentDetail._id);
+                //   setShowConfirm(true);
+                // }}
+
+                onClick={() =>
+                  setConfirmConfig({
+                    open: true,
+                    type: "tournament",
+                    id: tournamentDetail._id,
+                  })
+                }
               >
                 Delete Tournament
               </button>
@@ -653,7 +716,7 @@ const SetupTournament = () => {
         </div>
         {/*  */}
         {/* CONFIRM DELETE MODAL */}
-        <ConfirmModal
+        {/* <ConfirmModal
           isOpen={showConfirm}
           title="Delete Tournament"
           message="This action cannot be undone. Do you want to proceed?"
@@ -663,6 +726,20 @@ const SetupTournament = () => {
           loading={isScoreLoading}
           onConfirm={handleDeleteTournament} // call delete function here
           onCancel={() => setShowConfirm(false)} // close modal
+        /> */}
+
+        <ConfirmModal
+          isOpen={confirmConfig.open}
+          title={confirmTitle}
+          message={confirmMessage}
+          confirmText="YES"
+          cancelText="NO"
+          danger
+          loading={isScoreLoading}
+          onConfirm={handleConfirmDelete}
+          onCancel={() =>
+            setConfirmConfig({ open: false, type: null, id: null })
+          }
         />
       </div>
     </div>

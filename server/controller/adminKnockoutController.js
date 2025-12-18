@@ -22,6 +22,19 @@ function getRoundNumber(numTeams) {
   }
 }
 
+const getKnockoutSize = (count) => {
+  console.log("getKnockoutSize",count);
+  
+  if (count >= 9) return 16;
+  if (count >= 7) return 8;
+  if (count >= 5) return 6;
+  if (count >= 3) return 4;
+  if (count >= 2) return 2;
+
+
+  return 0; // invalid
+};
+
 async function generateNextRound(tournamentId, round) {
   const currentMatches = await KnockoutMatch.find({ tournamentId, round });
 
@@ -63,12 +76,12 @@ async function generateNextRound(tournamentId, round) {
 
 const adminKnockoutController = {
   createTeamsForKnockout: async (req, res) => {
-    // console.log("Creating teams for knockout with data:", req.body);
+    console.log("Creating teams for knockout with data:", req.body);
 
     try {
-      const numberOfPlayersQualifiedToKnockout = 1; // You can modify this as needed or get from req.body
-      const { tournamentId } = req.body;
-      const groups = await Group.find({ tournamentId });
+      // const numberOfPlayersQualifiedToKnockout = 1; // You can modify this as needed or get from req.body
+      const { _id, numberOfPlayersQualifiedToKnockout } = req.body;
+      const groups = await Group.find({ tournamentId: _id });
 
       // 2. Pick top teams based on totalPoints or pointsDiff
       let qualifiedTeams = [];
@@ -111,6 +124,8 @@ const adminKnockoutController = {
           }));
         qualifiedTeams.push(...topTeams);
 
+      
+
         // Take exactly the next top team from each group
         const nextTeam = sortedTeams[numberOfPlayersQualifiedToKnockout];
         if (nextTeam) {
@@ -123,16 +138,24 @@ const adminKnockoutController = {
         }
       });
 
+
+  const targetSize = getKnockoutSize(qualifiedTeams.length);
+
+        console.log("targetSize", targetSize);
+
+
       console.log("Qualified Team1", qualifiedTeams);
       console.log("remainingTeams", remainingTeams);
 
       // 2. Ensure even number of teams
 
       // Ensure Qualified Teams Are Even AND Minimum 8
-      while (
-        qualifiedTeams.length % 2 !== 0 || // odd count → must add 1
-        qualifiedTeams.length < 8 // less than 8 → must add more
-      ) {
+      // while (
+      //   qualifiedTeams.length % 2 !== 0 || // odd count → must add 1
+      //   qualifiedTeams.length < 8 // less than 8 → must add more
+      // )
+
+      while (qualifiedTeams.length < targetSize && remainingTeams.length > 0) {
         if (remainingTeams.length === 0) break; // nothing left to add, stop safely
 
         // sort remaining best → worst
@@ -158,7 +181,7 @@ const adminKnockoutController = {
 
       const knockoutTeamPromises = qualifiedTeams.map((team) =>
         KnockoutTeam.create({
-          tournamentId,
+          tournamentId: _id,
           teamId: team.teamId,
           teamName: team.name,
           round: roundNumber,
@@ -183,7 +206,7 @@ const adminKnockoutController = {
       let match = null;
       for (let i = 0; i < shuffled.length; i += 2) {
         match = await KnockoutMatch.create({
-          tournamentId,
+          tournamentId: _id,
           round: roundNumber,
           teamsHome: {
             teamId: shuffled[i].teamId,

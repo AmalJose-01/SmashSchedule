@@ -1,26 +1,28 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { deleteTournamentAPI } from "../services/admin/adminTeamServices";
+import { deleteTeamAPI } from "../services/admin/adminTeamServices";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
-export const useDeleteTournament = (tournamentId) => {
+export const useDeleteTeam = (teamId) => {
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
     const navigate = useNavigate();
 
 
   const mutation = useMutation({
-    mutationKey: ["delete", tournamentId],
-    mutationFn: deleteTournamentAPI,
+    mutationKey: ["deleteTeam", teamId],
+    mutationFn: deleteTeamAPI,
     onMutate: () => toast.loading("Delete tournament..."),
     onSuccess: () => {
       toast.dismiss();
       toast.success("Delete tournament successfully!");
-      queryClient.invalidateQueries({ queryKey: ["adminTournamentList"] });
+      queryClient.invalidateQueries({ queryKey: ["teams"] });
     },
     onError: (error) => {
+      toast.dismiss();
+    
       toast.dismiss();
             if (error?.response?.status === 401) {
               toast.error(error.response.data.message || "Session expired");
@@ -37,7 +39,7 @@ export const useDeleteTournament = (tournamentId) => {
 
   useEffect(() => {
     if (mutation.isLoading) {
-      toast.loading("Deleting tournament...", { id: "deleteLoader" });
+      toast.loading("Deleting team...", { id: "deleteLoader" });
     } else {
       toast.dismiss("deleteLoader");
     }
@@ -45,11 +47,11 @@ export const useDeleteTournament = (tournamentId) => {
 
   useEffect(() => {
     if (!mutation.isLoading && !mutation.isFetching) {
-      toast.dismiss("Deleting tournament...", { id: "deleteLoader" });
+      toast.dismiss("Deleting team...", { id: "deleteLoader" });
     }
   }, [mutation.isLoading, mutation.isFetching]);
 
-  const handleTournamentDelete = (data) => {
+  const handleTeamDelete = (data) => {
     try {
       toast.promise(mutation.mutateAsync(data), {
         loading: "Delete tournament...",
@@ -59,7 +61,7 @@ export const useDeleteTournament = (tournamentId) => {
     } catch (error) {
       console.log(error);
       if (error?.status === 401) {
-        console.log("handleTournamentDelete", error.response.data.message);
+        console.log("handleTeamDelete", error.response.data.message);
         dispatch(logOut());
         toast.error(error.response.data.message);
       } else {
@@ -69,7 +71,7 @@ export const useDeleteTournament = (tournamentId) => {
   };
 
   return {
-    handleTournamentDelete,
+    handleTeamDelete,
     isLoading: mutation.isLoading,
     isError: mutation.isError,
     isSuccess: mutation.isSuccess,
