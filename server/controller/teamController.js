@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const Team = require("../model/team.js");
-const Tournament = require("../model/tournament.js");
+const Tournament = require("../model/tournamentModel.js");
 const Group = require("../model/groupTournament.js");
 const { get } = require("mongoose");
 const GroupMatch = require("../model/groupMatch.js");
@@ -72,7 +72,6 @@ const teamController = {
         playerOneDOB,
         playerTwoDOB,
         tournamentId,
-
       });
 
       if (!newTeam) {
@@ -87,6 +86,8 @@ const teamController = {
       res.status(500).json({ message: "Server Error", error: error.message });
     }
   },
+
+  
 
   
 

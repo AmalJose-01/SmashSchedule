@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useGetKnockoutList } from "../../hooks/useGetKnockoutList";
-import { Table } from "lucide-react";
+import { MapPin, Table, Trophy } from "lucide-react";
+import winnerGif from "../../assets/fireworks.gif";
+import StatusBadge from "../../components/StatusBadge";
 
 export function getRoundName(round) {
   switch (round) {
@@ -28,7 +30,8 @@ const KnockoutResult = () => {
   );
 
   const { handleKnockoutList } = useGetKnockoutList(
-    tournamentData?.tournamentId,"User"
+    tournamentData?._id,
+    "User"
   );
 
   const knockoutList = handleKnockoutList();
@@ -72,52 +75,143 @@ const KnockoutResult = () => {
                 {getRoundName(Number(round))}
               </h2>
 
-              {/* MATCH CARDS */}
-              <div className="grid md:grid-cols-2 gap-4">
-                {groupedMatches[round].map((match) => (
-                  <div
-                    key={match._id}
-                    className="w-full p-4 bg-gradient-to-r from-gray-400 via-blue-300 to-purple-200 shadow rounded-xl border text-white"
-                  >
-                    <h3 className="text-xl font-bold text-center mb-4">
-                      {match.teamsHome.teamName} vs {match.teamsAway.teamName}
-                    </h3>
+              {getRoundName(Number(round)) === "Final" ? (
+                <div className="grid md:grid-cols-1 gap-4">
+                  {groupedMatches[round].map((match) => (
+                    <div
+                      key={match._id}
+                      className="card p-4 border border-gray-200 rounded-xl bg-blue-50 hover:bg-blue-100 transition flex flex-col items-center justify-center"
+                      style={{
+                        backgroundImage:
+                          match.status === "finished"
+                            ? `url(${winnerGif})`
+                            : "none",
+                      }}
+                    >
+                      {match.status === "finished" && match.winner && (
+                        <div className="flex items-center gap-2 justify-center mb-10 shadow-xl bg-gradient-to-tr from-sky-300 to-purple-500 p-4 rounded-2xl border border-purple-800 ">
+                          <Trophy className="w-10 h-10 text-white" />
+                          <h1 className="text-6xl font-bold text-white">
+                            Winner:{" "}
+                            {match.winner === "home"
+                              ? match.teamsHome.teamName
+                              : match.teamsAway.teamName}
+                          </h1>
+                        </div>
+                      )}
 
-                    {/* SCORES INPUT */}
-                    <div className="flex flex-col gap-3 items-center">
-                      {match.scores.map((set, idx) => {
-                        const isSameScore =
-                          set.home === set.away && set.home > 0 && set.away > 0;
-
-                        return (
+                      <div className="w-full flex items-center justify-center mb-3 gap-5">
+                        <div className="flex items-center justify-center ">
                           <div
-                            key={set._id}
-                            className="flex items-center gap-2"
+                            className={`font-bold ${
+                              match.status === "finished"
+                                ? "text-white"
+                                : "text-gray-800"
+                            } text-center text-lg`}
                           >
-                            <input
-                              type="number"
-                              min={0}
-                              max={21}
-                              className="w-20 md:w-40 p-1 border rounded text-center text-black"
-                              value={set.home === 0 ? "" : set.home}
-                              disabled={true}
-                            />
-                            <span>-</span>
-                            <input
-                              type="number"
-                              min={0}
-                              max={21}
-                              className="w-20 md:w-40 p-1 border rounded text-center text-black"
-                              value={set.away === 0 ? "" : set.away}
-                              disabled={true}
-                            />
+                            {match.teamsHome.teamName} vs{" "}
+                            {match.teamsAway.teamName}
                           </div>
-                        );
-                      })}
+                        </div>
+                        <StatusBadge status={match.status} />
+                      </div>
+
+                      {/* SCORES INPUT */}
+                      <div className="flex flex-col gap-3 items-center">
+                        {match.scores.map((set, idx) => {
+                          const isSameScore =
+                            set.home === set.away &&
+                            set.home > 0 &&
+                            set.away > 0;
+
+                          return (
+                            <div
+                              key={set._id}
+                              className="flex items-center gap-2"
+                            >
+                              <input
+                                type="number"
+                                min={0}
+                                max={21}
+                                className="w-20 md:w-40 p-1 border  rounded text-center text-black  border-purple-800 bg-slate-200"
+                                value={set.home === 0 ? "" : set.home}
+                                disabled={true}
+                              />
+                              <span>-</span>
+                              <input
+                                type="number"
+                                min={0}
+                                max={21}
+                                className="w-20 md:w-40 p-1 border rounded text-center text-black  border-purple-800 bg-slate-200"
+                                value={set.away === 0 ? "" : set.away}
+                                disabled={true}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 gap-4">
+                  {groupedMatches[round].map((match) => (
+                    <div
+                      key={match._id}
+                      className="card p-4 border border-gray-200 rounded-xl bg-blue-50 hover:bg-blue-100 transition flex flex-col items-center justify-center"
+                    >
+                      <div className="w-full flex items-center justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="font-semibold text-gray-800">
+                            {match.teamsHome.teamName} vs{" "}
+                            {match.teamsAway.teamName}
+                          </div>
+                        </div>
+                        <StatusBadge status={match.status} />
+                      </div>
+
+                      {/* <h3 className="text-xl font-bold text-center mb-4">
+                        {match.teamsHome.teamName} vs {match.teamsAway.teamName}
+                      </h3> */}
+
+                      {/* SCORES INPUT */}
+                      <div className="flex flex-col gap-3 items-center">
+                        {match.scores.map((set, idx) => {
+                          const isSameScore =
+                            set.home === set.away &&
+                            set.home > 0 &&
+                            set.away > 0;
+
+                          return (
+                            <div
+                              key={set._id}
+                              className="flex items-center gap-2"
+                            >
+                              <input
+                                type="number"
+                                min={0}
+                                max={21}
+                                className="w-20 md:w-40 p-1 border rounded text-center text-black  border-purple-800 bg-zinc-50"
+                                value={set.home === 0 ? "" : set.home}
+                                disabled={true}
+                              />
+                              <span>-</span>
+                              <input
+                                type="number"
+                                min={0}
+                                max={21}
+                                className="w-20 md:w-40 p-1 border rounded text-center text-black  border-purple-800 bg-zinc-50"
+                                value={set.away === 0 ? "" : set.away}
+                                disabled={true}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>

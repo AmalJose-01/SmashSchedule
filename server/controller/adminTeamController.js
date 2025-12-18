@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const Team = require("../model/team.js");
-const Tournament = require("../model/tournament.js");
+const Tournament = require("../model/tournamentModel.js");
 const Group = require("../model/groupTournament.js");
 const { get } = require("mongoose");
 const GroupMatch = require("../model/groupMatch.js");
@@ -15,79 +15,119 @@ const {
 
 // Create a new team
 const adminTeamController = {
-  createTeam: async (req, res) => {
-    console.log("dfghjkl", req.body);
+createMultipleTeam: async (req, res) => {
+  console.log("createMultipleTeam");
+
+  try {
+    const { teams } = req.body;
+
+    if (!Array.isArray(teams) || teams.length === 0) {
+      return res.status(400).json({ message: "Teams array is required" });
+    }
+
+    const skippedTeams = [];
+
+    // Collect all emails & contacts from request
+    const emails = teams.flatMap((t) => [t.playerOneEmail, t.playerTwoEmail]);
+    const contacts = teams.flatMap((t) => [t.playerOneContact, t.playerTwoContact]);
+
+    // Fetch all existing emails & contacts from DB in one query
+    const existingTeams = await Team.find({
+      $or: [
+        { playerOneEmail: { $in: emails } },
+        { playerTwoEmail: { $in: emails } },
+        { playerOneContact: { $in: contacts } },
+        { playerTwoContact: { $in: contacts } },
+      ],
+    });
+
+    const existingEmails = new Set(
+      existingTeams.flatMap((t) => [t.playerOneEmail, t.playerTwoEmail])
+    );
+    const existingContacts = new Set(
+      existingTeams.flatMap((t) => [t.playerOneContact, t.playerTwoContact])
+    );
+
+    // Filter teams that can be inserted
+    const teamsToInsert = teams.filter((team) => {
+      const duplicate =
+        existingEmails.has(team.playerOneEmail) ||
+        existingEmails.has(team.playerTwoEmail) ||
+        existingContacts.has(team.playerOneContact) ||
+        existingContacts.has(team.playerTwoContact);
+
+      if (duplicate) skippedTeams.push(team);
+      return !duplicate;
+    });
+
+    // Insert remaining teams
+    const savedTeams =
+      teamsToInsert.length > 0
+        ? await Team.insertMany(teamsToInsert, { ordered: false })
+        : [];
+
+        console.log("savedTeams",savedTeams);
+        
+
+    res.status(201).json({
+      message: "Teams processed successfully",
+      insertedCount: savedTeams.length,
+      skippedCount: skippedTeams.length,
+      insertedTeams: savedTeams,
+      skippedTeams,
+    });
+  } catch (error) {
+    console.error("Create multiple team error", error);
+    res.status(500).json({
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+},
+
+ deleteTeam: async (req, res) => {
+    console.log("Admin deleteTeam Delete");
 
     try {
-      const {
-        userId,
-        teamName,
-        playerOneName,
-        playerTwoName,
-        playerOneEmail,
-        playerTwoEmail,
-        playerOneContact,
-        playerTwoContact,
-        playerOneDOB,
-        playerTwoDOB,
-        tournamentId,
-      } = req.body;
+      const { teamId } = req.params;
+      console.log("Deleting team:", teamId);
 
-      if (
-        !userId ||
-        !teamName ||
-        !playerOneName ||
-        !playerTwoName ||
-        !playerOneEmail ||
-        !playerTwoEmail ||
-        !playerOneContact ||
-        !playerTwoContact ||
-        !playerOneDOB ||
-        !playerTwoDOB ||
-        !tournamentId
-      ) {
-        return res.status(400).json({ message: "All fields are required" });
+      // 1️⃣ Validate ID format (prevents CastError)
+      if (!mongoose.Types.ObjectId.isValid(teamId)) {
+        return res.status(400).json({ message: "Invalid teamId" });
       }
-      // Check for existing emails or contacts
-      const existingTeam = await Team.findOne({
-        $or: [
-          { playerOneEmail },
-          { playerTwoEmail },
-          { playerOneContact },
-          { playerTwoContact },
-        ],
+
+      // 2️⃣ Check if tournament exists
+      const existingTournament = await Team.findById(teamId);
+
+      if (!existingTournament) {
+        return res.status(404).json({ message: "Tournament not found" });
+      }
+
+      
+     
+     
+
+
+      // 9️⃣ Delete tournament
+      await Team.findByIdAndDelete(teamId);
+
+      return res.status(200).json({
+        message: "Team deleted successfully",
       });
-      if (existingTeam) {
-        return res
-          .status(400)
-          .json({ message: "Email or Contact already exists" });
-      }
-      const newTeam = await Team.create({
-        adminId: userId,
-        teamName,
-        playerOneName,
-        playerTwoName,
-        playerOneEmail,
-        playerTwoEmail,
-        playerOneContact,
-        playerTwoContact,
-        playerOneDOB,
-        playerTwoDOB,
-        tournamentId,
-      });
-
-      if (!newTeam) {
-        return res.status(500).json({ message: "Failed to create team" });
-      }
-
-      res
-        .status(201)
-        .json({ message: "Team created successfully", team: newTeam });
     } catch (error) {
-      console.log("Create module error", error);
-      res.status(500).json({ message: "Server Error", error: error.message });
+      console.error("deleteTeam error:", error);
+      return res.status(500).json({
+        message: "Server Error",
+        error: error.message,
+      });
     }
   },
+
+
+
+
+
   getTeams: async (req, res) => {
     try {
       const { tournamentId } = req.params;
@@ -119,7 +159,7 @@ const adminTeamController = {
         maximumParticipants,
         matchType,
         description,
-        registrationFee
+        registrationFee,
       } = req.body;
 
       if (
@@ -155,7 +195,7 @@ const adminTeamController = {
         matchType,
         description,
         status: "Create",
-        registrationFee
+        registrationFee,
       });
 
       if (!createTournament) {
@@ -585,14 +625,12 @@ const adminTeamController = {
               homeStanding.wins += 1;
               awayStanding.losses += 1;
               homeStanding.totalPoints += 3;
-                        groupDoc.status = "finished";
-
+              groupDoc.status = "finished";
             } else if (winner === "away") {
               awayStanding.wins += 1;
               homeStanding.losses += 1;
               awayStanding.totalPoints += 3;
-                        groupDoc.status = "finished";
-
+              groupDoc.status = "finished";
             }
 
             homeStanding.pointsFor += points.homeTotal;
@@ -611,13 +649,12 @@ const adminTeamController = {
         }
       }
 
-     return res.status(200).json({
-      message: "Multiple match scores saved successfully",
-      totalMatchesUpdated: matches.length,
-      groupsUpdated: updatedGroups.length,
-      groups: updatedGroups,
-    });
-
+      return res.status(200).json({
+        message: "Multiple match scores saved successfully",
+        totalMatchesUpdated: matches.length,
+        groupsUpdated: updatedGroups.length,
+        groups: updatedGroups,
+      });
     } catch (error) {
       console.log("Save match score error", error);
       res.status(500).json({ message: "Server Error", error: error.message });

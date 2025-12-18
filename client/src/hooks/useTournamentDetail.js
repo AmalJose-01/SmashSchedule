@@ -4,10 +4,13 @@ import { getTournamentDetailsAPI } from "../services/teamServices";
 import { useEffect } from "react";
 import { getAdminTournamentDetailsAPI } from "../services/admin/adminTeamServices";
 import { useDispatch } from "react-redux";
+import { logOut } from "../redux/slices/userSlice";
+import { useNavigate } from "react-router-dom";
 
 export const useTournamentDetail = (tournamentId, userType) => {
   console.log(userType);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const { data, isLoading, isFetching, error } = useQuery({
     queryKey:
@@ -18,10 +21,21 @@ export const useTournamentDetail = (tournamentId, userType) => {
       userType === "Admin"
         ? getAdminTournamentDetailsAPI(tournamentId)
         : getTournamentDetailsAPI(tournamentId),
-    onError: (err) =>
+    onError: (error) => {
+      toast.dismiss();
+      if (error?.response?.status === 401) {
+        toast.error(error.response.data.message || "Session expired");
+
+        dispatch(logOut());
+        navigate("/");
+
+        return;
+      }
+
       toast.error(
-        err?.response?.data?.message || "Error loading tournament details"
-      ),
+        error?.response?.data?.message || "Error loading tournament details"
+      );
+    },
   });
 
   useEffect(() => {

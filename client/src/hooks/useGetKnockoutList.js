@@ -4,6 +4,7 @@ import { getKnockoutScheduleAPI } from "../services/teamServices";
 import { useEffect } from "react";
 import { getAdminKnockoutScheduleAPI } from "../services/admin/adminTeamServices";
 import { useDispatch } from "react-redux";
+import { logOut } from "../redux/slices/userSlice";
 
 
 export const useGetKnockoutList = (tournamentId,userType) => {

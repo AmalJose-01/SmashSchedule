@@ -3,6 +3,19 @@ import { BASE_URL } from "../../../utils/config.js";
 import { headerData } from "../../../utils/storageHandler.js";
 
 
+
+export const importTeamAPI = async (teamData) => {
+  try {
+    const response = await axios.post(`${BASE_URL}/admin/teams`, teamData,headerData());
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+
+
 export const getTeamListAPI = async (tournamentId) => {
   console.log("getTeamListAPI called"); // <--- should log when triggered
 try {
@@ -25,7 +38,7 @@ export const saveTournamentAPI = async (tournamentData) => {
   try {
     const response = await axios.post(
       `${BASE_URL}/admin/create-tournament`,
-      tournamentData, { headers: headerData().headers }            
+      tournamentData, headerData()           
                     
     );
     return response.data;
@@ -105,9 +118,7 @@ export const getAdminTournamentDetailsAPI = async (tournamentId) => {
     console.log("getTournamentDetailsAPI response:====", response.data); // <--- log the full response
     return response.data;
   } catch (error) {
-    throw new Error(
-      error.response?.data?.message || "Failed to fetch tournament details"
-    );
+     throw error
   }
 };
 
@@ -158,6 +169,17 @@ export const deleteTournamentAPI = async (tournamentId) => {
   }
 };
 
+export const deleteTeamAPI = async (teamId) => {
+  try {
+    const response = await axios.delete(
+      `${BASE_URL}/admin/delete-team/${teamId}`,headerData()
+    );
+    return response.data;
+  } catch (error) {
+      throw error
+  }
+};
+
 export const createKnockoutScheduleAPI = async (tournament) => {
   console.log("createKnockoutScheduleAPI called with ID:", tournament); // <--- should log when triggered
 
@@ -168,9 +190,7 @@ export const createKnockoutScheduleAPI = async (tournament) => {
     console.log("createKnockoutScheduleAPI response:====", response.data); // <--- log the full response
     return response.data;
   } catch (error) {
-    throw new Error(
-      error.response?.data?.message || "Failed to fetch tournament details"
-    );
+      throw error
   }
 };
 
@@ -200,9 +220,7 @@ export const getAdminKnockoutScheduleAPI = async (tournamentId) => {
     console.log("getKnockoutScheduleAPI response:====", response.data); // <--- log the full response
     return response.data;
   } catch (error) {
-    throw new Error(
-      error.response?.data?.message || "Failed to fetch tournament details"
-    );
+     throw error
   }
 };
 

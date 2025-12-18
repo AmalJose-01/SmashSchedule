@@ -61,7 +61,7 @@ const TeamSetup = () => {
       playerTwoContact: "",
       playerOneDOB: "",
       playerTwoDOB: "",
-              tournamentId:tournament.tournamentId ,
+              tournamentId:tournament._id ,
 
     },
   });

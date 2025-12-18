@@ -1,7 +1,7 @@
 import React from "react";
 import { FaCalculator, FaPlus, FaSave, FaTimes, FaUserShield } from "react-icons/fa";
 import { BiLogIn, BiLogOut } from "react-icons/bi";
-import { Home, Trophy, LogIn, ArrowRight ,Shuffle,Swords, Cog,UserPlus, Award} from "lucide-react";
+import { Home, Trophy, LogIn, ArrowRight ,Shuffle,Swords, Cog,UserPlus, Award, RefreshCw} from "lucide-react";
 
 
 // Icon map
@@ -19,6 +19,7 @@ const iconMap = {
   settings: Cog,
   register:UserPlus,
   award: Award,
+  sync: RefreshCw
 };
 
 const ButtonWithIcon = ({ title, icon, buttonBGColor, textColor, onClick, type = "button", }) => {

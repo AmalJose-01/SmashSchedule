@@ -124,7 +124,6 @@ const CreateTournament = () => {
         </div>
 
         <div className="flex gap-2">
-         
           <Logout />
         </div>
       </div>

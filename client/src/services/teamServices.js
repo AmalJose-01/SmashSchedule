@@ -33,9 +33,7 @@ export const getTournamentDetailsAPI = async (tournamentId) => {
     console.log("getTournamentDetailsAPI response:====", response.data); // <--- log the full response
     return response.data;
   } catch (error) {
-    throw new Error(
-      error.response?.data?.message || "Failed to fetch tournament details"
-    );
+     throw error
   }
 };
 
