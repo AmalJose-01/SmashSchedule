@@ -31,7 +31,7 @@ export const useUpdateScore = (input) => {
         return;
       }
 
-      toast.error(error?.message || "Failed to save score");
+      toast.error(error?.response.data.message || "Failed to save score");
     },
   });
   const handleScore = (data) => {

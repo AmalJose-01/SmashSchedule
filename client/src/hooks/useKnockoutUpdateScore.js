@@ -18,7 +18,7 @@ export const useKnockoutUpdateScore = (input) => {
     },
     onError: (err) => {
       toast.dismiss();
-      toast.error(err?.message || "Failed to save score");
+      toast.error(err?.response.data.message || "Failed to save score");
     },
   });
   const handleKnockoutScore = (data) => {

@@ -25,7 +25,7 @@ const SaveTeamRegistration = () => {
     },
     onError: (err) => {
       toast.dismiss();
-      toast.error(err?.message || "Failed to save team");
+      toast.error(err?.response.data.message || "Failed to save team");
     },
   });
 

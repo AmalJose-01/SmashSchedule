@@ -558,6 +558,9 @@ createMultipleTeam: async (req, res) => {
 
       console.log("Call Admin Save", matches);
 
+        const updatedGroups = [];
+
+
       for (const match of matches) {
         const { matchId, scores } = match;
         if (!matchId || !scores || scores.length === 0) continue;
@@ -579,7 +582,6 @@ createMultipleTeam: async (req, res) => {
     -------------------------------------------------- */
         const groupIds = [...new Set(matches.map((m) => m.group))];
 
-        const updatedGroups = [];
 
         for (const groupId of groupIds) {
           const groupDoc = await Group.findById(groupId);

@@ -20,7 +20,9 @@ queryClient.invalidateQueries({ queryKey: ["tournamentDetail"] });
     },
     onError: (err) => {
        toast.dismiss(); 
-      toast.error(err?.message || "Failed to save score");
+       console.log("errffffffff",err);
+       
+      toast.error(err?.response.data.message || "Failed to save score");
     },
   });
   const handleMultipleScore = (data) => {
