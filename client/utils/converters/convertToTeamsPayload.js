@@ -4,6 +4,7 @@ import { getMappedValue } from "../mappers/getMappedValue";
 
 export const convertToTeamsPayload = (rows, tournamentId) => {
   return {
+     tournamentId,
     teams: rows.map((row) => {
       const playerOneName = getMappedValue(row, TEAM_HEADER_MAP.playerOneName);
       const playerTwoName = getMappedValue(row, TEAM_HEADER_MAP.playerTwoName);

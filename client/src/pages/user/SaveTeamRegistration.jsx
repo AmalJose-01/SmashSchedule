@@ -7,10 +7,12 @@ import { saveTeamAPI } from "../../services/teamServices";
 import { toast } from "sonner"; // make sure react-toastify is installed
 import Navbar from "../../components/Navbar";
 import { X, Users, Mail, Phone, Trophy, Upload, UserPlus ,Save } from "lucide-react";
+import { useSelector } from "react-redux";
 
 const SaveTeamRegistration = () => {
   const navigate = useNavigate();
    
+  const tournament = useSelector((state) => state.tournament.tournamentData);
 
   const { mutateAsync, isLoading } = useMutation({
     mutationKey: ["saveTeam"],
@@ -21,7 +23,7 @@ const SaveTeamRegistration = () => {
     onSuccess: () => {
       toast.dismiss();
       toast.success("Team saved successfully!");
-      // navigate("/");
+      onClose()
     },
     onError: (err) => {
       toast.dismiss();
@@ -57,6 +59,8 @@ const SaveTeamRegistration = () => {
       playerTwoContact: "",
       playerOneDOB: "",
       playerTwoDOB: "",
+            tournamentId: tournament._id,
+
     },
   });
 
@@ -74,7 +78,7 @@ const SaveTeamRegistration = () => {
     }
   };
   const onClose = () => {
-    navigate("/tournament-list");
+    navigate("/tournamentList");
   };
 
   return (

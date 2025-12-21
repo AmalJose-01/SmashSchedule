@@ -1,10 +1,23 @@
 import { CheckCircle, Trophy } from "lucide-react";
+import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useGetUserDetail } from "../../hooks/useGetUserDetail";
 
 export default function Success() {
   const [params] = useSearchParams();
   const sessionId = params.get("session_id");
   const navigate = useNavigate();
+
+  const { handleGetUserDetail, userDetail } = useGetUserDetail();
+
+  handleGetUserDetail();
+
+  useEffect(() => {
+
+console.log("userDetail",userDetail);
+
+
+  }, [userDetail]);
 
   return (
     <div className="bg-white shadow-md">
@@ -63,19 +76,14 @@ export default function Success() {
               </div>
             </div>
           </div>
-         <button
-  className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
-  onClick={() => navigate("/tournament-list", { replace: true })}
->
-  Return to Dashboard
-</button>
+          <button
+            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+            onClick={() => navigate("/tournament-list", { replace: true })}
+          >
+            Return to Dashboard
+          </button>
         </div>
       </div>
-
-      {/* <div className="p-4">
-        <h1>Payment Successful 🎉</h1>
-        <p>Your Session ID: {sessionId}</p>
-      </div> */}
     </div>
   );
 }

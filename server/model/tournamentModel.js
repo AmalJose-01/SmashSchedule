@@ -39,6 +39,7 @@ const tournamentSchema = new mongoose.Schema(
     },
     description: { type: String },
     registrationFee: { type: String ,  required: true },
+    uniqueKey:  { type: String },
 
   },
   { timestamps: true }

@@ -10,6 +10,7 @@ import {
   Grid3x3,
   Layers,
   Save,
+  DollarSign,
 } from "lucide-react";
 import ButtonWithIcon from "../../components/ButtonWithIcon";
 import Logout from "../../components/Logout";
@@ -22,11 +23,14 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { logOut } from "../../redux/slices/userSlice";
+import { useEffect, useState } from "react";
 
 const CreateTournament = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
+  const [matchTypeValue, setMatchTypeValue] = useState("Singles"); // state to hold selected value
+  const [playTypeValue, setPlayTypeValue] = useState("Round Robbin"); // state to hold selected value
 
   // ---------------------------
   // FORM VALIDATION (YUP)
@@ -43,6 +47,7 @@ const CreateTournament = () => {
     "maximumParticipants",
     "matchType",
     "description",
+    "registrationFee",
   ]);
 
   // ---------------------------
@@ -57,8 +62,13 @@ const CreateTournament = () => {
       toast.dismiss();
       toast.success("Tournament saved successfully!");
       queryClient.invalidateQueries({ queryKey: ["adminTournamentList"] });
+      navigate(location.state?.from || "/tournament-list", {
+        replace: true,
+      });
     },
     onError: (error) => {
+      toast.dismiss();
+
       if (error?.response?.status === 401) {
         toast.dismiss();
 
@@ -69,6 +79,10 @@ const CreateTournament = () => {
 
         return;
       }
+
+      toast.error(
+        error?.response?.data?.message || "Error loading tournament details"
+      );
     },
   });
 
@@ -82,7 +96,7 @@ const CreateTournament = () => {
     defaultValues: {
       tournamentName: "My Tournament",
       teamsPerGroup: 4,
-      playType: "group-knockout",
+      playType: "Round Robbin",
       numberOfPlayersQualifiedToKnockout: 2,
       numberOfCourts: 1,
       date: "",
@@ -91,6 +105,7 @@ const CreateTournament = () => {
       maximumParticipants: "",
       matchType: "Singles",
       description: "",
+      registrationFee: "",
     },
   });
 
@@ -107,6 +122,8 @@ const CreateTournament = () => {
       // handled in onError
     }
   };
+
+  useEffect(() => {}, [matchTypeValue, playTypeValue]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white ">
@@ -235,28 +252,50 @@ const CreateTournament = () => {
               </div>
             </div>
 
-            <div>
-              <div className="flex items-center gap-2 text-gray-700 mb-2">
-                <Users className="w-4 h-4" />
-                Maximum Participants
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <div className="flex items-center gap-2 text-gray-700 mb-2">
+                  <Users className="w-4 h-4" />
+                  Maximum Participants/Team
+                </div>
+                <input
+                  type="number"
+                  id="maxParticipants"
+                  name="maxParticipants"
+                  // value={formData.maxParticipants}
+                  // onChange={handleChange}
+                  required
+                  min="2"
+                  {...register("maximumParticipants")}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter max number of participants"
+                />
+                {errors.maximumParticipants && (
+                  <p className="text-red-600 text-sm">
+                    {errors.maximumParticipants.message}
+                  </p>
+                )}
               </div>
-              <input
-                type="number"
-                id="maxParticipants"
-                name="maxParticipants"
-                // value={formData.maxParticipants}
-                // onChange={handleChange}
-                required
-                min="2"
-                {...register("maximumParticipants")}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter max number of participants"
-              />
-              {errors.maximumParticipants && (
-                <p className="text-red-600 text-sm">
-                  {errors.maximumParticipants.message}
-                </p>
-              )}
+              <div>
+                <div className="flex items-center gap-2 text-gray-700 mb-2">
+                  <DollarSign className="w-4 h-4" />
+                  Registration Fee
+                </div>
+                <input
+                  type="number"
+                  id=" registrationFee"
+                  name=" registrationFee"
+                  required
+                  {...register("registrationFee")}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter max number of participants"
+                />
+                {errors.registrationFee && (
+                  <p className="text-red-600 text-sm">
+                    {errors.registrationFee.message}
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Tournament Format Section */}
@@ -271,11 +310,11 @@ const CreateTournament = () => {
                   </div>
                   <select
                     id="matchType"
-                    name="matchType"
-                    // value={formData.matchType}
-                    // onChange={handleChange}
-                    required
-                    {...register("matchType")}
+                    {...register("matchType", { required: true })} // register only once
+                    value={matchTypeValue} // bind to state for display
+                    onChange={(e) => {
+                      setMatchTypeValue(e.target.value); // update local state
+                    }}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     <option value="Singles">Singles</option>
@@ -291,7 +330,9 @@ const CreateTournament = () => {
                 <div>
                   <div className="flex items-center gap-2 text-gray-700 mb-2">
                     <Grid3x3 className="w-4 h-4" />
-                    Teams per Group
+                    {matchTypeValue === "Singles"
+                      ? "Player per Group"
+                      : "Teams per Group"}
                   </div>
                   <input
                     type="number"
@@ -310,15 +351,21 @@ const CreateTournament = () => {
                   )}
                 </div>
 
-                <div>
-                  <div className="flex items-center gap-2 text-gray-700 mb-2">
+                <div className={`${playTypeValue === "group-knockout" ? "" : "col-span-2"}`}>
+                  <div className={`flex items-center gap-2 text-gray-700 mb-2`}>
                     <Layers className="w-4 h-4" />
                     Play Type
                   </div>
                   <select
-                    {...register("playType")}
+                    {...register("playType", { required: true })}
+                    value={playTypeValue}
+                    onChange={(e) => {
+                      setPlayTypeValue(e.target.value);
+                      setValue("playType", e.target.value); // sync with react-hook-form
+                    }}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
+                    <option value="round-robin">Round Robin</option>
                     <option value="group">Group Stage</option>
                     <option value="knockout">Knockout</option>
                     <option value="group-knockout">Group + Knockout</option>
@@ -330,35 +377,28 @@ const CreateTournament = () => {
                   )}
                 </div>
 
-                <div>
-                  <div
-                    htmlFor="qualifiedToKnockout"
-                    className="flex items-center gap-2 text-gray-700 mb-2"
-                  >
-                    <Trophy className="w-4 h-4" />
-                    Qualified to Knockout
+                {playTypeValue === "group-knockout" && (
+                  <div>
+                    <div className="flex items-center gap-2 text-gray-700 mb-2">
+                      <Trophy className="w-4 h-4" />
+                      Qualified to Knockout
+                    </div>
+                    <input
+                      type="number"
+                      min="1"
+                      {...register("numberOfPlayersQualifiedToKnockout")}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    {errors.numberOfPlayersQualifiedToKnockout && (
+                      <p className="text-red-600 text-sm">
+                        {errors.numberOfPlayersQualifiedToKnockout.message}
+                      </p>
+                    )}
                   </div>
-                  <input
-                    type="number"
-                    id="numberOfPlayersQualifiedToKnockout"
-                    name="numberOfPlayersQualifiedToKnockout"
-                    // value={formData.qualifiedToKnockout}
-                    // onChange={handleChange}
-                    required
-                    min="1"
-                    {...register("numberOfPlayersQualifiedToKnockout")}
-                    // max={formData.teamsPerGroup}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  {errors.numberOfPlayersQualifiedToKnockout && (
-                    <p className="text-red-600 text-sm">
-                      {errors.numberOfPlayersQualifiedToKnockout.message}
-                    </p>
-                  )}
-                </div>
+                )}
 
-                <div>
-                  <div className="flex items-center gap-2 text-gray-700 mb-2">
+                <div className="col-span-2">
+                  <div className="flex  items-center gap-2 text-gray-700 mb-2">
                     <MapPin className="w-4 h-4" />
                     Number of Courts Available
                   </div>
