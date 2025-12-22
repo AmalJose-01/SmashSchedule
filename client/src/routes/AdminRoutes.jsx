@@ -8,6 +8,11 @@ import { useSelector } from "react-redux";
 import Login from "../pages/admin/Login";
 import CreateTournament from "../pages/admin/CreateTournament";
 import AdminTournamentList from "../pages/admin/AdminTournamentList";
+import EditTournament from "../pages/admin/EditTournament";
+import EditTeam from "../pages/admin/EditTeam";
+
+
+
 
 const AdminRoutes = () => {
   const user = useSelector((state) => state.user.user);
@@ -54,6 +59,25 @@ const AdminRoutes = () => {
         element={
           <ProtectedRoute role="admin">
             <CreateTournament />
+          </ProtectedRoute>
+        }
+      />
+
+
+         <Route
+        path="/edit-tournament"
+        element={
+          <ProtectedRoute role="admin">
+            <EditTournament />
+          </ProtectedRoute>
+        }
+      />
+
+           <Route
+        path="/edit-team"
+        element={
+          <ProtectedRoute role="admin">
+            <EditTeam />
           </ProtectedRoute>
         }
       />

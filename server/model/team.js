@@ -17,22 +17,22 @@ const teamSchema = new mongoose.Schema(
     playerOneEmail: {
       type: String,
       required: true,
-      unique: true,
+      // unique: true,
     },
     playerTwoEmail: {
       type: String,
       required: true,
-      unique: true,
+      // unique: true,
     },
     playerOneContact: {
       type: String,
       required: true,
-      unique: true,
+      // unique: true,
     },
     playerTwoContact: {
       type: String,
       required: true,
-      unique: true,
+      // unique: true,
     },
     playerOneDOB: {
       type: String,
@@ -50,6 +50,26 @@ const teamSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+
+teamSchema.index(
+  { tournamentId: 1, playerOneEmail: 1 },
+  { unique: true, sparse: true }
+);
+teamSchema.index(
+  { tournamentId: 1, playerTwoEmail: 1 },
+  { unique: true, sparse: true }
+);
+teamSchema.index(
+  { tournamentId: 1, playerOneContact: 1 },
+  { unique: true, sparse: true }
+);
+teamSchema.index(
+  { tournamentId: 1, playerTwoContact: 1 },
+  { unique: true, sparse: true }
+);
+
+
 
 const Team = mongoose.model("Team", teamSchema);
 

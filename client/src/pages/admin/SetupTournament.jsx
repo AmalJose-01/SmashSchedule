@@ -24,6 +24,8 @@ import {
   Upload,
   DollarSign,
   Key,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import ButtonWithIcon from "../../components/ButtonWithIcon";
 import Logout from "../../components/Logout";
@@ -63,7 +65,6 @@ const SetupTournament = () => {
     confirmConfig.type === "team"
       ? "Are you sure you want to delete this team? This action cannot be undone."
       : "This will permanently delete the tournament and all related data. Do you want to continue?";
-
 
   const [selectedPlayers, setSelectedPlayers] = useState([]);
   const [assigning, setAssigning] = useState(false);
@@ -303,8 +304,7 @@ const SetupTournament = () => {
 
     try {
       handleUseImportTeam(payload);
-           setTeamFile(null);
-
+      setTeamFile(null);
     } catch (err) {
       console.error("Error:", err);
     }
@@ -327,6 +327,7 @@ const SetupTournament = () => {
     try {
       handleUseImportTeam(payload);
     } catch (err) {
+      setData([]);
       console.error("Error:", err);
     }
   };
@@ -571,7 +572,7 @@ const SetupTournament = () => {
                         key={team._id}
                         className="flex items-center gap-3 p-2 bg-blue-50 rounded-lg border border-gray-200"
                       >
-                        <div className="flex items-center w-full">
+                        <div className="flex items-center w-full justify-between">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                               <span className="text-blue-600">
@@ -582,28 +583,49 @@ const SetupTournament = () => {
                             {team.teamName}
                           </div>
 
-                          <button
-                            className={`${
-                              tournamentDetail.status != "Create"
-                                ? "hidden"
-                                : ""
-                            } ml-auto p-2 bg-red-500 text-white rounded hover:bg-red-600 flex items-center justify-center`}
-                            // onClick={(e) => {
-                            //   e.stopPropagation(); // Prevent li click
-                            //   setDeleteTeamId(team._id);
-                            //   setShowConfirm(true);
-                            // }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setConfirmConfig({
-                                open: true,
-                                type: "team",
-                                id: team._id,
-                              });
-                            }}
-                          >
-                            <FaTrash />
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              className={`${
+                                tournamentDetail.status != "Create"
+                                  ? "hidden"
+                                  : ""
+                              } ml-auto p-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center`}
+                              // onClick={(e) => {
+                              //   e.stopPropagation();
+                              //   setConfirmConfig({
+                              //     open: true,
+                              //     type: "team",
+                              //     id: team._id,
+                              //   });
+                              // }}
+
+                              onClick={() =>
+                                navigate("/edit-team", {
+                                  state: { team },
+                                })
+                              }
+                            >
+                              <Pencil />
+                            </button>
+
+                            <button
+                              className={`${
+                                tournamentDetail.status != "Create"
+                                  ? "hidden"
+                                  : ""
+                              } ml-auto p-2 bg-red-500 text-white rounded hover:bg-red-600 flex items-center justify-center`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConfirmConfig({
+                                  open: true,
+                                  type: "team",
+                                  id: team._id,
+                                });
+                              }}
+                            >
+                              <Trash2 />
+                            </button>
+                          </div>
                         </div>
                       </li>
                     ))}
@@ -690,7 +712,11 @@ const SetupTournament = () => {
                 </span>
               </button>
               <button
-                onClick={() => navigate("/teams")}
+                onClick={() =>
+                  navigate("/edit-tournament", {
+                    state: { tournamentDetail },
+                  })
+                }
                 className={`w-full px-4 py-2 transition-colors flex items-center justify-center gap-2 ${
                   tournamentDetail.status === "Create"
                     ? "bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -732,19 +758,6 @@ const SetupTournament = () => {
             </div>
           </div>
         </div>
-        {/*  */}
-        {/* CONFIRM DELETE MODAL */}
-        {/* <ConfirmModal
-          isOpen={showConfirm}
-          title="Delete Tournament"
-          message="This action cannot be undone. Do you want to proceed?"
-          confirmText="YES"
-          cancelText="NO"
-          danger
-          loading={isScoreLoading}
-          onConfirm={handleDeleteTournament} // call delete function here
-          onCancel={() => setShowConfirm(false)} // close modal
-        /> */}
 
         <ConfirmModal
           isOpen={confirmConfig.open}
