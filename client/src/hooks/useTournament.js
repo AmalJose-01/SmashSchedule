@@ -19,9 +19,19 @@ export const useTournament = (userType) => {
     cacheTime: 30 * 60 * 1000,
     refetchOnWindowFocus: false,
 
-    onError: (err) => {
-      const message =
-        err?.response?.data?.message || "Error loading tournaments";
+    onError: (error) => {
+      toast.dismiss();
+      if (error?.response?.status === 401) {
+        toast.error(error.response.data.message || "Session expired");
+
+        dispatch(logOut());
+        navigate("/");
+
+        return;
+      }
+      toast.error(
+        error?.response?.data?.message || "Error loading tournament details"
+      );
     },
   });
 
@@ -42,13 +52,8 @@ export const useTournament = (userType) => {
 
     if (!data?.tournaments) return [];
 
-    return data.tournaments
-      // .map((t) =>
-      //   t.tournamentName && t._id
-      //     ? { tournamentId: t._id, name: t.tournamentName }
-      //     : null
-      // )
-      // .filter(Boolean);
+    return data.tournaments;
+   
   };
 
   return {

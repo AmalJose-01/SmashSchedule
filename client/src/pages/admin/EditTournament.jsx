@@ -25,13 +25,22 @@ import { useDispatch } from "react-redux";
 import { logOut } from "../../redux/slices/userSlice";
 import { useEffect, useState } from "react";
 
-const CreateTournament = () => {
+import { useLocation } from "react-router-dom";
+
+const EditTournament = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
-  const [matchTypeValue, setMatchTypeValue] = useState("Singles"); // state to hold selected value
-  const [playTypeValue, setPlayTypeValue] = useState("Round Robbin"); // state to hold selected value
+  const { state } = useLocation();
+  const tournamentDetail = state?.tournamentDetail;
 
+
+  const [matchTypeValue, setMatchTypeValue] = useState(tournamentDetail.matchType ? tournamentDetail.matchType : "Singles"); // state to hold selected value
+  const [playTypeValue, setPlayTypeValue] = useState(tournamentDetail.playType ? tournamentDetail.playType : "Round Robbin"); // state to hold selected value
+
+
+
+  
   // ---------------------------
   // FORM VALIDATION (YUP)
   // ---------------------------
@@ -62,7 +71,7 @@ const CreateTournament = () => {
       toast.dismiss();
       toast.success("Tournament saved successfully!");
       queryClient.invalidateQueries({ queryKey: ["adminTournamentList"] });
-      navigate(location.state?.from || "/tournament-list", {
+      navigate(location.state?.from || "/setup-tournament", {
         replace: true,
       });
     },
@@ -110,7 +119,7 @@ const CreateTournament = () => {
   });
 
   const onClose = () => {
-    navigate("/tournament-list");
+    navigate("/setup-tournament");
   };
 
   const onSubmit = async (data) => {
@@ -136,7 +145,7 @@ const CreateTournament = () => {
           />
 
           <h2 className="text-xl font-semibold text-blue-800">
-            Create New Tournament
+            Edit Tournament
           </h2>
         </div>
 
@@ -178,6 +187,8 @@ const CreateTournament = () => {
                 <div>
                   <input
                     type="text"
+                    value={tournamentDetail.tournamentName
+}
                     placeholder="Tournament Name"
                     {...register("tournamentName")}
                     className="w-full p-2 border rounded"
@@ -200,6 +211,7 @@ const CreateTournament = () => {
                   type="date"
                   id="date"
                   name="date"
+                  value={tournamentDetail.date}
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   {...register("date")}
@@ -218,6 +230,7 @@ const CreateTournament = () => {
                   type="time"
                   id="time"
                   name="time"
+                    value={tournamentDetail.time}
                   //   value={formData.time}
                   //   onChange={handleChange}
                   required
@@ -242,6 +255,7 @@ const CreateTournament = () => {
                     placeholder="Tournament Name"
                     {...register("location")}
                     className="w-full p-2 border rounded"
+                      value={tournamentDetail.location}
                   />
                   {errors.location && (
                     <p className="text-red-500 text-sm">
@@ -262,6 +276,7 @@ const CreateTournament = () => {
                   type="number"
                   id="maxParticipants"
                   name="maxParticipants"
+                    value={tournamentDetail.maximumParticipants}
                   // value={formData.maxParticipants}
                   // onChange={handleChange}
                   required
@@ -285,6 +300,7 @@ const CreateTournament = () => {
                   type="number"
                   id=" registrationFee"
                   name=" registrationFee"
+                    value={tournamentDetail.registrationFee}
                   required
                   {...register("registrationFee")}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -338,6 +354,7 @@ const CreateTournament = () => {
                     type="number"
                     id="teamsPerGroup"
                     name="teamsPerGroup"
+                      value={tournamentDetail.teamsPerGroup}
                     required
                     min="2"
                     {...register("teamsPerGroup")}
@@ -351,7 +368,11 @@ const CreateTournament = () => {
                   )}
                 </div>
 
-                <div className={`${playTypeValue === "group-knockout" ? "" : "col-span-2"}`}>
+                <div
+                  className={`${
+                    playTypeValue === "group-knockout" ? "" : "col-span-2"
+                  }`}
+                >
                   <div className={`flex items-center gap-2 text-gray-700 mb-2`}>
                     <Layers className="w-4 h-4" />
                     Play Type
@@ -386,6 +407,7 @@ const CreateTournament = () => {
                     <input
                       type="number"
                       min="1"
+                        value={tournamentDetail.numberOfPlayersQualifiedToKnockout}
                       {...register("numberOfPlayersQualifiedToKnockout")}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
@@ -406,6 +428,7 @@ const CreateTournament = () => {
                     type="number"
                     id="numberOfCourts"
                     name="numberOfCourts"
+                      value={tournamentDetail.numberOfCourts}
                     // value={formData.courtsAvailable}
                     // onChange={handleChange}
                     required
@@ -433,6 +456,7 @@ const CreateTournament = () => {
                 <textarea
                   id="description"
                   name="description"
+                    value={tournamentDetail.description}
                   // value={formData.description}
                   // onChange={handleChange}
                   rows={4}
@@ -474,4 +498,4 @@ const CreateTournament = () => {
   );
 };
 
-export default CreateTournament;
+export default EditTournament;

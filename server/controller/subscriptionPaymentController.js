@@ -1,7 +1,7 @@
 const Stripe = require("stripe");
 const stripe = Stripe(process.env.STRIPE_KEY);
 const AdminUser = require("../model/adminUser");
-
+const BASE_URL = require("../utils/config")
 const subscriptionPaymentController = {
   subscriptionPayment: async (req, res) => {
     try {
@@ -52,9 +52,11 @@ const subscriptionPaymentController = {
         mode: "subscription",
         line_items: [{ price: "price_1Sd70SAGJ8rZb74kQKnxRd7m", quantity: 1 }],
         success_url:
-          "http://localhost:5173/success?session_id={CHECKOUT_SESSION_ID}",
-        cancel_url: "http://localhost:5173/cancel",
+          `${BASE_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${BASE_URL}/cancel`,
         customer_email: user.emailID,
+              client_reference_id: req.userId.toString(),
+
         metadata: { userId: req.userId.toString() },
       });
 

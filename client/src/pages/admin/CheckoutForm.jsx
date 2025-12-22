@@ -45,8 +45,6 @@ export default function CheckoutForm() {
           cardHolderName: ev.payerName,
         });
 
-        
-
         // const result = await stripe.confirmCardPayment(clientSecret, {
         //   payment_method: ev.paymentMethod.id,
         // });
@@ -69,60 +67,53 @@ export default function CheckoutForm() {
   // NORMAL CARD PAYMENT (CardElement)
   // ---------------------------------------------------------
   const handleCardPayment = async (amount) => {
-  if (!stripe || !elements) {
-    toast.error("Stripe not ready");
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    const clientSecret = await handleSubscription({
-      amount: amount * 100,
-      email: "amaljvv@gmail.com",
-      cardHolderName: "Amal Jose",
-    });
-
-    console.log("Returned clientSecret:", clientSecret);
-
-    if (!clientSecret) {
-      toast.error("Payment failed: No client secret returned");
-      setLoading(false);
+    if (!stripe || !elements) {
+      toast.error("Stripe not ready");
       return;
     }
 
-    toast.success("Payment completed!");
-  } catch (e) {
-    toast.error("Payment failed!");
-    console.log("Payment error:", e);
-  }
+    setLoading(true);
 
-  setLoading(false);
-};
-
-const createCheckout = async(price) => {
     try {
-         const clientSecret = await handleSubscription({
-      amount: price * 100,
-      email: "amaljvv@gmail.com",
-      cardHolderName: "Amal Jose",
-      priceId: "prod_TaHZCxbbgMmy1v",
-    });
-    } catch (error) {
-            console.log("Payment error:", error);  
-       toast.error("Payment failed!");
+      const clientSecret = await handleSubscription({
+        amount: amount * 100,
+        email: "amaljvv@gmail.com",
+        cardHolderName: "Amal Jose",
+      });
+
+      console.log("Returned clientSecret:", clientSecret);
+
+      if (!clientSecret) {
+        toast.error("Payment failed: No client secret returned");
+        setLoading(false);
+        return;
+      }
+
+      toast.success("Payment completed!");
+    } catch (e) {
+      toast.error("Payment failed!");
+      console.log("Payment error:", e);
     }
-}
 
+    setLoading(false);
+  };
 
-
+  const createCheckout = async (price) => {
+    try {
+      const clientSecret = await handleSubscription({
+        amount: price * 100,
+        email: "amaljvv@gmail.com",
+        cardHolderName: "Amal Jose",
+        priceId: "prod_TaHZCxbbgMmy1v",
+      });
+    } catch (error) {
+      console.log("Payment error:", error);
+      toast.error("Payment failed!");
+    }
+  };
 
   return (
     <div className="w-full space-y-4 p-6 bg-white rounded shadow">
-
-
- 
-
       {/* PLANS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {/* BASIC PLAN */}
@@ -194,9 +185,7 @@ const PlanCard = ({ title, price, billedAnnually, features, onClick }) => {
           <span className="text-gray-600">/month</span>
 
           {billedAnnually && (
-            <div className="text-sm text-green-600 mt-1">
-              Billed annually
-            </div>
+            <div className="text-sm text-green-600 mt-1">Billed annually</div>
           )}
         </div>
 

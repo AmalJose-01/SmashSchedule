@@ -29,8 +29,8 @@ router.post("/", async (req, res) => {
 
     const intent = event.data.object;
     const customerEmail = intent.receipt_email;
-      const userId = intent.metadata?.userId; 
-
+  const userId =
+    session.client_reference_id || session.metadata?.userId;
 
 //  UPDATE USER VERIFIED STATUS
     if (userId) {

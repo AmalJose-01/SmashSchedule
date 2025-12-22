@@ -41,7 +41,7 @@ const Navbar = () => {
             />
             <div>
               <span className="text-xl font-semibold">
-                Ballarat Masters Badminton Club
+               Badminton Tournament Scheduler
               </span>
               <p className="text-sm text-gray-600">Tournament Management</p>
             </div>

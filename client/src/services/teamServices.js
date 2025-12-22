@@ -6,9 +6,7 @@ export const saveTeamAPI = async (teamData) => {
     const response = await axios.post(`${BASE_URL}/tournament/teams`, teamData);
     return response.data;
   } catch (error) {
-    throw new Error(
-      error.response?.data?.message || "Failed to save team data"
-    );
+      throw error;
   }
 };
 
@@ -63,6 +61,24 @@ export const getKnockoutScheduleAPI = async (tournamentId) => {
     );
   }
 };
+
+
+export const getTournamentInformationAPI = async (tournamentId) => {
+  console.log("getTournamentInformationAPI called with ID:", tournamentId); // <--- should log when triggered
+
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/tournament/get-tournament-information/${tournamentId}`
+    );
+    console.log("getTournamentInformationAPI response:====", response.data); // <--- log the full response
+    return response.data;
+  } catch (error) {
+   console.log("getAdminTournamentListAPI error",error);
+    
+    throw error
+  }
+};
+
 
 
 

@@ -7,6 +7,7 @@ import { setTournamentData } from "../../redux/slices/tournamentSlice";
 import { useDispatch } from "react-redux";
 import { Calendar, Settings, DollarSign } from "lucide-react";
 import ButtonWithIcon from "../../components/ButtonWithIcon";
+import VerifyCodeModal from "../../components/VerifyCodeModal";
 
 const TournamentList = () => {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ const TournamentList = () => {
   const queryClient = useQueryClient();
   const [isExpanded, setIsExpanded] = useState(false);
   const toggleExpand = () => setIsExpanded((prev) => !prev);
+    const [openVerification, setVerificationOpen] = useState(false);
 
   const tournaments = handleTournamentList();
 
@@ -69,7 +71,7 @@ const TournamentList = () => {
 
                   dispatch(setTournamentData(tournament));
 
-                  navigate(`/groupStageList/${tournament._id}`);
+                  //navigate(`/groupStageList/${tournament._id}`);
                 }}
               >
                 <div className="flex justify-between items-start mb-4">
@@ -100,30 +102,51 @@ const TournamentList = () => {
                       onClick={(e) => {
                         dispatch(setTournamentData(tournament));
 
-                        navigate(`/groupStageList/${tournament._id}`);
+                        navigate(`/tournamentInfo`);
                       }}
                       className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       View Details
                     </button>
+
                     {tournament.status === "Create" &&
-                      tournament.participants < tournament.maxParticipants && (
+                      tournament.registeredTeamsCount <
+                        tournament.maximumParticipants && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             dispatch(setTournamentData(tournament));
-                            navigate("/teams", {
-                              replace: true,
-                              state: {
-                                from: `/tournamentList`,
-                              },
-                            });
+                            navigate(`/save-teams`);
+
+                            // navigate("/teams", {
+                            //   replace: true,
+                            //   state: {
+                            //     from: `/tournamentList`,
+                            //   },
+                            // });
                           }}
                           className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                         >
                           Register
                         </button>
                       )}
+                    <button
+                      // onClick={(e) => {
+                      //   dispatch(setTournamentData(tournament));
+
+                      //   navigate(`/groupStageList/${tournament._id}`);
+                      // }}
+                              onClick={() =>{
+                                dispatch(setTournamentData(tournament));
+ setVerificationOpen(true)
+                              }}
+
+                      className={`flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors ${
+                        tournament.status === "Create" ? "hidden" : ""
+                      }`}
+                    >
+                      View Score
+                    </button>
                   </div>
                 </div>
               </div>
@@ -137,6 +160,11 @@ const TournamentList = () => {
           </h2>
         </div>
       )}
+  <VerifyCodeModal
+        open={openVerification}
+        onClose={() => setVerificationOpen(false)}
+      />
+
     </div>
   );
 };

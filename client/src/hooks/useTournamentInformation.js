@@ -5,6 +5,7 @@ import { getAdminTournamentInformationAPI } from "../services/admin/adminTeamSer
 import { useDispatch } from "react-redux";
 import { logOut } from "../redux/slices/userSlice";
 import { useNavigate } from "react-router-dom";
+import { getTournamentInformationAPI } from "../services/teamServices";
 
 export const useTournamentInformation = (tournamentId, userType) => {
   console.log(userType);
@@ -19,7 +20,7 @@ export const useTournamentInformation = (tournamentId, userType) => {
     queryFn: () =>
       userType === "Admin"
         ? getAdminTournamentInformationAPI(tournamentId)
-        : getAdminTournamentInformationAPI(tournamentId),
+        : getTournamentInformationAPI(tournamentId),
     onError: (error) => {
       console.log("MUTATION ERROR:", error);
 

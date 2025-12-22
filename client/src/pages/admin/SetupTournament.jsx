@@ -22,6 +22,10 @@ import {
   Grid3x3,
   Eye,
   Upload,
+  DollarSign,
+  Key,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import ButtonWithIcon from "../../components/ButtonWithIcon";
 import Logout from "../../components/Logout";
@@ -62,9 +66,6 @@ const SetupTournament = () => {
       ? "Are you sure you want to delete this team? This action cannot be undone."
       : "This will permanently delete the tournament and all related data. Do you want to continue?";
 
-  const [deleteTournamentId, setDeleteTournamentId] = useState(null);
-  const [deleteTeamId, setDeleteTeamId] = useState(null);
-
   const [selectedPlayers, setSelectedPlayers] = useState([]);
   const [assigning, setAssigning] = useState(false);
   const [teamFile, setTeamFile] = useState(null);
@@ -72,7 +73,6 @@ const SetupTournament = () => {
   const [headers, setHeaders] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
 
-  const queryClient = useQueryClient();
   const [isExpanded, setIsExpanded] = useState(false);
   const toggleExpand = () => setIsExpanded((prev) => !prev);
 
@@ -237,12 +237,6 @@ const SetupTournament = () => {
 
   const { handleTeamDelete } = useDeleteTeam();
 
-  // const handleDeleteTournament = () => {
-  //   if (!deleteTournamentId) return;
-  //   handleTournamentDelete(deleteTournamentId);
-  //   setShowConfirm(false);
-  // };
-
   const handleConfirmDelete = () => {
     if (!confirmConfig.id || !confirmConfig.type) return;
 
@@ -305,10 +299,12 @@ const SetupTournament = () => {
 
     // Convert to payload or do other processing
     const payload = convertToTeamsPayload(papaData, tournamentDetail._id);
+
     console.log("convertToTeamsPayloadsetData:", payload);
 
     try {
       handleUseImportTeam(payload);
+      setTeamFile(null);
     } catch (err) {
       console.error("Error:", err);
     }
@@ -331,6 +327,7 @@ const SetupTournament = () => {
     try {
       handleUseImportTeam(payload);
     } catch (err) {
+      setData([]);
       console.error("Error:", err);
     }
   };
@@ -373,7 +370,11 @@ const SetupTournament = () => {
             } flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors`}
           >
             <UserPlus className="w-5 h-5" />
-            <span className="hidden md:flex">Add Players</span>
+            <span className="hidden md:flex">
+              {tournamentDetail.matchType === "Doubles"
+                ? "Register Team"
+                : "Register Player"}
+            </span>
           </button>
           <button
             // onClick={() => onEdit(tournament)}
@@ -450,6 +451,7 @@ const SetupTournament = () => {
                     <div>{tournamentDetail.time || "Not set"}</div>
                   </div>
                 </div>
+
                 <div className="flex items-start gap-3">
                   <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
                   <div>
@@ -464,6 +466,23 @@ const SetupTournament = () => {
                       Max Participants
                     </div>
                     <div>{tournamentDetail.maximumParticipants}</div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <DollarSign className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div>
+                    <div className="text-sm text-gray-600">
+                      Registration Fee
+                    </div>
+                    <div>{tournamentDetail.registrationFee || "Not set"}</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Key className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div>
+                    <div className="text-sm text-gray-600">Secret Key</div>
+                    <div>{tournamentDetail.uniqueKey}</div>
                   </div>
                 </div>
               </div>
@@ -553,7 +572,7 @@ const SetupTournament = () => {
                         key={team._id}
                         className="flex items-center gap-3 p-2 bg-blue-50 rounded-lg border border-gray-200"
                       >
-                        <div className="flex items-center w-full">
+                        <div className="flex items-center w-full justify-between">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                               <span className="text-blue-600">
@@ -564,24 +583,49 @@ const SetupTournament = () => {
                             {team.teamName}
                           </div>
 
-                          <button
-                            className={`${tournamentDetail.status != "Create" ? "hidden" : ""} ml-auto p-2 bg-red-500 text-white rounded hover:bg-red-600 flex items-center justify-center`}
-                            // onClick={(e) => {
-                            //   e.stopPropagation(); // Prevent li click
-                            //   setDeleteTeamId(team._id);
-                            //   setShowConfirm(true);
-                            // }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setConfirmConfig({
-                                open: true,
-                                type: "team",
-                                id: team._id,
-                              });
-                            }}
-                          >
-                            <FaTrash />
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              className={`${
+                                tournamentDetail.status != "Create"
+                                  ? "hidden"
+                                  : ""
+                              } ml-auto p-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center`}
+                              // onClick={(e) => {
+                              //   e.stopPropagation();
+                              //   setConfirmConfig({
+                              //     open: true,
+                              //     type: "team",
+                              //     id: team._id,
+                              //   });
+                              // }}
+
+                              onClick={() =>
+                                navigate("/edit-team", {
+                                  state: { team },
+                                })
+                              }
+                            >
+                              <Pencil />
+                            </button>
+
+                            <button
+                              className={`${
+                                tournamentDetail.status != "Create"
+                                  ? "hidden"
+                                  : ""
+                              } ml-auto p-2 bg-red-500 text-white rounded hover:bg-red-600 flex items-center justify-center`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConfirmConfig({
+                                  open: true,
+                                  type: "team",
+                                  id: team._id,
+                                });
+                              }}
+                            >
+                              <Trash2 />
+                            </button>
+                          </div>
                         </div>
                       </li>
                     ))}
@@ -614,47 +658,42 @@ const SetupTournament = () => {
                     </p>
                   </div>
 
-                  <ButtonWithIcon
+                  {/* <ButtonWithIcon
                     title="Import"
                     icon="sync"
                     buttonBGColor="bg-green-600"
                     textColor="text-white"
                     onClick={handleSyncTeams}
-                  />
+                  /> */}
                 </div>
-                {/* <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setIsDragging(true);
-        }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setIsDragging(false);
-          handleLogoUpload(e.dataTransfer.files[0]);
-        }}
-        className={`flex flex-col items-center justify-center px-6 py-6 border-2 border-dashed rounded-lg cursor-pointer transition
-          ${
-            isDragging
-              ? "border-blue-500 bg-blue-50"
-              : "border-gray-300 bg-gray-100"
-          }`}
-      ></div> */}
-                 
+
                 <div className="flex items-center gap-4">
                   <label className="flex-1 cursor-pointer">
-                    <div className="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors text-center">
-                      {"Upload team"}
+                    <div
+                      className={`px-4 py-2 ${
+                        tournamentDetail.status === "Create"
+                          ? "bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+                          : "bg-orange-200 text-white rounded-lg hover:bg-orange-200"
+                      } border-gray-400 rounded-lg transition-colors text-center`}
+                    >
+                      {tournamentDetail.matchType === "Doubles"
+                        ? "Upload Team"
+                        : "Upload Player"}
                     </div>
                     <input
                       type="file"
                       accept=".csv,.xls,.xlsx"
                       onChange={handleLogoUpload}
                       className="hidden"
+                      disabled={
+                        tournamentDetail.status === "Create" ? false : true
+                      }
                     />
                   </label>
                 </div>
               </div>
+
+              <div className="border-t" />
 
               <button
                 onClick={() => navigate("/teams")}
@@ -666,10 +705,18 @@ const SetupTournament = () => {
                 disabled={tournamentDetail.status === "Create" ? false : true}
               >
                 <UserPlus className="w-4 h-4" />
-                Add Players
+                <span className="hidden md:flex">
+                  {tournamentDetail.matchType === "Doubles"
+                    ? "Register Team"
+                    : "Register Player"}
+                </span>
               </button>
               <button
-                onClick={() => navigate("/teams")}
+                onClick={() =>
+                  navigate("/edit-tournament", {
+                    state: { tournamentDetail },
+                  })
+                }
                 className={`w-full px-4 py-2 transition-colors flex items-center justify-center gap-2 ${
                   tournamentDetail.status === "Create"
                     ? "bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -694,13 +741,10 @@ const SetupTournament = () => {
                   : "View Matches"}
               </button>
 
+              <div className="border-t" />
+
               <button
                 className="w-full px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                // onClick={() => {
-                //   setDeleteTournamentId(tournamentDetail._id);
-                //   setShowConfirm(true);
-                // }}
-
                 onClick={() =>
                   setConfirmConfig({
                     open: true,
@@ -714,19 +758,6 @@ const SetupTournament = () => {
             </div>
           </div>
         </div>
-        {/*  */}
-        {/* CONFIRM DELETE MODAL */}
-        {/* <ConfirmModal
-          isOpen={showConfirm}
-          title="Delete Tournament"
-          message="This action cannot be undone. Do you want to proceed?"
-          confirmText="YES"
-          cancelText="NO"
-          danger
-          loading={isScoreLoading}
-          onConfirm={handleDeleteTournament} // call delete function here
-          onCancel={() => setShowConfirm(false)} // close modal
-        /> */}
 
         <ConfirmModal
           isOpen={confirmConfig.open}

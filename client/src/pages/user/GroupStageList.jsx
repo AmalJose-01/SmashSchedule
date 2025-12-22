@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { div } from "framer-motion/client";
+import StatusBadge from "../../components/StatusBadge";
 
 const GroupStageList = () => {
   const location = useLocation();
@@ -28,10 +29,20 @@ const GroupStageList = () => {
   const { tournamentId } = useParams();
   const navigate = useNavigate();
 
-  const [expandedMatchId, setExpandedMatchId] = useState(null);
+  const [expandedGroupId, setExpandedGroupId] = useState(null);
 
-  const [isExpanded, setIsExpanded] = useState(false);
-  const toggleExpand = () => setIsExpanded((prev) => !prev);
+  // const [isExpanded, setIsExpanded] = useState(false);
+  // const toggleExpand = () => setIsExpanded((prev) => !prev);
+
+
+const toggleExpand = (groupId) => {
+  if (expandedGroupId === groupId) {
+    setExpandedGroupId(null); // collapse if clicked again
+  } else {
+    setExpandedGroupId(groupId); // expand this group only
+  }
+};
+
 
   const { handleTournamentDetail, isLoading: isTournamentDetailLoading } =
     useTournamentDetail(tournamentId, "User");
@@ -163,6 +174,7 @@ const GroupStageList = () => {
                 const groupMatches = matches.filter((m) => m.group === gp._id);
 
                 return (
+                   <div key={gp._id} className="flex flex-col">
                   <div
                     key={gp._id}
                     className="bg-white rounded-3xl shadow-lg   overflow-x-auto"
@@ -324,24 +336,27 @@ const GroupStageList = () => {
                     {/* Schedule And court */}
                     <div
                       className="flex justify-between items-center cursor-pointer m-4"
-                      onClick={toggleExpand}
+                      // onClick={toggleExpand}
+                      onClick={() => toggleExpand(gp._id)}
                     >
                       <div className="flex gap-2">
                         <BarChart2 className="w-5 h-5" />
 
                         <h2 className="text-md font-semibold mb-4">
-                          {isExpanded ? "Hide Score" : "View Score"}
+                          {/* {isExpanded ? "Hide Score" : "View Score"} */}
+                            {expandedGroupId === gp._id ? "Hide Score" : "View Score"}
+
                         </h2>
                       </div>
 
                       {groupMatches.length > 0 && (
                         <span className="text-gray-600">
-                          {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
+                          {expandedGroupId === gp._id ? <FaChevronUp /> : <FaChevronDown />}
                         </span>
                       )}
                     </div>
 
-                    {isExpanded && (
+                    {expandedGroupId === gp._id  && (
                       <div>
                         {/* Matches */}
                         <h3 className="mb-4 flex items-center gap-2 text-gray-700 m-4">
@@ -363,7 +378,7 @@ const GroupStageList = () => {
                           {groupMatches.map((m) => (
                             <div
                               key={m._id}
-                              className="card bg-gradient-to-br from-blue-50 to-purple-50 p-4 rounded-xl border-2 border-blue-100 hover:shadow-lg transition-all"
+                              className="card  bg-blue-50 p-4 rounded-xl border-2 border-blue-100 hover:shadow-lg transition-all"
                             >
                               <div className="w-full flex items-center justify-between mb-3">
                                 <div className="flex-1">
@@ -375,7 +390,9 @@ const GroupStageList = () => {
                                     {m.court === "" ? "Court" : m.court}
                                   </div>
                                 </div>
-                                {getStatusBadge(m.status)}
+                                {/* {getStatusBadge(m.status)} */}
+                                                        <StatusBadge status={m.status} />
+
                               </div>
 
                               <div className="mt-2 space-y-1 items-center justify-center">
@@ -430,6 +447,7 @@ const GroupStageList = () => {
                       </div>
                     )}
                   </div>
+                   </div>
                 );
               })}
           </div>

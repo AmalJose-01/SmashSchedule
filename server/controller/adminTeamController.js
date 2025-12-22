@@ -13,26 +13,65 @@ const {
   determineWinner,
 } = require("../helpers/matchHelpers.js");
 
+const generateUnique4DigitKey = () => {
+  return ((Date.now() % 9000) + 1000).toString();
+};
+const normalizePhone = (value) =>
+  value?.replace(/[^\d]/g, "");
+
 // Create a new team
 const adminTeamController = {
-createMultipleTeam: async (req, res) => {
-  console.log("createMultipleTeam");
+  createMultipleTeam: async (req, res) => {
+    console.log("createMultipleTeam", req.body);
 
-  try {
-    const { teams } = req.body;
+    try {
+ const { teams, tournamentId } = req.body;
+
+    if (!tournamentId) {
+      return res.status(400).json({ message: "tournamentId is required" });
+    }
 
     if (!Array.isArray(teams) || teams.length === 0) {
-      return res.status(400).json({ message: "Teams array is required" });
+      return res.status(400).json({ message: "Teams list is required" });
     }
 
     const skippedTeams = [];
 
-    // Collect all emails & contacts from request
-    const emails = teams.flatMap((t) => [t.playerOneEmail, t.playerTwoEmail]);
-    const contacts = teams.flatMap((t) => [t.playerOneContact, t.playerTwoContact]);
+    /*  Normalize + validate */
+    const cleanedTeams = teams.map((team) => ({
+      ...team,
+      tournamentId,
+      playerOneContact: normalizePhone(team.playerOneContact),
+      playerTwoContact: normalizePhone(team.playerTwoContact),
+    }));
 
-    // Fetch all existing emails & contacts from DB in one query
+    /*  Same email/contact inside same team */
+    const validTeams = cleanedTeams.filter((team) => {
+      if (team.playerOneEmail === team.playerTwoEmail) {
+        skippedTeams.push({ ...team, reason: "Same email for both players" });
+        return false;
+      }
+
+      if (team.playerOneContact === team.playerTwoContact) {
+        skippedTeams.push({ ...team, reason: "Same contact for both players" });
+        return false;
+      }
+
+      return true;
+    });
+
+    /*  Check existing teams in same tournament */
+    const emails = validTeams.flatMap((t) => [
+      t.playerOneEmail,
+      t.playerTwoEmail,
+    ]);
+    const contacts = validTeams.flatMap((t) => [
+      t.playerOneContact,
+      t.playerTwoContact,
+    ]);
+
     const existingTeams = await Team.find({
+      tournamentId,
       $or: [
         { playerOneEmail: { $in: emails } },
         { playerTwoEmail: { $in: emails } },
@@ -48,44 +87,49 @@ createMultipleTeam: async (req, res) => {
       existingTeams.flatMap((t) => [t.playerOneContact, t.playerTwoContact])
     );
 
-    // Filter teams that can be inserted
-    const teamsToInsert = teams.filter((team) => {
+    const teamsToInsert = validTeams.filter((team) => {
       const duplicate =
         existingEmails.has(team.playerOneEmail) ||
         existingEmails.has(team.playerTwoEmail) ||
         existingContacts.has(team.playerOneContact) ||
         existingContacts.has(team.playerTwoContact);
 
-      if (duplicate) skippedTeams.push(team);
+      if (duplicate) {
+        skippedTeams.push({ ...team, reason: "Already exists in tournament" });
+      }
+
       return !duplicate;
     });
 
-    // Insert remaining teams
+    /*  Insert */
     const savedTeams =
       teamsToInsert.length > 0
         ? await Team.insertMany(teamsToInsert, { ordered: false })
         : [];
 
-        console.log("savedTeams",savedTeams);
-        
 
-    res.status(201).json({
-      message: "Teams processed successfully",
+         if (!savedTeams || savedTeams.length ==0) {
+                return res.status(500).json({ message: "Failed to import team" });
+
+      }
+
+    return res.status(201).json({
+      message: "Teams import completed",
       insertedCount: savedTeams.length,
       skippedCount: skippedTeams.length,
       insertedTeams: savedTeams,
       skippedTeams,
     });
-  } catch (error) {
-    console.error("Create multiple team error", error);
-    res.status(500).json({
-      message: "Server Error",
-      error: error.message,
-    });
-  }
-},
+    } catch (error) {
+      console.error("Create multiple team error", error);
+      res.status(500).json({
+        message: "Server Error",
+        error: error.message,
+      });
+    }
+  },
 
- deleteTeam: async (req, res) => {
+  deleteTeam: async (req, res) => {
     console.log("Admin deleteTeam Delete");
 
     try {
@@ -104,11 +148,6 @@ createMultipleTeam: async (req, res) => {
         return res.status(404).json({ message: "Tournament not found" });
       }
 
-      
-     
-     
-
-
       // 9️⃣ Delete tournament
       await Team.findByIdAndDelete(teamId);
 
@@ -124,12 +163,10 @@ createMultipleTeam: async (req, res) => {
     }
   },
 
-
-
-
-
   getTeams: async (req, res) => {
     try {
+      console.log("Import Team");
+
       const { tournamentId } = req.params;
 
       const teams = await Team.find({ tournamentId: tournamentId });
@@ -168,7 +205,8 @@ createMultipleTeam: async (req, res) => {
         !playType ||
         !teamsPerGroup ||
         !numberOfPlayersQualifiedToKnockout ||
-        !numberOfCourts
+        !numberOfCourts ||
+        !registrationFee
       ) {
         return res.status(400).json({ message: "All fields are required" });
       }
@@ -180,6 +218,7 @@ createMultipleTeam: async (req, res) => {
           .json({ message: "Tournament with this name already exists" });
       }
 
+      let uniqueKey = generateUnique4DigitKey();
       // 1. Create Tournament
       const createTournament = await Tournament.create({
         tournamentName,
@@ -196,6 +235,7 @@ createMultipleTeam: async (req, res) => {
         description,
         status: "Create",
         registrationFee,
+        uniqueKey,
       });
 
       if (!createTournament) {
@@ -415,6 +455,15 @@ createMultipleTeam: async (req, res) => {
       const tournamentMatches = await GroupMatch.find({
         tournamentId: tournamentId,
       });
+      const knockoutMatch = await KnockoutMatch.find({
+        tournamentId: tournamentId,
+      }).select("status");
+
+      let knockoutStatus = "";
+
+      if (knockoutMatch.length > 0) {
+        knockoutStatus = "scheduled";
+      }
 
       console.log("tournamentGroup:", tournamentGroup);
       console.log("tournamentMatches:", tournamentMatches);
@@ -431,6 +480,7 @@ createMultipleTeam: async (req, res) => {
         message: "Tournament details retrieved successfully",
         groups: tournamentGroup,
         matches: tournamentMatches,
+        knockoutStatus: knockoutStatus,
       });
     } catch (error) {
       console.log("Get tournament details error", error);
@@ -558,6 +608,8 @@ createMultipleTeam: async (req, res) => {
 
       console.log("Call Admin Save", matches);
 
+      const updatedGroups = [];
+
       for (const match of matches) {
         const { matchId, scores } = match;
         if (!matchId || !scores || scores.length === 0) continue;
@@ -578,8 +630,6 @@ createMultipleTeam: async (req, res) => {
        2️⃣ Collect UNIQUE group IDs
     -------------------------------------------------- */
         const groupIds = [...new Set(matches.map((m) => m.group))];
-
-        const updatedGroups = [];
 
         for (const groupId of groupIds) {
           const groupDoc = await Group.findById(groupId);

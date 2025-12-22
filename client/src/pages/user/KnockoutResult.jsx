@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useGetKnockoutList } from "../../hooks/useGetKnockoutList";
-import { MapPin, Table, Trophy } from "lucide-react";
+import { Calendar, MapPin, Table, Trophy } from "lucide-react";
 import winnerGif from "../../assets/fireworks.gif";
 import StatusBadge from "../../components/StatusBadge";
 
@@ -69,24 +69,33 @@ const KnockoutResult = () => {
       {matches.length > 0 ? (
         <div className="grid grid-cols-1 gap-6 bg-white p-6 rounded-3xl shadow-lg">
           {Object.keys(groupedMatches).map((round) => (
-            <div key={round} className="space-y-4">
+            <div key={round} className="space  rounded-3xl shadow-lg ">
               {/* ROUND HEADER */}
-              <h2 className="text-3xl font-extrabold text-blue-800 border-b pb-2">
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 rounded-t-3xl">
+                 <h2 className="text-2xl text-white flex items-center gap-2">
+                 <Trophy className="w-6 h-6" />
                 {getRoundName(Number(round))}
               </h2>
+              </div>
+             
+ <h3 className="mb-4 flex items-center gap-2 text-gray-700 m-4">
+                      <Calendar className="w-5 h-5" />
+                      Matches
+                    </h3>
+
 
               {getRoundName(Number(round)) === "Final" ? (
-                <div className="grid md:grid-cols-1 gap-4">
+                <div className="grid md:grid-cols-1 gap-4 p-6">
                   {groupedMatches[round].map((match) => (
                     <div
                       key={match._id}
                       className="card p-4 border border-gray-200 rounded-xl bg-blue-50 hover:bg-blue-100 transition flex flex-col items-center justify-center"
-                      style={{
-                        backgroundImage:
-                          match.status === "finished"
-                            ? `url(${winnerGif})`
-                            : "none",
-                      }}
+                      // style={{
+                      //   backgroundImage:
+                      //     match.status === "finished"
+                      //       ? `url(${winnerGif})`
+                      //       : "none",
+                      // }}
                     >
                       {match.status === "finished" && match.winner && (
                         <div className="flex items-center gap-2 justify-center mb-10 shadow-xl bg-gradient-to-tr from-sky-300 to-purple-500 p-4 rounded-2xl border border-purple-800 ">
@@ -105,7 +114,7 @@ const KnockoutResult = () => {
                           <div
                             className={`font-bold ${
                               match.status === "finished"
-                                ? "text-white"
+                                ? "text-gray-800"
                                 : "text-gray-800"
                             } text-center text-lg`}
                           >
@@ -137,7 +146,7 @@ const KnockoutResult = () => {
                                 value={set.home === 0 ? "" : set.home}
                                 disabled={true}
                               />
-                              <span>-</span>
+                              <span>:</span>
                               <input
                                 type="number"
                                 min={0}
@@ -154,7 +163,7 @@ const KnockoutResult = () => {
                   ))}
                 </div>
               ) : (
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid md:grid-cols-2 gap-4 p-4">
                   {groupedMatches[round].map((match) => (
                     <div
                       key={match._id}
@@ -170,9 +179,7 @@ const KnockoutResult = () => {
                         <StatusBadge status={match.status} />
                       </div>
 
-                      {/* <h3 className="text-xl font-bold text-center mb-4">
-                        {match.teamsHome.teamName} vs {match.teamsAway.teamName}
-                      </h3> */}
+               
 
                       {/* SCORES INPUT */}
                       <div className="flex flex-col gap-3 items-center">
@@ -195,7 +202,7 @@ const KnockoutResult = () => {
                                 value={set.home === 0 ? "" : set.home}
                                 disabled={true}
                               />
-                              <span>-</span>
+                              <span>:</span>
                               <input
                                 type="number"
                                 min={0}

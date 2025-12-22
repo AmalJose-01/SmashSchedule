@@ -36,6 +36,7 @@ const MatchHome = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingMatchId, setPendingMatchId] = useState(null);
 
+
   const [selectedGroup, setSelectedGroup] = useState("all"); // "all" = show all groups
   const { tournamentId } = useParams();
   const navigate = useNavigate();
@@ -302,13 +303,14 @@ const MatchHome = () => {
               <ChevronDown className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
-          <ButtonWithIcon
+          <div className={`${tournamentDetail.knockoutStatus === "scheduled" ? "hidden" : ""}`}> <ButtonWithIcon
             title="Update All Score"
             icon="save"
             buttonBGColor="bg-blue-600"
             textColor="text-white"
             onClick={updateAllScore}
-          />
+          /></div>
+         
         </div>
 
         {/* Group Stage */}
@@ -477,7 +479,7 @@ const MatchHome = () => {
                           </div>
 
                           {/* Update Score Button */}
-                          <div className="w-full items-center justify-center mt-2 ">
+                          <div className={`w-full items-center justify-center mt-2 ${tournamentDetail.knockoutStatus === "scheduled" ? "hidden" : ""}`}>
                             <button
                               className="flex w-full items-center gap-1  justify-center px-4 py-2 bg-green-600 text-white rounded hover:bg-blue-700 text-sm"
                               onClick={() => updateScore(m._id)}
@@ -629,6 +631,11 @@ const MatchHome = () => {
         onConfirm={handleConfirmYes} // call delete function here
         onCancel={handleConfirmNo} // close modal
       />
+
+    
+
+
+
     </div>
   );
 };

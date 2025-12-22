@@ -9,4 +9,6 @@ router.post("/teams", teamController.createTeam);
 
 router.get("/get-tournaments", teamController.getTournaments);
 router.get("/get-tournamentDetails/:tournamentId", teamController.getTournamentDetails);
+  router.get("/get-tournament-information/:tournamentId", teamController.getTournamentInformation);
+
 module.exports = router;

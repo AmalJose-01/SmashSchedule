@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {  useQueryClient } from "@tanstack/react-query";
 import { useTournament } from "../../hooks/useTournament";
 import { setTournamentData } from "../../redux/slices/tournamentSlice";
 import { useDispatch } from "react-redux";
-import { FaTrash, FaChevronDown, FaChevronUp } from "react-icons/fa"; // import the trash icon
-import { ListChecks, Swords } from "lucide-react";
+import { FaTrash } from "react-icons/fa"; // import the trash icon
+import { ListChecks } from "lucide-react";
 import ButtonWithIcon from "../../components/ButtonWithIcon";
 import { useDeleteTournament } from "../../hooks/useDeleteTournament";
 import Logout from "../../components/Logout";

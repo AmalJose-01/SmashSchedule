@@ -22,6 +22,12 @@ const TeamSetup = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const { state } = location;
+  const team = state?.team;
+
+  console.log("team",team);
+  
+
   const tournament = useSelector((state) => state.tournament.tournamentData);
 
   const { mutateAsync, isLoading } = useMutation({
@@ -131,6 +137,7 @@ const TeamSetup = () => {
                       type="text"
                       placeholder="Team Name"
                       {...register("teamName")}
+                      value={team.teamName}
                       className="w-full p-2 border rounded"
                     />
                     {errors.teamName && (
@@ -153,6 +160,7 @@ const TeamSetup = () => {
                     placeholder="Full Name"
                     {...register("playerOneName")}
                     className="w-full p-2 border rounded"
+                    value={team.playerOneName}
                   />
                   {errors.playerOneName && (
                     <p className="text-red-500 text-sm">
@@ -164,6 +172,7 @@ const TeamSetup = () => {
                     placeholder="Email"
                     {...register("playerOneEmail")}
                     className="w-full p-2 border rounded "
+                    value={team.playerOneEmail}
                   />
                   {errors.playerOneEmail && (
                     <p className="text-red-500 text-sm">
@@ -176,6 +185,7 @@ const TeamSetup = () => {
                     placeholder="Phone"
                     {...register("playerOneContact")}
                     className="w-full p-2 border rounded"
+                    value={team.playerOneContact}
                   />
                   {errors.playerOneContact && (
                     <p className="text-red-500 text-sm">
@@ -187,6 +197,7 @@ const TeamSetup = () => {
                     type="date"
                     {...register("playerOneDOB")}
                     className="w-full p-2 border rounded"
+                    value={team.playerOneDOB}
                   />
                   {errors.playerOneDOB && (
                     <p className="text-red-500 text-sm">
@@ -205,6 +216,7 @@ const TeamSetup = () => {
                     placeholder="Player Two Name"
                     {...register("playerTwoName")}
                     className="w-full p-2 border rounded mt-1"
+                    value={team.playerTwoName}
                   />
                   {errors.playerTwoName && (
                     <p className="text-red-500 text-sm">
@@ -217,6 +229,7 @@ const TeamSetup = () => {
                     placeholder="Email"
                     {...register("playerTwoEmail")}
                     className="w-full p-2 border rounded mt-2"
+                    value={team.playerTwoEmail}
                   />
                   {errors.playerTwoEmail && (
                     <p className="text-red-500 text-sm">
@@ -229,6 +242,7 @@ const TeamSetup = () => {
                     placeholder="Phone"
                     {...register("playerTwoContact")}
                     className="w-full p-2 border rounded mt-2"
+                    value={team.playerTwoContact}
                   />
                   {errors.playerTwoContact && (
                     <p className="text-red-500 text-sm">
@@ -240,6 +254,7 @@ const TeamSetup = () => {
                     type="date"
                     {...register("playerTwoDOB")}
                     className="w-full p-2 border rounded mt-2"
+                    value={team.playerTwoDOB}
                   />
                   {errors.playerTwoDOB && (
                     <p className="text-red-500 text-sm">

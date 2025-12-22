@@ -1,5 +1,6 @@
 import axios from "axios";
 import { BASE_URL } from "../../utils/config";
+import { headerData } from "../../utils/storageHandler";
 
 
 export const  registerAPI = async (input) => {
@@ -36,3 +37,20 @@ export const resetPasswordAPI = async (input) => {
   const response = await axios.post(`${BASE_URL}/user/reset-password`,input)
   return response.data
 }
+
+export const getUserDetailAPI = async () => {
+  console.log("getUserDetailAPI called with ID:"); // <--- should log when triggered
+
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/admin/getUserDetail`,headerData()
+    );
+    console.log("getUserDetailAPI response:====", response.data); // <--- log the full response
+    return response.data;
+  } catch (error) {
+     throw error
+  }
+};
+
+
+

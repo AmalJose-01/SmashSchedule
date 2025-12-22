@@ -43,5 +43,8 @@ const validationSchemas = Yup.object().shape({
     .typeError("Maximum participants must be a number")
     .required("Maximum participants is required")
     .moreThan(0, "Maximum participants must be greater than 2"),
+  registrationFee: Yup.string().required("Registration Fee is required"),
+
+    
 });
 export default validationSchemas;
