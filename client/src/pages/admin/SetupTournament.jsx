@@ -377,13 +377,17 @@ const SetupTournament = () => {
             </span>
           </button>
           <button
-            // onClick={() => onEdit(tournament)}
+            onClick={() =>
+                  navigate("/edit-tournament", {
+                    state: { tournamentDetail },
+                  })
+                }
             className={`${
               tournamentDetail.status != "Create" ? "hidden" : ""
             } flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors`}
           >
             <Edit className="w-5 h-5" />
-            <span className="hidden md:flex">Edit Tournament</span>
+            <span className="hidden md:flex">Edit Details</span>
           </button>
           <Logout />
         </div>

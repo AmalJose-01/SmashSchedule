@@ -13,10 +13,12 @@ export default function Success() {
   handleGetUserDetail();
 
   useEffect(() => {
+    console.log("userDetail", userDetail);
+    dispatch(loginUser(userDetail));
 
-console.log("userDetail",userDetail);
-
-
+    if (userDetail.accountType === "admin") {
+      navigate("/tournament-list", { replace: true });
+    }
   }, [userDetail]);
 
   return (

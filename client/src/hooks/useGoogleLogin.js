@@ -38,28 +38,11 @@ export const useGoogleLogin = () => {
 
             console.log("user..........", user);
 
-            // if (user.accountType === "trade") {
-            //   console.log("is trade");
-
-            //   if (user.isVerified === true) {
-            //     navigate("/tradedashboard");
-            //   } else {
-            //     navigate("/trade/add-profile");
-            //   }
-            // } else if (user.accountType === "user") {
-            //   navigate("/userdashboard");
-            // } else
+           
 
             dispatch(loginUser(res));
 
-            // if (user.accountType === "admin" && !user.isVerified) {
-            //   // navigate("/tournament-list");
-            //     navigate("/checkout");
-            // }
-            // // else  if (user.accountType === "admin") {
-            // //   navigate("/tournament-list");
-            // //   //  navigate("/checkout");
-            // // }
+         
 
             return "Login successful!";
           },
