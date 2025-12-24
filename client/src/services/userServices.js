@@ -39,7 +39,7 @@ export const resetPasswordAPI = async (input) => {
 }
 
 export const getUserDetailAPI = async () => {
-  console.log("getUserDetailAPI called with ID:"); // <--- should log when triggered
+  console.log("getUserDetailAPI called with ID:",headerData()); // <--- should log when triggered
 
   try {
     const response = await axios.get(
