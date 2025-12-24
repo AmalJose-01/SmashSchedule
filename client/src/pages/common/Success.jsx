@@ -1,6 +1,7 @@
 import { CheckCircle, Trophy } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
+import { useGetUserDetail } from "../../hooks/useGetUserDetail";
 
 export default function Success() {
   const [params] = useSearchParams();
