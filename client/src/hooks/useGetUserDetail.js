@@ -29,12 +29,22 @@ export const useGetUserDetail = () => {
   });
 
   const handleGetUserDetail = () => {
+   
+   
+   
+   
+   
+   
     try {
-      toast.promise(mutation.mutateAsync(data), {
-        loading: "Matches Scheduling..",
-        success: "Matches Scheduling successfully",
-        error: "Error Scheduling Matches",
-      });
+      if (error?.status === 401) {
+      console.log("handleTournamentList", error.response.data.message);
+      dispatch(logOut());
+      toast.error(error.response.data.message);
+    }
+
+    if (!data?.user) return [];
+
+    return data;
     } catch (error) {
       console.log(error);
 
