@@ -33,33 +33,9 @@ export const useGoogleLogin = () => {
         {
           loading: "Logging in...",
           success: (res) => {
-            console.log("res..........", res);
             let user = res.user;
 
-            console.log("user..........", user);
-
-            // if (user.accountType === "trade") {
-            //   console.log("is trade");
-
-            //   if (user.isVerified === true) {
-            //     navigate("/tradedashboard");
-            //   } else {
-            //     navigate("/trade/add-profile");
-            //   }
-            // } else if (user.accountType === "user") {
-            //   navigate("/userdashboard");
-            // } else
-
             dispatch(loginUser(res));
-
-            // if (user.accountType === "admin" && !user.isVerified) {
-            //   // navigate("/tournament-list");
-            //     navigate("/checkout");
-            // }
-            // // else  if (user.accountType === "admin") {
-            // //   navigate("/tournament-list");
-            // //   //  navigate("/checkout");
-            // // }
 
             return "Login successful!";
           },
@@ -71,7 +47,6 @@ export const useGoogleLogin = () => {
         }
       );
     } catch (error) {
-      console.log("tradedashboard", error);
 
       alert(error.response?.data?.message || "Login failed");
     }

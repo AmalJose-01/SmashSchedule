@@ -11,9 +11,6 @@ import AdminTournamentList from "../pages/admin/AdminTournamentList";
 import EditTournament from "../pages/admin/EditTournament";
 import EditTeam from "../pages/admin/EditTeam";
 
-
-
-
 const AdminRoutes = () => {
   const user = useSelector((state) => state.user.user);
 
@@ -27,7 +24,7 @@ const AdminRoutes = () => {
           </ProtectedRoute>
         }
       />
-       <Route
+      <Route
         path="/setup-tournament"
         element={
           <ProtectedRoute role="admin">
@@ -54,7 +51,7 @@ const AdminRoutes = () => {
         }
       />
 
-       <Route
+      <Route
         path="/create-tournament"
         element={
           <ProtectedRoute role="admin">
@@ -63,8 +60,7 @@ const AdminRoutes = () => {
         }
       />
 
-
-         <Route
+      <Route
         path="/edit-tournament"
         element={
           <ProtectedRoute role="admin">
@@ -73,7 +69,7 @@ const AdminRoutes = () => {
         }
       />
 
-           <Route
+      <Route
         path="/edit-team"
         element={
           <ProtectedRoute role="admin">
@@ -82,35 +78,26 @@ const AdminRoutes = () => {
         }
       />
 
-
-
-
-
-{/* <Route
-  path="/login"
-  element={
-    !user ? (
-      <Login />
-    ) : user.accountType === "admin" && !user.isVerified ? (
-      <Navigate to="/checkout" replace />
-    ) : (
-      <Navigate to="/tournament-list" replace />
-    )
-  }
-/> */}
-
-
       <Route
         path="/login"
         element={
+          !user ? (
+            <Login />
+          ) : user.accountType === "admin" && !user.isVerified ? (
+            <Navigate to="/checkout" replace />
+          ) : (
+            <Navigate to="/tournament-list" replace />
+          )
+        }
+      />
 
-
-
-          
+      {/* <Route
+        path="/login"
+        element={
           !user ? <Login /> : <Navigate to="/tournament-list" replace />
           // !user ? <Login /> : <Navigate to="/checkout" replace />
         }
-      />
+      /> */}
 
       {/* Add more admin routes here */}
     </>

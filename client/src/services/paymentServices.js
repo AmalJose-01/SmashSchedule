@@ -26,7 +26,7 @@ export const createCheckoutAPI = async (paymentData) => {
     const response = await axios.post(
       `${BASE_URL}/payment/create-checkout`,paymentData,headerData()
     );
-    console.log("createCheckoutAPI response:====", response.error); // <--- log the full response
+    console.log("createCheckoutAPI response:====", response.data); // <--- log the full response
     return response.data;
   } catch (error) {
 

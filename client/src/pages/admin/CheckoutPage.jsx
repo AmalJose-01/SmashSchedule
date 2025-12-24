@@ -3,7 +3,10 @@ import { loadStripe } from "@stripe/stripe-js";
 import CheckoutForm from "./CheckoutForm";
 import { stripe_Publishable_key } from "../../../utils/config";
 
-const stripePromise = loadStripe(stripe_Publishable_key);
+// const stripePromise = loadStripe(stripe_Publishable_key);
+const stripePromise = loadStripe(stripe_Publishable_key, {
+  locale: "en", // 🔥 FIXES './en' ERROR
+});
 
 export default function CheckoutPage() {
   return (

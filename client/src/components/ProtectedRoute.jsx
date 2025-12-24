@@ -11,7 +11,7 @@ const ProtectedRoute = ({ children, role }) => {
     if (!user) {
       navigate("/", { replace: true });
     }
-  }, [user, navigate]);
+  }, [user]);
 
   // While redirecting, render nothing
   if (!user) return null;

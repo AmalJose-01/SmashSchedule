@@ -622,11 +622,10 @@ const MatchHome = () => {
       {/* CONFIRM DELETE MODAL */}
       <ConfirmModal
         isOpen={showConfirm}
-        title="Delete Tournament"
-        message="This action cannot be undone. Do you want to proceed?"
-        confirmText="YES"
-        cancelText="NO"
-        danger
+        title="Save Score"
+        message="It looks like a team has zero points. Please check the scores!"
+        confirmText="Save"
+        cancelText="Cancel"
         loading={isScoreLoading}
         onConfirm={handleConfirmYes} // call delete function here
         onCancel={handleConfirmNo} // close modal

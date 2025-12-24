@@ -1,23 +1,28 @@
 import { CheckCircle, Trophy } from "lucide-react";
-import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useGetUserDetail } from "../../hooks/useGetUserDetail";
+import { useDispatch } from "react-redux";
 
 export default function Success() {
   const [params] = useSearchParams();
   const sessionId = params.get("session_id");
   const navigate = useNavigate();
 
-  const { handleGetUserDetail, userDetail } = useGetUserDetail();
+//   const { handleGetUserDetail, userDetail } = useGetUserDetail();
 
-  handleGetUserDetail();
+//  useEffect(() => {
+//   if (!userDetail) {
+//     handleGetUserDetail();
+//   }
+// }, []); // run once on mount
 
-  useEffect(() => {
+//   useEffect(() => {
+//     console.log("userDetail", userDetail);
+//     // dispatch(loginUser(userDetail));
 
-console.log("userDetail",userDetail);
-
-
-  }, [userDetail]);
+//     if (userDetail.accountType === "admin") {
+//       navigate("/tournament-list", { replace: true });
+//     }
+//   }, [userDetail]);
 
   return (
     <div className="bg-white shadow-md">
