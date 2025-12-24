@@ -7,22 +7,22 @@ export default function Success() {
   const sessionId = params.get("session_id");
   const navigate = useNavigate();
 
-//   const { handleGetUserDetail, userDetail } = useGetUserDetail();
+  const { handleGetUserDetail, userDetail } = useGetUserDetail();
 
-//  useEffect(() => {
-//   if (!userDetail) {
-//     handleGetUserDetail();
-//   }
-// }, []); // run once on mount
+ useEffect(() => {
+  if (!userDetail) {
+    handleGetUserDetail();
+  }
+}, []); // run once on mount
 
-//   useEffect(() => {
-//     console.log("userDetail", userDetail);
-//     // dispatch(loginUser(userDetail));
+  useEffect(() => {
+    console.log("userDetail", userDetail);
+    // dispatch(loginUser(userDetail));
 
-//     if (userDetail.accountType === "admin") {
-//       navigate("/tournament-list", { replace: true });
-//     }
-//   }, [userDetail]);
+    if (userDetail.accountType === "admin") {
+      navigate("/tournament-list", { replace: true });
+    }
+  }, [userDetail]);
 
   return (
     <div className="bg-white shadow-md">
