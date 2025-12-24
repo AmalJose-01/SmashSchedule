@@ -4,6 +4,7 @@ import { getUserDetailAPI } from "../services/userServices";
 import { useQuery } from "@tanstack/react-query";
 import { logOut } from "../redux/slices/userSlice";
 import { toast } from "sonner";
+import { useEffect } from "react";
 
 export const useGetUserDetail = () => {
   const dispatch = useDispatch();
@@ -28,28 +29,25 @@ export const useGetUserDetail = () => {
     },
   });
 
+ 
+
   const handleGetUserDetail = () => {
-   
-   
-   
-   
-   
-   
     try {
       if (error?.status === 401) {
-      console.log("handleTournamentList", error.response.data.message);
-      dispatch(logOut());
-      toast.error(error.response.data.message);
-    }
+        console.log("handleGetUserDetail", error.response.data.message);
+        dispatch(logOut());
+        toast.error(error.response.data.message);
+      }
+      console.log("handleGetUserDetail", data);
 
-    if (!data?.user) return [];
+      if (!data) return [];
 
-    return data;
+      return data;
     } catch (error) {
       console.log(error);
 
       if (error?.status === 401) {
-        console.log("handleUseMatchSave", error.response.data.message);
+        console.log("handleGetUserDetail", error.response.data.message);
         dispatch(logOut());
         toast.error(error.response.data.message);
       } else {
@@ -60,7 +58,6 @@ export const useGetUserDetail = () => {
 
   return {
     handleGetUserDetail,
-    userDetail: data,
     isLoading,
     error,
   };

@@ -9,21 +9,16 @@ export default function Success() {
   const sessionId = params.get("session_id");
   const navigate = useNavigate();
 
-  const { handleGetUserDetail, userDetail } = useGetUserDetail();
+  const { handleGetUserDetail } = useGetUserDetail();
 
- useEffect(() => {
-  if (!userDetail) {
-    handleGetUserDetail();
-  }
-}, []); // run once on mount
+ const userDetail  = handleGetUserDetail();
+
+
 
   useEffect(() => {
     console.log("userDetail", userDetail);
-    // dispatch(loginUser(userDetail));
 
-    if (userDetail.user.accountType === "admin") {
-      navigate("/tournament-list", { replace: true });
-    }
+  
   }, [userDetail]);
 
   return (
@@ -83,12 +78,16 @@ export default function Success() {
               </div>
             </div>
           </div>
-          <button
-            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
-            onClick={() => navigate("/tournament-list", { replace: true })}
-          >
-            Return to Dashboard
-          </button>
+    <button
+      className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+      onClick={() => {
+        // if (userDetail?.user?.accountType === "admin") {
+        //   navigate("/tournament-list", { replace: true });
+        // }
+      }}
+    >
+      Return to Dashboard
+    </button>
         </div>
       </div>
     </div>

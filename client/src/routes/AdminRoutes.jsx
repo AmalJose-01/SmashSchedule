@@ -91,13 +91,13 @@ const AdminRoutes = () => {
         }
       />
 
-      {/* <Route
+      <Route
         path="/login"
         element={
           !user ? <Login /> : <Navigate to="/tournament-list" replace />
           // !user ? <Login /> : <Navigate to="/checkout" replace />
         }
-      /> */}
+      />
 
       {/* Add more admin routes here */}
     </>
