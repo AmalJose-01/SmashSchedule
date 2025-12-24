@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getUserDetailAPI } from "../services/userServices";
 import { useQuery } from "@tanstack/react-query";
 import { logOut } from "../redux/slices/userSlice";
+import { toast } from "sonner";
 
 export const useGetUserDetail = () => {
   const dispatch = useDispatch();
