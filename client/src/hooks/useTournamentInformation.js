@@ -8,7 +8,6 @@ import { useNavigate } from "react-router-dom";
 import { getTournamentInformationAPI } from "../services/teamServices";
 
 export const useTournamentInformation = (tournamentId, userType) => {
-  console.log(userType);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 

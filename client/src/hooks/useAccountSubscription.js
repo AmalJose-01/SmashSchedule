@@ -1,38 +1,31 @@
-import { useElements, useStripe } from "@stripe/react-stripe-js";
 import { toast } from "sonner";
-import { createCheckoutAPI } from "../services/paymentServices";
 import { useMutation } from "@tanstack/react-query";
 import { loadStripe } from "@stripe/stripe-js";
-import { stripe_Publishable_key } from "../../utils/config";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
+
+import { createCheckoutAPI } from "../services/paymentServices";
+import { stripe_Publishable_key } from "../../utils/config";
 import { logOut } from "../redux/slices/userSlice";
 
 export const useSubscription = () => {
-  const stripePromise = loadStripe(stripe_Publishable_key);
+  const stripePromise = loadStripe(stripe_Publishable_key, {
+  locale: "en", // 🔥 FIXES './en' ERROR
+});
+  // const stripePromise = loadStripe(stripe_Publishable_key);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // React Query Mutation
   const mutation = useMutation({
     mutationKey: ["payment"],
     mutationFn: createCheckoutAPI,
 
-    // 🔥 HANDLE AXIOS ERRORS HERE
     onError: (error) => {
-      console.log("MUTATION ERROR:", error);
-
       if (error?.response?.status === 401) {
         toast.error(error.response.data.message || "Session expired");
-
         dispatch(logOut());
         navigate("/");
-
-        return;
       }
-
-      // Fallback for other errors
-      toast.error(error?.response?.data?.message || error.message);
     },
   });
 
@@ -41,32 +34,30 @@ export const useSubscription = () => {
 
     if (!stripe) {
       toast.error("Stripe not loaded yet");
-      return;
+      return null;
     }
 
-    // 🔥 NO TRY-CATCH NEEDED HERE
-    toast.promise(
-      mutation.mutateAsync(paymentData),
-      {
-        loading: "Checkout...",
+    // ⭐ Capture promise
+    const promise = mutation.mutateAsync(paymentData);
 
-        success: async (res) => {
-          console.log("Checkout URL:", res.url);
-          window.location.href = res.url;
-        },
+    toast.promise(promise, {
+      loading: "Checkout...",
+      success: "Redirecting to payment...",
+      error: (err) =>
+        err?.response?.data?.message ||
+        err?.message ||
+        "Checkout failed",
+    });
 
-        error: (err) => {
-          console.log("TOAST ERROR BLOCK:", err);
-
-          return (
-            err?.response?.data?.message ||
-            err?.message ||
-            "Checkout failed"
-          );
-        },
-      }
-    );
+    // ✅ Await & return API response
+    const response = await promise;
+    return response;
   };
 
-  return { handleSubscription };
+  return {
+    handleSubscription,
+    subscriptionDetail: mutation.data,
+    isSuccess: mutation.isSuccess,
+    isLoading: mutation.isPending,
+  };
 };

@@ -33,16 +33,9 @@ export const useGoogleLogin = () => {
         {
           loading: "Logging in...",
           success: (res) => {
-            console.log("res..........", res);
             let user = res.user;
 
-            console.log("user..........", user);
-
-           
-
             dispatch(loginUser(res));
-
-         
 
             return "Login successful!";
           },
@@ -54,7 +47,6 @@ export const useGoogleLogin = () => {
         }
       );
     } catch (error) {
-      console.log("tradedashboard", error);
 
       alert(error.response?.data?.message || "Login failed");
     }
