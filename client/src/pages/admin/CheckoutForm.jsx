@@ -113,27 +113,6 @@ export default function CheckoutForm() {
     setLoading(false);
   };
 
-  // -------------------------------
-  // STRIPE CHECKOUT (Subscription Products)
-  // -------------------------------
-  // const createCheckout = async (priceId) => {
-  //   try {
-  //     const sessionId = await handleSubscription({
-  //       priceId,
-  //       email: "amaljvv@gmail.com",
-  //     });
-  //     console.log("sessionId", sessionId);
-
-  //     //  const stripe = await stripePromise;
-  //     //  await stripe.redirectToCheckout({ sessionId });
-
-  //     window.location.href = sessionId.url;
-  //   } catch (error) {
-  //     console.error("Checkout error:", error);
-  //     toast.error("Checkout failed!");
-  //   }
-  // };
-
 // -------------------------------
 // STRIPE CHECKOUT (Subscription Products)
 // -------------------------------
