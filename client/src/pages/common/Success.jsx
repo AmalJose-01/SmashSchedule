@@ -21,7 +21,7 @@ export default function Success() {
     console.log("userDetail", userDetail);
     // dispatch(loginUser(userDetail));
 
-    if (userDetail.accountType === "admin") {
+    if (userDetail.user.accountType === "admin") {
       navigate("/tournament-list", { replace: true });
     }
   }, [userDetail]);
