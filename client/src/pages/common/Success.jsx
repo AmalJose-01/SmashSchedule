@@ -18,6 +18,7 @@ export default function Success() {
 
   useEffect(() => {
     console.log("userDetail", userDetail);
+    if(!userDetail)
             dispatch(loginUser(userDetail));
 
   
