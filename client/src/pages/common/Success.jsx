@@ -8,6 +8,7 @@ export default function Success() {
   const [params] = useSearchParams();
   const sessionId = params.get("session_id");
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const { handleGetUserDetail } = useGetUserDetail();
 
@@ -17,6 +18,7 @@ export default function Success() {
 
   useEffect(() => {
     console.log("userDetail", userDetail);
+            dispatch(loginUser(userDetail));
 
   
   }, [userDetail]);
