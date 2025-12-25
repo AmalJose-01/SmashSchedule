@@ -81,9 +81,9 @@ export default function Success() {
     <button
       className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
       onClick={() => {
-        // if (userDetail?.user?.accountType === "admin") {
-        //   navigate("/tournament-list", { replace: true });
-        // }
+        if (userDetail?.user?.accountType === "admin") {
+          navigate("/tournament-list", { replace: true });
+        }
       }}
     >
       Return to Dashboard
