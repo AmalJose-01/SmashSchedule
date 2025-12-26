@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { useGetUserDetail } from "../../hooks/useGetUserDetail";
 import { useEffect } from "react";
-import { clearUser, loginUser } from "../../redux/slices/userSlice";
+import { clearUser, updateUser } from "../../redux/slices/userSlice";
 
 
 export default function Success() {
