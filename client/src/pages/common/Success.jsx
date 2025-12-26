@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { useGetUserDetail } from "../../hooks/useGetUserDetail";
 import { useEffect } from "react";
-import { loginUser } from "../../redux/slices/userSlice";
+import { clearUser, loginUser } from "../../redux/slices/userSlice";
 
 
 export default function Success() {
@@ -18,7 +18,7 @@ const { userDetail, isLoading } = useGetUserDetail();
 
 useEffect(() => {
   if (userDetail?.user) {
-
+dispatch(clearUser())
     console.log("userDetail",userDetail);
     
     dispatch(loginUser(userDetail.user));
@@ -54,9 +54,9 @@ useEffect(() => {
             className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
             disabled={!user}
             onClick={() => {
-              if (user?.isVerified) {
-                navigate("/tournament-list", { replace: true });
-              } else {
+if (user?.accountType === "admin" && user?.isVerified) {
+  navigate("/tournament-list", { replace: true });
+} else {
                 navigate("/", { replace: true });
               }
             }}

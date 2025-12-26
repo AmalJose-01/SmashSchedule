@@ -5,18 +5,16 @@ import { useQuery } from "@tanstack/react-query";
 import { logOut } from "../redux/slices/userSlice";
 import { toast } from "sonner";
 
-
 export const useGetUserDetail = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const {
-    data,
-    isLoading,
-    error,
-  } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["userDetail"],
     queryFn: getUserDetailAPI,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    cacheTime: 1000 * 60 * 10, // 10 minutes
+    refetchOnWindowFocus: false,
     retry: false,
     onError: (error) => {
       const status = error?.response?.status;
@@ -35,7 +33,7 @@ export const useGetUserDetail = () => {
   });
 
   return {
-    userDetail: data,   // ✅ return data directly
+    userDetail: data, // ✅ return data directly
     isLoading,
     error,
   };
