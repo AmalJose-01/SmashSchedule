@@ -40,6 +40,8 @@ const auth = async (req, res, next) => {
     //  Continue to next middleware
     next();
   } catch (error) {
+          console.log("Auth error",error);
+
    //  Properly handle known JWT errors
     if (error.name === "TokenExpiredError") {
       console.error("Token expired:", error);

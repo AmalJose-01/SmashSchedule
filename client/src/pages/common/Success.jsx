@@ -14,26 +14,16 @@ export default function Success() {
   const dispatch = useDispatch();
 
   const user = useSelector((state) => state.user.user);
-  const { handleGetUserDetail } = useGetUserDetail();
+const { userDetail, isLoading } = useGetUserDetail();
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = handleGetUserDetail();
-console.log("handleGetUserDetail res",res);
+useEffect(() => {
+  if (userDetail?.user) {
 
-        if (res) {
-          dispatch(loginUser(res));
-        }
-      } catch (err) {
-        console.error("Failed to fetch user details", err);
-      }
-    };
-
-    if (!user) {
-      fetchUser();
-    }
-  }, [dispatch, user, handleGetUserDetail]);
+    console.log("userDetail",userDetail);
+    
+    dispatch(loginUser(userDetail.user));
+  }
+}, [userDetail, dispatch]);
 
   return (
     <div className="bg-white shadow-md">
