@@ -31,7 +31,7 @@ const userSlice = createSlice({
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
     },
-    clearUser: () => {
+    clearUser: (state) => {
       state.user = null;
       localStorage.removeItem("user");
            
