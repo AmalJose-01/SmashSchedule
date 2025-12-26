@@ -22,9 +22,9 @@ function App() {
       <div className="w-full h-full bg-slate-200 overflow-x-hidden">
         <Router>
           <Routes>
-            {/* <Route path="/" element={<Home />} /> */}
-            <Route path="/" element={<Success />} />
-                        {/* <Route path="/success" element={<Success />} /> */}
+            <Route path="/" element={<Home />} />
+            {/* <Route path="/" element={<Success />} /> */}
+                        <Route path="/success" element={<Success />} />
 
 
             <Route path="/teams" element={<TeamSetup />} />
