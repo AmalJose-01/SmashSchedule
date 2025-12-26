@@ -21,7 +21,7 @@ useEffect(() => {
 dispatch(clearUser())
     console.log("userDetail",userDetail);
     
-    dispatch(loginUser(userDetail));
+    dispatch(updateUser(userDetail));
   }
 }, [userDetail, dispatch]);
 
