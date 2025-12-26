@@ -1,10 +1,17 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { getUser } from "../../../utils/storageHandler";
+import { getAccessToken, getRefreshToken, getUser } from "../../../utils/storageHandler";
+
+// const initialUserDetail = {
+//   user: getUser() || null,
+//    accessToken: null,
+//   refreshToken: null,
+// };
+
 
 const initialUserDetail = {
   user: getUser() || null,
-   accessToken: null,
-  refreshToken: null,
+  accessToken: getAccessToken() || null,
+  refreshToken: getRefreshToken() || null,
 };
 
 const userSlice = createSlice({
