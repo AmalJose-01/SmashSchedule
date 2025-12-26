@@ -20,9 +20,10 @@ export default function Success() {
     const fetchUser = async () => {
       try {
         const res = handleGetUserDetail();
+console.log("handleGetUserDetail res",res);
 
-        if (res?.user) {
-          dispatch(loginUser(res.user));
+        if (res) {
+          dispatch(loginUser(res));
         }
       } catch (err) {
         console.error("Failed to fetch user details", err);
