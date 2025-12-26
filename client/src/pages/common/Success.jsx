@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { useGetUserDetail } from "../../hooks/useGetUserDetail";
 import { useEffect } from "react";
-import { loginUser } from "../../redux/userSlice";
+import { loginUser } from "../../redux/slices/userSlice";
+
 
 export default function Success() {
   const [params] = useSearchParams();
