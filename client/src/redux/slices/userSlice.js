@@ -3,11 +3,14 @@ import { getUser } from "../../../utils/storageHandler";
 
 const initialUserDetail = {
   user: getUser() || null,
+   accessToken: null,
+  refreshToken: null,
 };
 
 const userSlice = createSlice({
   name: "user",
   initialState: initialUserDetail,
+  
   reducers: {
     loginUser: (state, action) => {
       console.log("action.payload", action.payload);
@@ -28,8 +31,13 @@ const userSlice = createSlice({
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
     },
+    clearUser: () => {
+      state.user = null;
+      localStorage.removeItem("user");
+           
+    },
   },
 });
 
-export const { loginUser, logOut } = userSlice.actions;
+export const { loginUser, logOut ,clearUser} = userSlice.actions;
 export default userSlice.reducer;
