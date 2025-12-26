@@ -4,20 +4,25 @@ import { getUserDetailAPI } from "../services/userServices";
 import { useQuery } from "@tanstack/react-query";
 import { logOut } from "../redux/slices/userSlice";
 import { toast } from "sonner";
-import { useEffect } from "react";
+
 
 export const useGetUserDetail = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { data, isLoading, error } = useQuery({
+  const {
+    data,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["userDetail"],
     queryFn: getUserDetailAPI,
+    retry: false,
     onError: (error) => {
-      toast.dismiss();
+      const status = error?.response?.status;
 
-      if (error?.response?.status === 401) {
-        toast.error(error.response.data.message || "Session expired");
+      if (status === 401) {
+        toast.error("Session expired");
         dispatch(logOut());
         navigate("/");
         return;
@@ -29,35 +34,8 @@ export const useGetUserDetail = () => {
     },
   });
 
- 
-
-  const handleGetUserDetail = () => {
-    try {
-      if (error?.status === 401) {
-        console.log("handleGetUserDetail", error.response.data.message);
-        dispatch(logOut());
-        toast.error(error.response.data.message);
-      }
-      console.log("handleGetUserDetail", data);
-
-      if (!data) return [];
-
-      return data;
-    } catch (error) {
-      console.log(error);
-
-      if (error?.status === 401) {
-        console.log("handleGetUserDetail", error.response.data.message);
-        dispatch(logOut());
-        toast.error(error.response.data.message);
-      } else {
-        toast.error("Error Scheduling Matches");
-      }
-    }
-  };
-
   return {
-    handleGetUserDetail,
+    userDetail: data,   // ✅ return data directly
     isLoading,
     error,
   };
