@@ -1,6 +1,6 @@
 import { CheckCircle, Trophy } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useGetUserDetail } from "../../hooks/useGetUserDetail";
 import { useEffect } from "react";
 
@@ -9,6 +9,8 @@ export default function Success() {
   const sessionId = params.get("session_id");
   const navigate = useNavigate();
   const dispatch = useDispatch();
+    const user = useSelector((state) => state.user.user);
+
 
   const { handleGetUserDetail } = useGetUserDetail();
 
@@ -22,7 +24,7 @@ export default function Success() {
             dispatch(loginUser(userDetail));
 
   
-  }, [userDetail]);
+  }, [userDetail, user]);
 
   return (
     <div className="bg-white shadow-md">
@@ -84,7 +86,7 @@ export default function Success() {
     <button
       className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
       onClick={() => {
-        if (userDetail?.user?.accountType === "admin") {
+        if (user.isVerified === "admin") {
           navigate("/tournament-list", { replace: true });
         }
       }}
