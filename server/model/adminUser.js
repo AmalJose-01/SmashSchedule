@@ -110,8 +110,8 @@ adminUserSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-const adminDetail = mongoose.model("AdminUser", adminUserSchema);
+const AdminUser = mongoose.model("AdminUser", adminUserSchema);
 
 // Export the model
-module.exports = adminDetail;
+module.exports = AdminUser;
 

@@ -92,7 +92,6 @@ export const getAdminTournamentListAPI = async () => {
 };
 
 export const getAdminTournamentInformationAPI = async (tournamentId) => {
-  console.log("getTournamentInformationAPI called with ID:", tournamentId); // <--- should log when triggered
 
   try {
     const response = await axios.get(

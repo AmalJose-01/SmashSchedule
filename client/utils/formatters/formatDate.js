@@ -4,7 +4,6 @@
 //   const [day, month, year] = dateStr.split("/");
 //   return `${year}-${month}-${day}`;
 // };
-
 export const formatDate = (value) => {
   if (!value) return null;
 
@@ -16,14 +15,17 @@ export const formatDate = (value) => {
   }
 
   // Already ISO (YYYY-MM-DD)
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(value)) {
     return value;
   }
 
-  // DD/MM/YYYY
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
+  // DD/MM/YYYY or D/M/YYYY
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(value)) {
     const [dd, mm, yyyy] = value.split("/");
-    return `${yyyy}-${mm}-${dd}`;
+    // Pad single digits with leading 0
+    const day = dd.padStart(2, "0");
+    const month = mm.padStart(2, "0");
+    return `${yyyy}-${month}-${day}`;
   }
 
   // Fallback

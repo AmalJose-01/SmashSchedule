@@ -39,11 +39,11 @@ app.use(
 // Connect to the database
 connectToDatabase();
 
-// Middleware to parse JSON requests
-app.use(express.json());
 
 app.use(cors(corsOptions))
 
+// Middleware to parse JSON requests
+app.use(express.json());
 
 
 

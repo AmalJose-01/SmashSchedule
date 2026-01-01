@@ -12,32 +12,242 @@ const {
   getTotalPoints,
   determineWinner,
 } = require("../helpers/matchHelpers.js");
+const AdminUser = require("../model/adminUser.js");
+const sendEmail = require("../utils/sendEmail.js");
 
 const generateUnique4DigitKey = () => {
   return ((Date.now() % 9000) + 1000).toString();
 };
-const normalizePhone = (value) =>
-  value?.replace(/[^\d]/g, "");
+const normalizePhone = (value) => value?.replace(/[^\d]/g, "");
 
-// Create a new team
+
+// Reusable email builders
+const buildPlayerMailBody = ({ teamName, playerOneName, playerTwoName, tournamentDetail }) => `
+  <h2>🏸 Team Registration Confirmed</h2>
+
+  <p>Hi <strong>${playerOneName}</strong>,</p>
+
+  <p>Your team <strong>${teamName}</strong> has been successfully registered.</p>
+
+  <hr />
+
+  <h3>📅 Match Details</h3>
+  <ul>
+    <li><strong>Date:</strong> ${tournamentDetail.date || "To be announced"}</li>
+    <li><strong>Time:</strong> ${tournamentDetail.time || "To be announced"}</li>
+    <li><strong>Location:</strong> ${tournamentDetail.location || "To be announced"}</li>
+    <li><strong>Tournament Access Code:</strong> ${tournamentDetail.uniqueKey || "TBA"}</li>
+  </ul>
+
+  <h3>👥 Team Members</h3>
+  <ul>
+    <li>${playerOneName}</li>
+    <li>${playerTwoName}</li>
+  </ul>
+
+  <p>Best of luck! 🏆</p>
+
+  <p style="margin-top:20px;">
+    Regards,<br/>
+    <strong>Webfluence Tournament Team</strong>
+  </p>
+`;
+
+const buildAdminMailBody = ({ teamName, tournamentId, playerOneName, playerOneEmail, playerTwoName, playerTwoEmail }) => `
+  <h3>📢 New Team Registered</h3>
+  <p><strong>Team Name:</strong> ${teamName}</p>
+  <p><strong>Tournament ID:</strong> ${tournamentId}</p>
+
+  <ul>
+    <li>${playerOneName} (${playerOneEmail})</li>
+    <li>${playerTwoName} (${playerTwoEmail})</li>
+  </ul>
+`;
+
+
+
+
 const adminTeamController = {
-  createMultipleTeam: async (req, res) => {
-    console.log("createMultipleTeam", req.body);
+  // Create a new team
+//   createMultipleTeam: async (req, res) => {
+//     console.log("createMultipleTeam", req.body);
 
-    try {
- const { teams, tournamentId } = req.body;
+//     try {
+//       const { teams, tournamentId } = req.body;
 
+//       if (!tournamentId) {
+//         return res.status(400).json({ message: "tournamentId is required" });
+//       }
+
+//       if (!Array.isArray(teams) || teams.length === 0) {
+//         return res.status(400).json({ message: "Teams list is required" });
+//       }
+
+//       const skippedTeams = [];
+
+//       /*  Normalize + validate */
+//       const cleanedTeams = teams.map((team) => ({
+//         ...team,
+//         tournamentId,
+//         playerOneContact: normalizePhone(team.playerOneContact),
+//         playerTwoContact: normalizePhone(team.playerTwoContact),
+//       }));
+
+//       /*  Same email/contact inside same team */
+//       const validTeams = cleanedTeams.filter((team) => {
+//         if (team.playerOneEmail === team.playerTwoEmail) {
+//           skippedTeams.push({ ...team, reason: "Same email for both players" });
+//           return false;
+//         }
+
+//         if (team.playerOneContact === team.playerTwoContact) {
+//           skippedTeams.push({
+//             ...team,
+//             reason: "Same contact for both players",
+//           });
+//           return false;
+//         }
+
+//         return true;
+//       });
+
+//       /*  Check existing teams in same tournament */
+//       const emails = validTeams.flatMap((t) => [
+//         t.playerOneEmail,
+//         t.playerTwoEmail,
+//       ]);
+//       const contacts = validTeams.flatMap((t) => [
+//         t.playerOneContact,
+//         t.playerTwoContact,
+//       ]);
+
+//       const existingTeams = await Team.find({
+//         tournamentId,
+//         $or: [
+//           { playerOneEmail: { $in: emails } },
+//           { playerTwoEmail: { $in: emails } },
+//           { playerOneContact: { $in: contacts } },
+//           { playerTwoContact: { $in: contacts } },
+//         ],
+//       });
+
+//       const existingEmails = new Set(
+//         existingTeams.flatMap((t) => [t.playerOneEmail, t.playerTwoEmail])
+//       );
+//       const existingContacts = new Set(
+//         existingTeams.flatMap((t) => [t.playerOneContact, t.playerTwoContact])
+//       );
+
+//       const teamsToInsert = validTeams.filter((team) => {
+//         const duplicate =
+//           existingEmails.has(team.playerOneEmail) ||
+//           existingEmails.has(team.playerTwoEmail) ||
+//           existingContacts.has(team.playerOneContact) ||
+//           existingContacts.has(team.playerTwoContact);
+
+//         if (duplicate) {
+//           skippedTeams.push({
+//             ...team,
+//             reason: "Already exists in tournament",
+//           });
+//         }
+
+//         return !duplicate;
+//       });
+
+//       console.log("Teams to insert",teamsToInsert);
+      
+
+//       /*  Insert */
+//       const savedTeams =
+//         teamsToInsert.length > 0
+//           ? await Team.insertMany(teamsToInsert, { ordered: false })
+//           : [];
+
+//       if (!savedTeams || savedTeams.length == 0) {
+//         return res.status(500).json({ message: "Failed to import team" });
+//       }
+//             console.error("Success",);
+
+
+// const tournamentDetail = await Tournament.findOne({
+//   _id: tournamentId,
+// }).select("adminId uniqueKey date time location");
+
+// const AdminUserDetail = await AdminUser.findOne({
+//   _id: tournamentDetail.adminId,
+// }).select("emailID");
+
+
+//       const playerMailSubject = "✅ Team Registration Successful";
+//       const adminMailSubject = "📢 New Team Registered";
+//  await Promise.allSettled(
+//       savedTeams.flatMap((team) => {
+//         const playerMailBody = buildPlayerMailBody({
+//           teamName: team.teamName,
+//           playerOneName: team.playerOneName,
+//           playerTwoName: team.playerTwoName,
+//           tournamentDetail,
+//         });
+
+//         const tasks = [
+//           sendEmail({ to: team.playerOneEmail, subject: playerMailSubject, html: playerMailBody }),
+//           sendEmail({ to: team.playerTwoEmail, subject: playerMailSubject, html: playerMailBody }),
+//         ];
+
+//         if (AdminUserDetail?.emailID) {
+//           const adminMailBody = buildAdminMailBody({
+//             teamName: team.teamName,
+//             tournamentId,
+//             playerOneName: team.playerOneName,
+//             playerOneEmail: team.playerOneEmail,
+//             playerTwoName: team.playerTwoName,
+//             playerTwoEmail: team.playerTwoEmail,
+//           });
+
+//           tasks.push(sendEmail({ to: AdminUserDetail.emailID, subject: adminMailSubject, html: adminMailBody }));
+//         }
+
+//         return tasks;
+//       })
+//     );
+
+//       console.error("Create multiple team error",);
+
+
+//       return res.status(201).json({
+//         message: "Teams import completed",
+//         insertedCount: savedTeams.length,
+//         skippedCount: skippedTeams.length,
+//         insertedTeams: savedTeams,
+//         skippedTeams,
+//       });
+//     } catch (error) {
+//       console.error("Create multiple team error", error);
+//       res.status(500).json({
+//         message: "Server Error",
+//         error: error.message,
+//       });
+//     }
+//   },
+
+createMultipleTeam: async (req, res) => {
+  console.log("createMultipleTeam", req.body);
+
+  try {
+    const { teams, tournamentId } = req.body;
+
+    // Basic validation
     if (!tournamentId) {
       return res.status(400).json({ message: "tournamentId is required" });
     }
-
     if (!Array.isArray(teams) || teams.length === 0) {
       return res.status(400).json({ message: "Teams list is required" });
     }
 
     const skippedTeams = [];
 
-    /*  Normalize + validate */
+    // Normalize and validate contacts
     const cleanedTeams = teams.map((team) => ({
       ...team,
       tournamentId,
@@ -45,30 +255,22 @@ const adminTeamController = {
       playerTwoContact: normalizePhone(team.playerTwoContact),
     }));
 
-    /*  Same email/contact inside same team */
+    // Filter out teams with same email/contact for both players
     const validTeams = cleanedTeams.filter((team) => {
       if (team.playerOneEmail === team.playerTwoEmail) {
         skippedTeams.push({ ...team, reason: "Same email for both players" });
         return false;
       }
-
       if (team.playerOneContact === team.playerTwoContact) {
         skippedTeams.push({ ...team, reason: "Same contact for both players" });
         return false;
       }
-
       return true;
     });
 
-    /*  Check existing teams in same tournament */
-    const emails = validTeams.flatMap((t) => [
-      t.playerOneEmail,
-      t.playerTwoEmail,
-    ]);
-    const contacts = validTeams.flatMap((t) => [
-      t.playerOneContact,
-      t.playerTwoContact,
-    ]);
+    // Check existing emails and contacts in the same tournament
+    const emails = validTeams.flatMap(t => [t.playerOneEmail, t.playerTwoEmail]);
+    const contacts = validTeams.flatMap(t => [t.playerOneContact, t.playerTwoContact]);
 
     const existingTeams = await Team.find({
       tournamentId,
@@ -80,14 +282,11 @@ const adminTeamController = {
       ],
     });
 
-    const existingEmails = new Set(
-      existingTeams.flatMap((t) => [t.playerOneEmail, t.playerTwoEmail])
-    );
-    const existingContacts = new Set(
-      existingTeams.flatMap((t) => [t.playerOneContact, t.playerTwoContact])
-    );
+    const existingEmails = new Set(existingTeams.flatMap(t => [t.playerOneEmail, t.playerTwoEmail]));
+    const existingContacts = new Set(existingTeams.flatMap(t => [t.playerOneContact, t.playerTwoContact]));
 
-    const teamsToInsert = validTeams.filter((team) => {
+    // Filter out duplicates in the database
+    const teamsToInsert = validTeams.filter(team => {
       const duplicate =
         existingEmails.has(team.playerOneEmail) ||
         existingEmails.has(team.playerTwoEmail) ||
@@ -97,21 +296,59 @@ const adminTeamController = {
       if (duplicate) {
         skippedTeams.push({ ...team, reason: "Already exists in tournament" });
       }
-
       return !duplicate;
     });
 
-    /*  Insert */
-    const savedTeams =
-      teamsToInsert.length > 0
-        ? await Team.insertMany(teamsToInsert, { ordered: false })
-        : [];
+    console.log("Teams to insert", teamsToInsert);
 
+    // Insert new teams
+    const savedTeams = teamsToInsert.length > 0
+      ? await Team.insertMany(teamsToInsert, { ordered: false })
+      : [];
 
-         if (!savedTeams || savedTeams.length ==0) {
-                return res.status(500).json({ message: "Failed to import team" });
+    if (!savedTeams || savedTeams.length === 0) {
+      return res.status(500).json({ message: "Failed to import team" });
+    }
 
-      }
+    // Fetch tournament and admin details
+    const tournamentDetail = await Tournament.findById(tournamentId)
+      .select("adminId uniqueKey date time location");
+    const AdminUserDetail = await AdminUser.findById(tournamentDetail.adminId)
+      .select("emailID");
+
+    const playerMailSubject = "✅ Team Registration Successful";
+    const adminMailSubject = "📢 New Team Registered";
+
+    // Send emails
+    await Promise.allSettled(
+      savedTeams.flatMap(team => {
+        const playerMailBody = buildPlayerMailBody({
+          teamName: team.teamName,
+          playerOneName: team.playerOneName,
+          playerTwoName: team.playerTwoName,
+          tournamentDetail,
+        });
+
+        const tasks = [
+          sendEmail({ to: team.playerOneEmail, subject: playerMailSubject, html: playerMailBody }),
+          sendEmail({ to: team.playerTwoEmail, subject: playerMailSubject, html: playerMailBody }),
+        ];
+
+        if (AdminUserDetail?.emailID) {
+          const adminMailBody = buildAdminMailBody({
+            teamName: team.teamName,
+            tournamentId,
+            playerOneName: team.playerOneName,
+            playerOneEmail: team.playerOneEmail,
+            playerTwoName: team.playerTwoName,
+            playerTwoEmail: team.playerTwoEmail,
+          });
+          tasks.push(sendEmail({ to: AdminUserDetail.emailID, subject: adminMailSubject, html: adminMailBody }));
+        }
+
+        return tasks;
+      })
+    );
 
     return res.status(201).json({
       message: "Teams import completed",
@@ -120,14 +357,16 @@ const adminTeamController = {
       insertedTeams: savedTeams,
       skippedTeams,
     });
-    } catch (error) {
-      console.error("Create multiple team error", error);
-      res.status(500).json({
-        message: "Server Error",
-        error: error.message,
-      });
-    }
-  },
+  } catch (error) {
+    console.error("Create multiple team error", error);
+    res.status(500).json({
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+},
+
+
 
   deleteTeam: async (req, res) => {
     console.log("Admin deleteTeam Delete");
@@ -211,7 +450,10 @@ const adminTeamController = {
         return res.status(400).json({ message: "All fields are required" });
       }
 
-      const existingTournament = await Tournament.findOne({ tournamentName });
+      const existingTournament = await Tournament.findOne({
+        tournamentName,
+        adminId: req.userId,
+      });
       if (existingTournament) {
         return res
           .status(400)
