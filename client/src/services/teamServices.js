@@ -64,9 +64,10 @@ export const getKnockoutScheduleAPI = async (tournamentId) => {
 
 
 export const getTournamentInformationAPI = async (tournamentId) => {
-  console.log("getTournamentInformationAPI called with ID:", tournamentId); // <--- should log when triggered
 
   try {
+    console.log(`${BASE_URL}/tournament/get-tournament-information/${tournamentId}`);
+    
     const response = await axios.get(
       `${BASE_URL}/tournament/get-tournament-information/${tournamentId}`
     );

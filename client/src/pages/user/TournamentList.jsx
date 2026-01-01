@@ -20,7 +20,7 @@ const TournamentList = () => {
   const queryClient = useQueryClient();
   const [isExpanded, setIsExpanded] = useState(false);
   const toggleExpand = () => setIsExpanded((prev) => !prev);
-    const [openVerification, setVerificationOpen] = useState(false);
+  const [openVerification, setVerificationOpen] = useState(false);
 
   const tournaments = handleTournamentList();
 
@@ -136,11 +136,10 @@ const TournamentList = () => {
 
                       //   navigate(`/groupStageList/${tournament._id}`);
                       // }}
-                              onClick={() =>{
-                                dispatch(setTournamentData(tournament));
- setVerificationOpen(true)
-                              }}
-
+                      onClick={() => {
+                        dispatch(setTournamentData(tournament));
+                        setVerificationOpen(true);
+                      }}
                       className={`flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors ${
                         tournament.status === "Create" ? "hidden" : ""
                       }`}
@@ -160,11 +159,10 @@ const TournamentList = () => {
           </h2>
         </div>
       )}
-  <VerifyCodeModal
+      <VerifyCodeModal
         open={openVerification}
         onClose={() => setVerificationOpen(false)}
       />
-
     </div>
   );
 };
