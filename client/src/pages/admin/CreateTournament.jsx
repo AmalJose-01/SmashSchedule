@@ -11,6 +11,8 @@ import {
   Layers,
   Save,
   DollarSign,
+  User,
+  Medal,
 } from "lucide-react";
 import ButtonWithIcon from "../../components/ButtonWithIcon";
 import Logout from "../../components/Logout";
@@ -123,7 +125,7 @@ const CreateTournament = () => {
     }
   };
 
-  useEffect(() => {}, [matchTypeValue, playTypeValue]);
+  useEffect(() => { }, [matchTypeValue, playTypeValue]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white ">
@@ -146,7 +148,8 @@ const CreateTournament = () => {
       </div>
 
       {/* Content View */}
-      <div className="card w-full max-w-xl mx-auto shadow-lg rounded-lg bg-blue-600 items-center mt-5 ">
+      <div className="p-5">
+      <div className="card w-full max-w-full mx-auto shadow-lg rounded-lg bg-blue-600 items-center">
         <div className="flex  items-center justify-between p-4">
           <div className="flex  items-center gap-3">
             <Trophy className="w-6 h-6 text-white" />
@@ -167,9 +170,15 @@ const CreateTournament = () => {
           >
             {/* Team Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+
+
+
+
+
               <div className="md:col-span-2">
                 <label
-                  htmlFor="teamName"
+                  htmlFor="tournamentName"
                   className="flex items-center gap-2 text-gray-700 mb-2"
                 >
                   <Shield className="w-4 h-4" />
@@ -298,7 +307,62 @@ const CreateTournament = () => {
               </div>
             </div>
 
-            {/* Tournament Format Section */}
+            {/* Age Group and Grade */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <div className="flex items-center gap-2 text-gray-700 mb-2">
+                  <User className="w-4 h-4" />
+                  Age Group
+                </div>
+                <select
+                  {...register("ageGroup")}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="">Select Age Group</option>
+                  <option value="U9">U9</option>
+                  <option value="U11">U11</option>
+                  <option value="U13">U13</option>
+                  <option value="U15">U15</option>
+                  <option value="U17">U17</option>
+                  <option value="U19">U19</option>
+                  <option value="Open">Open</option>
+                  <option value="35+">35+</option>
+                  <option value="40+">40+</option>
+                  <option value="45+">45+</option>
+                  <option value="50+">50+</option>
+                  <option value="55+">55+</option>
+                  <option value="60+">60+</option>
+                  <option value="65+">65+</option>
+                  <option value="70+">70+</option>
+                  <option value="Junior">Junior</option>
+                  <option value="Senior">Senior</option>
+                  <option value="Masters">Masters</option>
+                </select>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2 text-gray-700 mb-2">
+                  <Medal className="w-4 h-4" />
+                  Grade
+                </div>
+                <select
+                  {...register("grade")}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="">Select Grade</option>
+                  <option value="Standard">Standard</option>
+                  <option value="A">Grade A</option>
+                  <option value="B">Grade B</option>
+                  <option value="C">Grade C</option>
+                  <option value="D">Grade D</option>
+                  <option value="E">Grade E</option>
+                </select>
+              </div>
+            </div>
+
+
+
+            {/* Tournament Format */}
             <div className="pt-4 border-t">
               <h3 className="mb-4 text-gray-900">Tournament Format</h3>
 
@@ -319,6 +383,11 @@ const CreateTournament = () => {
                   >
                     <option value="Singles">Singles</option>
                     <option value="Doubles">Doubles</option>
+                    <option value="Mixed Doubles">Mixed Doubles</option>
+                    {/* <option value="Mens Singles">Men's Singles</option>
+                    <option value="Mens Doubles">Men's Doubles</option>
+                    <option value="Womens Singles">Women's Singles</option>
+                    <option value="Womens Doubles">Women's Doubles</option> */}
                   </select>
                   {errors.matchType && (
                     <p className="text-red-600 text-sm">
@@ -469,6 +538,7 @@ const CreateTournament = () => {
             </div>
           </form>
         </div>
+      </div>
       </div>
     </div>
   );
