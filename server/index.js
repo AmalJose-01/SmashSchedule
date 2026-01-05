@@ -42,7 +42,8 @@ connectToDatabase();
 
 
 app.use(cors(corsOptions))
-// app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/api/v1/uploads", express.static(path.join(__dirname, "uploads")));
 
 
 // Middleware to parse JSON requests
