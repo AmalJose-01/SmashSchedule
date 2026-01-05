@@ -18,6 +18,7 @@ export const useTournament = (userType) => {
     staleTime: 10 * 60 * 1000,
     cacheTime: 30 * 60 * 1000,
     refetchOnWindowFocus: false,
+    refetchOnMount: false,
 
     onError: (error) => {
       toast.dismiss();
