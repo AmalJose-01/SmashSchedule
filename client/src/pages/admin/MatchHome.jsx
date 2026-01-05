@@ -10,7 +10,7 @@ import { useCreateKnockoutList } from "../../hooks/useCreateKnockoutList";
 import { useSelector } from "react-redux";
 import { FaSave } from "react-icons/fa";
 import StatusBadge from "../../components/StatusBadge";
-
+import { BASE_URL } from "../../../utils/config.js";
 import {
   Award,
   Calendar,
@@ -80,6 +80,53 @@ const MatchHome = () => {
       })
     );
   };
+
+// const handleDownload = (pdfUrl) => {
+//   const pdfUrl = tournamentDetail?.pdfUrl;
+
+//   const link = document.createElement("a");
+//   link.href = `${BASE_URL}${pdfUrl}`;
+//   link.download = "Match_Sheets.pdf";
+//   link.click();
+// };
+
+
+const handleDownload = async () => {
+  try {
+    // Hardcoded backend URL for Render or localhost
+    // const BASE_URL = "http://localhost:3000"; // or Render: "https://your-app.onrender.com"
+    // const BASE_URL =  "https://your-app.onrender.com"
+
+    const pdfUrl = tournamentDetail?.pdfUrl;
+    if (!pdfUrl) throw new Error("PDF URL not found");
+
+    // Remove leading slash from pdfUrl if BASE_URL already ends without slash
+    const fullUrl = pdfUrl.startsWith("/") ? `${BASE_URL}${pdfUrl}` : `${BASE_URL}/${pdfUrl}`;
+
+    const response = await fetch(fullUrl, {
+      method: "GET",
+    });
+
+    if (!response.ok) throw new Error("Failed to fetch PDF");
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "Match_Sheets.pdf";
+    document.body.appendChild(link);
+    link.click();
+
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error("Download failed:", error);
+    alert("Failed to download PDF");
+  }
+};
+
+
 
   const updateAllScore = async () => {
     if (!matches) {
@@ -281,7 +328,7 @@ const MatchHome = () => {
       <div className="p-4">
         {/* Group Filter */}
 
-        <div className="mb-6 bg-white rounded-lg shadow-md p-4 flex items-center gap-4 m-4 sticky top-0 justify-between">
+<div className="mb-6 bg-white rounded-lg shadow-md p-4 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 m-4 sticky top-0 justify-between">
           <div className="flex gap-3">
             <label className="flex items-center gap-2">
               <Target className="w-5 h-5 text-blue-600" />
@@ -303,13 +350,24 @@ const MatchHome = () => {
               <ChevronDown className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
-          <div className={`${tournamentDetail.knockoutStatus === "scheduled" ? "hidden" : ""}`}> <ButtonWithIcon
+          <div className={`flex gap-2${tournamentDetail.knockoutStatus === "scheduled" ? "hidden" : ""}`}> <ButtonWithIcon
+            title="Download Score Sheet"
+            icon="save"
+            buttonBGColor="bg-yellow-600"
+            textColor="text-white"
+            onClick={handleDownload}
+          />
+
+           <ButtonWithIcon
             title="Update All Score"
             icon="save"
             buttonBGColor="bg-blue-600"
             textColor="text-white"
             onClick={updateAllScore}
-          /></div>
+          />
+          
+          
+          </div>
          
         </div>
 

@@ -14,8 +14,6 @@ export const importTeamAPI = async (teamData) => {
 };
 
 
-
-
 export const getTeamListAPI = async (tournamentId) => {
   console.log("getTeamListAPI called"); // <--- should log when triggered
 try {
@@ -44,6 +42,24 @@ export const saveTournamentAPI = async (tournamentData) => {
     return response.data;
   } catch (error) {
     console.log("saveTournamentAPI error",error);
+    
+    throw error
+  }
+};
+
+export const updateTournamentAPI = async (tournamentData) => {
+  console.log("updateTournamentAPI called", tournamentData);
+  console.log("headerData", headerData());
+
+  try {
+    const response = await axios.put(
+      `${BASE_URL}/admin/update-tournament`,
+      tournamentData, headerData()           
+                    
+    );
+    return response.data;
+  } catch (error) {
+    console.log("updateTournamentAPI error",error);
     
     throw error
   }

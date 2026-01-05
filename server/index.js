@@ -5,6 +5,7 @@ const routes = require("./routes/index");
 const cors = require(`cors`);
 const errorHandler = require('./middleware/errorHandler');
 const stripeWebhook = require("./routes/stripeWebhook")
+const path = require("path");
 
 
 const app = express();
@@ -41,6 +42,8 @@ connectToDatabase();
 
 
 app.use(cors(corsOptions))
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 
 // Middleware to parse JSON requests
 app.use(express.json());

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { getTeamListAPI } from "../../services/admin/adminTeamServices";
@@ -77,7 +77,10 @@ const SetupTournament = () => {
   const toggleExpand = () => setIsExpanded((prev) => !prev);
 
   const { handleUseMatchScheduling } = useMatchSave(tournament?._id);
-  const { handleUseImportTeam, successImportTeam } = useImportTeam();
+  const { handleUseImportTeam, successImportTeam, importError } =
+    useImportTeam();
+  const fileInputRef = useRef(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const { tournamentInfo } = useTournamentInformation(tournament._id, "Admin");
   const getStatusColor = (status) => {
@@ -261,8 +264,18 @@ const SetupTournament = () => {
   }, [isScoreSuccess, navigate]);
 
   const handleLogoUpload = async (e) => {
+
+
+        console.log("papaData after setData:");
+
+    if (isUploading) {
+      toast.warning("Upload already in progress. Please wait.");
+      return;
+    }
+
     const file = e.target.files[0];
     if (!file) return;
+    setIsUploading(true);
 
     const allowedTypes = ["csv", "xls", "xlsx"];
     const ext = file.name.split(".").pop().toLowerCase();
@@ -289,6 +302,7 @@ const SetupTournament = () => {
       console.log("papaData", rows);
 
       setData(rows);
+       e.target.value = "";
     }
   };
 
@@ -304,19 +318,26 @@ const SetupTournament = () => {
 
     try {
       handleUseImportTeam(payload);
-      setTeamFile(null);
+      // setTeamFile(null);
     } catch (err) {
       console.error("Error:", err);
     }
-  }, [papaData]);
+  }, [papaData,setTeamFile]);
 
   useEffect(() => {
-    if (successImportTeam) {
+    if (successImportTeam || importError) {
       setData([]); // clear parsed data
       setTeamFile(null); // clear uploaded file
-      toast.success("Teams imported successfully!"); // optional
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      //  if (successImportTeam){
+      //    toast.success("Teams imported successfully!"); // optional
+      //  }
+     
     }
-  }, [successImportTeam]);
+  }, [successImportTeam, importError]);
 
   const handleSyncTeams = () => {
     if (!papaData.length || !tournamentDetail._id) return;
@@ -378,10 +399,10 @@ const SetupTournament = () => {
           </button>
           <button
             onClick={() =>
-                  navigate("/edit-tournament", {
-                    state: { tournamentDetail },
-                  })
-                }
+              navigate("/edit-tournament", {
+                state: { tournamentDetail },
+              })
+            }
             className={`${
               tournamentDetail.status != "Create" ? "hidden" : ""
             } flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors`}
@@ -709,7 +730,7 @@ const SetupTournament = () => {
                 disabled={tournamentDetail.status === "Create" ? false : true}
               >
                 <UserPlus className="w-4 h-4" />
-                <span className="hidden md:flex">
+                <span className=" md:flex">
                   {tournamentDetail.matchType === "Doubles"
                     ? "Register Team"
                     : "Register Player"}

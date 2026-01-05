@@ -1,5 +1,6 @@
 import axios from "axios";
 import { BASE_URL } from "../../utils/config.js";
+import { headerData } from "../../utils/storageHandler.js";
 
 export const saveTeamAPI = async (teamData) => {
   try {
@@ -10,6 +11,15 @@ export const saveTeamAPI = async (teamData) => {
   }
 };
 
+
+export const updateTeamAPI = async (teamData) => {
+  try {
+    const response = await axios.put(`${BASE_URL}/admin/update-teams`, teamData, headerData());
+    return response.data;
+  } catch (error) {
+      throw error;
+  }
+};
 
 
 

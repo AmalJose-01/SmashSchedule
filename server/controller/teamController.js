@@ -179,25 +179,6 @@ const teamController = {
     }
   },
 
-  // getTournaments: async (req, res) => {
-  //   try {
-  //     const tournaments = await Tournament.find().select(
-  //       "_id tournamentName numberOfPlayersQualifiedToKnockout date time status registrationFee maximumParticipants"
-  //     );
-  //     console.log(
-  //       "Tournaments fetched===========================================================================:",
-  //       tournaments
-  //     );
-  //     res.status(200).json({
-  //       message: "Tournaments retrieved successfully",
-  //       tournaments: tournaments,
-  //     });
-  //   } catch (error) {
-  //     console.log("Get tournaments error", error);
-  //     res.status(500).json({ message: "Server Error", error: error.message });
-  //   }
-  // },
-
   getTournaments: async (req, res) => {
     try {
       const tournaments = await Tournament.aggregate([

@@ -3,7 +3,7 @@ import tournamentSetupSchema from "../../../utils/validationSchemas";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
-import { saveTeamAPI } from "../../services/teamServices";
+import { updateTeamAPI } from "../../services/teamServices";
 import { toast } from "sonner"; // make sure react-toastify is installed
 import Navbar from "../../components/Navbar";
 import {
@@ -32,7 +32,7 @@ const TeamSetup = () => {
 
   const { mutateAsync, isLoading } = useMutation({
     mutationKey: ["saveTeam"],
-    mutationFn: saveTeamAPI,
+    mutationFn: updateTeamAPI,
     onMutate: () => {
       toast.loading("Saving team...");
     },
@@ -66,7 +66,7 @@ const TeamSetup = () => {
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
-    defaultValues: {
+    defaultValues: team || {
       teamName: "",
       playerOneName: "",
       playerTwoName: "",
@@ -137,7 +137,7 @@ const TeamSetup = () => {
                       type="text"
                       placeholder="Team Name"
                       {...register("teamName")}
-                      value={team.teamName}
+                      // value={team.teamName}
                       className="w-full p-2 border rounded"
                     />
                     {errors.teamName && (
@@ -160,7 +160,7 @@ const TeamSetup = () => {
                     placeholder="Full Name"
                     {...register("playerOneName")}
                     className="w-full p-2 border rounded"
-                    value={team.playerOneName}
+                    // value={team.playerOneName}
                   />
                   {errors.playerOneName && (
                     <p className="text-red-500 text-sm">
@@ -172,7 +172,7 @@ const TeamSetup = () => {
                     placeholder="Email"
                     {...register("playerOneEmail")}
                     className="w-full p-2 border rounded "
-                    value={team.playerOneEmail}
+                    // value={team.playerOneEmail}
                   />
                   {errors.playerOneEmail && (
                     <p className="text-red-500 text-sm">
@@ -185,7 +185,7 @@ const TeamSetup = () => {
                     placeholder="Phone"
                     {...register("playerOneContact")}
                     className="w-full p-2 border rounded"
-                    value={team.playerOneContact}
+                    // value={team.playerOneContact}
                   />
                   {errors.playerOneContact && (
                     <p className="text-red-500 text-sm">
@@ -197,7 +197,7 @@ const TeamSetup = () => {
                     type="date"
                     {...register("playerOneDOB")}
                     className="w-full p-2 border rounded"
-                    value={team.playerOneDOB}
+                    // value={team.playerOneDOB}
                   />
                   {errors.playerOneDOB && (
                     <p className="text-red-500 text-sm">
@@ -216,7 +216,7 @@ const TeamSetup = () => {
                     placeholder="Player Two Name"
                     {...register("playerTwoName")}
                     className="w-full p-2 border rounded mt-1"
-                    value={team.playerTwoName}
+                    // value={team.playerTwoName}
                   />
                   {errors.playerTwoName && (
                     <p className="text-red-500 text-sm">
@@ -229,7 +229,7 @@ const TeamSetup = () => {
                     placeholder="Email"
                     {...register("playerTwoEmail")}
                     className="w-full p-2 border rounded mt-2"
-                    value={team.playerTwoEmail}
+                    // value={team.playerTwoEmail}
                   />
                   {errors.playerTwoEmail && (
                     <p className="text-red-500 text-sm">
@@ -242,7 +242,7 @@ const TeamSetup = () => {
                     placeholder="Phone"
                     {...register("playerTwoContact")}
                     className="w-full p-2 border rounded mt-2"
-                    value={team.playerTwoContact}
+                    // value={team.playerTwoContact}
                   />
                   {errors.playerTwoContact && (
                     <p className="text-red-500 text-sm">
@@ -254,7 +254,7 @@ const TeamSetup = () => {
                     type="date"
                     {...register("playerTwoDOB")}
                     className="w-full p-2 border rounded mt-2"
-                    value={team.playerTwoDOB}
+                    // value={team.playerTwoDOB}
                   />
                   {errors.playerTwoDOB && (
                     <p className="text-red-500 text-sm">
