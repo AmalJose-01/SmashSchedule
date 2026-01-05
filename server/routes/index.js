@@ -18,6 +18,8 @@ router.use("/admin", adminLoginRouter);
 router.use("/admin", adminTeamRouter);
 router.use("/admin", adminKnockoutRouter);
 router.use("/payment", paymentRouter);
+router.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 
 // router.use("/webhook",stripeWebhook);
 
