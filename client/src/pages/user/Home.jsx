@@ -4,7 +4,7 @@ import Navbar from "../../components/Navbar";
 import bgImage from "/src/assets/icon/bg_Web.svg";
 import HeroBanner from "../user/HeroBanner";
 import bbIcon from "../../assets/icon/bb_s.png";
-import bvIcon from "../../assets/icon/bv_s.jpeg";
+import bvIcon from "../../assets/icon/bv_s.png";
 import bmIcon from "../../assets/icon/bm_s.png";
 import webfluenceLogo from "../../assets/icon/webfluence_logo.png"; 
 
