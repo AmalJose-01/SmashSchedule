@@ -23,22 +23,22 @@ const Home = () => {
               </h1>
               <div className="flex flex-col md:flex-row items-center justify-center gap-8 mt-4">
                 <img
-                  src="/src/assets/icon/BB.jpeg"
+                  src="/src/assets/icon/bb.jpeg"
                   alt="Partner 1"
                   className="h-28"
                 />
                 <img
-                  src="/src/assets/icon/BV.png"
+                  src="/src/assets/icon/bv.png"
                   alt="Partner 2"
                   className="h-28"
                 />
                 <img
-                  src="/src/assets/icon/BM.jpeg"
+                  src="/src/assets/icon/bm.jpeg"
                   alt="Partner 3"
                   className="h-28"
                 />
                  <img
-                  src="/src/assets/icon/Logo (2).png"
+                  src="/src/assets/icon/webfluence_logo.png"
                   alt="Partner 3"
                   className="h-28"
                 />
