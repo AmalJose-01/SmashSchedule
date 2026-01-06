@@ -33,7 +33,12 @@ const Home = () => {
                   className="h-28"
                 />
                 <img
-                  src="/src/assets/icon/Bm.jpeg"
+                  src="/src/assets/icon/BM.jpeg"
+                  alt="Partner 3"
+                  className="h-28"
+                />
+                 <img
+                  src="/src/assets/icon/Logo (2).png"
                   alt="Partner 3"
                   className="h-28"
                 />
