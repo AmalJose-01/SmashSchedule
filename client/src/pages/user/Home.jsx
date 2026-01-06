@@ -16,28 +16,32 @@ const Home = () => {
   <HeroBanner />
       <div className=" bg-white rounded-lg shadow-xl p-4">
         <div className="flex flex-col  md:flex-row justify-between items-start">
-          <div className="flex justify-between items-start">
+          <div className="flex justify-center items-center w-full  mb-6 md:mb-0 ">
             <div>
-              <h1 className="font-bold text-lg text-blue-600">
-                Club Tournament Schedule
+              <h1 className="font-bold text-4xl text-blue-600 text-center">
+               Our Partners
               </h1>
-              <p className="text-gray-600 mb-4">
-                Date: Saturday, 10 January 2026 <br />
-                Time: 9:00 AM – 4:00 PM <br />
-                Venue: Ken Kay Badminton Stadium, Wendouree <br />
-                Event: Men’s Doubles (18+)
-              </p>
+              <div className="flex flex-col md:flex-row items-center justify-center gap-8 mt-4">
+                <img
+                  src="/src/assets/icon/BB.jpeg"
+                  alt="Partner 1"
+                  className="h-28"
+                />
+                <img
+                  src="/src/assets/icon/BV.png"
+                  alt="Partner 2"
+                  className="h-28"
+                />
+                <img
+                  src="/src/assets/icon/Bm.jpeg"
+                  alt="Partner 3"
+                  className="h-28"
+                />
+              </div>
+            
             </div>
           </div>
-          <div className="items-center justify-center">
-            <ButtonWithIcon
-              title="View Tournaments"
-              icon="trophy"
-              buttonBGColor="bg-green-600"
-              textColor="text-white"
-              onClick={() => navigate("/tournamentList")}
-            />
-          </div>
+          
         </div>
       </div>
       </div>
