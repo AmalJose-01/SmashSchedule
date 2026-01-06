@@ -3,6 +3,11 @@ import ButtonWithIcon from "../../components/ButtonWithIcon";
 import Navbar from "../../components/Navbar";
 import bgImage from "/src/assets/icon/bg_Web.svg";
 import HeroBanner from "../user/HeroBanner";
+import bbIcon from "@/assets/icon/bb_s.jpeg";
+import bvIcon from "@/assets/icon/bv_s.png";
+import bmIcon from "@/assets/icon/bm_s.jpeg";
+import webfluenceLogo from "@/assets/icon/webfluence_logo.png"; 
+
 
 const Home = () => {
   const navigate = useNavigate();
@@ -23,22 +28,22 @@ const Home = () => {
               </h1>
               <div className="flex flex-col md:flex-row items-center justify-center gap-8 mt-4">
                 <img
-                  src="/src/assets/icon/bb_s.jpeg"
+                  src={bbIcon}
                   alt="Partner 1"
                   className="h-28"
                 />
                 <img
-                  src="/src/assets/icon/bv_s.png"
+                  src={bvIcon}
                   alt="Partner 2"
                   className="h-28"
                 />
                 <img
-                  src="/src/assets/icon/bm_s.jpeg"
+                  src={bmIcon}
                   alt="Partner 3"
                   className="h-28"
                 />
                  <img
-                  src="/src/assets/icon/webfluence_logo.png"
+                  src={webfluenceLogo}
                   alt="Partner 3"
                   className="h-28"
                 />
