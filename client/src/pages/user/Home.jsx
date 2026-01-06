@@ -23,17 +23,17 @@ const Home = () => {
               </h1>
               <div className="flex flex-col md:flex-row items-center justify-center gap-8 mt-4">
                 <img
-                  src="/src/assets/icon/bb.jpeg"
+                  src="/src/assets/icon/bb_s.jpeg"
                   alt="Partner 1"
                   className="h-28"
                 />
                 <img
-                  src="/src/assets/icon/bv.png"
+                  src="/src/assets/icon/bv_s.png"
                   alt="Partner 2"
                   className="h-28"
                 />
                 <img
-                  src="/src/assets/icon/bm.jpeg"
+                  src="/src/assets/icon/bm_s.jpeg"
                   alt="Partner 3"
                   className="h-28"
                 />
