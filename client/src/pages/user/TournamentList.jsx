@@ -108,8 +108,8 @@ const TournamentList = () => {
                     >
                       View Details
                     </button>
-
-                    {tournament.status === "Create" || tournament.status === "" &&
+{/* comment for the tournament registration button */}
+                    {/* {tournament.status === "Create"  &&
                       tournament.registeredTeamsCount <
                         tournament.maximumParticipants && (
                         <button
@@ -129,7 +129,7 @@ const TournamentList = () => {
                         >
                           Register
                         </button>
-                      )}
+                      )} */}
                     <button
                       // onClick={(e) => {
                       //   dispatch(setTournamentData(tournament));
@@ -141,7 +141,7 @@ const TournamentList = () => {
                         setVerificationOpen(true);
                       }}
                       className={`flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors ${
-                        tournament.status === "Create" || tournament.status === "" ? "hidden" : ""
+                        tournament.status === "Create" ? "hidden" : ""
                       }`}
                     >
                       View Score

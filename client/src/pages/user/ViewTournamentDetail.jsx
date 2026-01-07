@@ -98,8 +98,10 @@ const ViewTournamentDetail = () => {
             Tournament Detail
           </h2>
         </div>
+        
+{/* comment for the tournament registration button */}
 
-        <div className="flex gap-2">
+        {/* <div className="flex gap-2">
           <button
             onClick={() =>
               navigate("/save-teams", {
@@ -117,7 +119,7 @@ const ViewTournamentDetail = () => {
             <span className="hidden md:flex">{tournamentDetail.matchType === "Doubles" ? "Register Team" : "Register Player"}</span>
           </button>
          
-        </div>
+        </div> */}
       </div>
 
       <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white p-3">
