@@ -19,7 +19,7 @@ const buildPlayerMailBody = ({ teamName, tournamentDetail, playerOneName }) => {
     <h3>🕘 Arrival & Check-In</h3>
     <p>
       Please arrive by <strong>
-        ${tournamentDetail?.time || "To be announced"}
+       09:00 AM
         , Saturday, 10 January 2026
       </strong> for check-in and a prompt start.
     </p>
