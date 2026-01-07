@@ -19,9 +19,6 @@ router.use("/admin", adminTeamRouter);
 router.use("/admin", adminKnockoutRouter);
 router.use("/payment", paymentRouter);
 
-
-// router.use("/webhook",stripeWebhook);
-
 router.use("/mail", mailTest);
 
 
