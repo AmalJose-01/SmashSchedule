@@ -92,11 +92,7 @@ const buildPlayerMailBody = ({ teamName, tournamentDetail, playerOneName }) => {
   Kind regards,<br />
   <strong>Ballarat Masters Badminton Club</strong><br /><br />
 
-  <img
-    src="https://smashschedule-1.onrender.com/uploads/bm_s.png"
-    alt="Ballarat Masters Badminton Club Logo"
-    style="width:120px; max-width:100%; height:auto;"
-  />
+
 </p>
   `;
 };
