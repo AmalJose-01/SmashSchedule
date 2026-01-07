@@ -69,7 +69,7 @@ console.log("Mail service =====================");
       from: `"Ballarat Masters Badminton Club" <${process.env.EMAIL_USER}>`,
       to,
       subject,
-      html,
+      html,                                                                                  
     });
 
     console.log("Email sent: %s", info.messageId);
