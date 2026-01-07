@@ -49,9 +49,9 @@ const buildPlayerMailBody = ({ teamName, tournamentDetail, playerOneName }) => {
 
     <p>
       * Website:
-      <a href="Smash Schedule">
-        https://smash-schedule.vercel.app/
-      </a>
+     <a href="https://smash-schedule.vercel.app/" target="_blank" rel="noopener noreferrer">
+  Smash Schedule
+</a>
       <br />
       * Viewing Score Access Code:
       <strong>${tournamentDetail?.uniqueKey || "To be announced"}</strong>
@@ -80,6 +80,19 @@ const buildPlayerMailBody = ({ teamName, tournamentDetail, playerOneName }) => {
       <li>Plenty of parking available on site</li>
       <li>No food or drink restrictions</li>
     </ul>
+
+
+
+    <p>
+  <a 
+    href="https://drive.google.com/file/d/1zTqiVv4LghbHhYIfDCTz_n8v1ILhp0aK/view" 
+    style="color: red; font-weight: bold; text-decoration: none;" 
+    target="_blank" 
+    rel="noopener noreferrer"
+  >
+    Click here to view the player information pack containing the tournament format and rules.
+  </a>
+</p>
 
     <p>
       If you have any questions, feel free to reply to this email.
