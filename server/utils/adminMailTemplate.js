@@ -18,5 +18,4 @@ const buildAdminMailBody = ({
   </ul>
   `;
 };
-
 module.exports = buildAdminMailBody;

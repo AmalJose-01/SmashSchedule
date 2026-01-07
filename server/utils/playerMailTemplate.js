@@ -105,5 +105,4 @@ const buildPlayerMailBody = ({ teamName, tournamentDetail, playerOneName }) => {
 
   `;
 };
-
 module.exports = buildPlayerMailBody;
