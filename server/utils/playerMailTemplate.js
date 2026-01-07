@@ -4,14 +4,10 @@ const buildPlayerMailBody = ({ teamName, tournamentDetail, playerOneName }) => {
 
     <p>Hi <strong>${playerOneName}</strong>,</p>
 
-    <p>
-      Your team <strong>${teamName}</strong> has been successfully registered for the tournament!
-    </p>
-
-    <hr />
+    
 
     <p>
-      Welcome to the <strong>Ballarat Masters Open – Doubles Badminton Tournament</strong>.
+      Welcome to the <strong>Ballarat Masters Open – Mens Doubles Badminton Tournament</strong>.
       We’re excited to have you registered and look forward to a great day of competitive badminton
       at Ken Kay Badminton Stadium.
     </p>
@@ -23,8 +19,8 @@ const buildPlayerMailBody = ({ teamName, tournamentDetail, playerOneName }) => {
     <h3>🕘 Arrival & Check-In</h3>
     <p>
       Please arrive by <strong>
-        ${tournamentDetail?.date || "To be announced"}
         ${tournamentDetail?.time || "To be announced"}
+        , Saturday, 10 January 2026
       </strong> for check-in and a prompt start.
     </p>
 
@@ -54,7 +50,7 @@ const buildPlayerMailBody = ({ teamName, tournamentDetail, playerOneName }) => {
     <p>
       * Website:
       <a href="https://smash-schedule.vercel.app/">
-        https://smash-schedule.vercel.app/
+        smash-schedule
       </a>
       <br />
       * Viewing Score Access Code:
