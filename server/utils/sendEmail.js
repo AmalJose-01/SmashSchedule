@@ -20,7 +20,7 @@ const transporter = nodemailer.createTransport({
 console.log("Mail service =====================");
 
     const info = await transporter.sendMail({
-      from: `"Webfluence" <${process.env.EMAIL_USER}>`,
+      from: `"Ballarat Masters Badminton Club" <${process.env.EMAIL_USER}>`,
       to,
       subject,
       html,

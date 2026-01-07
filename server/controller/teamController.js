@@ -14,6 +14,10 @@ const {
 } = require("../helpers/matchHelpers.js");
 const AdminUser = require("../model/adminUser.js");
 const sendEmail = require("../utils/sendEmail.js");
+const buildPlayerMailBody = require("../utils/playerMailTemplate.js");
+const buildAdminMailBody = require("../utils/adminMailTemplate.js");
+
+
 
 // Create a new team
 const teamController = {
@@ -94,47 +98,19 @@ const teamController = {
       // ==========================
       console.log("AdminUserDetail", AdminUserDetail);
 
+
+
+      
       // 1️⃣ Email to Players
       const playerMailSubject = "✅ Team Registration Successful";
+      const adminMailSubject = "📢 New Team Registered";
 
-      const playerMailBody = `
-  <h2>🏸 Team Registration Confirmed</h2>
-
-  <p>Hi <strong>${playerOneName}</strong>,</p>
-
-  <p>Your team <strong>${teamName}</strong> has been successfully registered for the tournament.</p>
-
-  <hr />
-
-  <h3>📅 Match Details</h3>
-  <ul>
-    <li><strong>Date:</strong> ${
-      tournamentDetail.date || "To be announced"
-    }</li>
-    <li><strong>Time:</strong> ${
-      tournamentDetail.time || "To be announced"
-    }</li>
-    <li><strong>Location:</strong> ${
-      tournamentDetail.location || "To be announced"
-    }</li>
-    <li><strong>Tournament Access Code:</strong> ${
-      tournamentDetail.uniqueKey
-    }</li>
-  </ul>
-
-  <h3>👥 Team Members</h3>
-  <ul>
-    <li>${playerOneName}</li>
-    <li>${playerTwoName}</li>
-  </ul>
-
-  <p>Best of luck for the tournament! 🏆</p>
-
-  <p style="margin-top:20px;">
-    Regards,<br/>
-    <strong>Webfluence Tournament Team</strong>
-  </p>
-`;
+      const playerMailBody = buildPlayerMailBody({
+        teamName,
+        playerOneName,
+        playerTwoName,
+        tournamentDetail,
+      });
 
       await Promise.all([
         sendEmail({
@@ -152,23 +128,22 @@ const teamController = {
       if (AdminUserDetail?.emailID) {
         const adminMailSubject = "📢 New Team Registered";
 
-        const adminMailBody = `
-    <h3>New Team Registration</h3>
-    <p><strong>Team Name:</strong> ${teamName}</p>
-    <p><strong>Tournament ID:</strong> ${tournamentId}</p>
-    <p><strong>Players:</strong></p>
-    <ul>
-      <li>${playerOneName} (${playerOneEmail})</li>
-      <li>${playerTwoName} (${playerTwoEmail})</li>
-    </ul>
-  `;
+        const adminMailBody = buildAdminMailBody({
+          teamName,
+          tournamentId,
+          playerOneName,
+          playerOneEmail,
+          playerTwoName,
+          playerTwoEmail
+        });
 
         await sendEmail({
           to: AdminUserDetail.emailID,
           subject: adminMailSubject,
-          html: adminMailBody,
+          html: adminMailBody
         });
       }
+     
 
       res
         .status(201)
