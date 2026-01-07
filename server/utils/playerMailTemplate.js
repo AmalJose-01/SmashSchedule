@@ -57,7 +57,7 @@ const buildPlayerMailBody = ({ teamName, tournamentDetail, playerOneName }) => {
         https://smash-schedule.vercel.app/
       </a>
       <br />
-      * Viewing Access Code:
+      * Viewing Score Access Code:
       <strong>${tournamentDetail?.uniqueKey || "To be announced"}</strong>
     </p>
 
@@ -96,11 +96,11 @@ const buildPlayerMailBody = ({ teamName, tournamentDetail, playerOneName }) => {
   Kind regards,<br />
   <strong>Ballarat Masters Badminton Club</strong><br /><br />
 
-  <img
-    src="https://smashschedule-1.onrender.com/uploads/bm_s.png"
-    alt="Ballarat Masters Badminton Club Logo"
-    style="width:120px; max-width:100%; height:auto;"
-  />
+//   <img
+//     src="https://smashschedule-1.onrender.com/uploads/bm_s.png"
+//     alt="Ballarat Masters Badminton Club Logo"
+//     style="width:120px; max-width:100%; height:auto;"
+//   />
 </p>
 
   `;

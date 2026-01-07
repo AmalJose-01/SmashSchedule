@@ -1,34 +1,35 @@
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
+require("dotenv").config();
 
-const transporter = nodemailer.createTransport({
-  service: process.env.EMAIL_SERVICE,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 /**
- * @param {string} to
- * @param {string} subject
- * @param {string} html
- * @param {object} club { contactName, contactEmail }
+ * Send registration email
+ * @param {object} params
+ * @param {string} params.to - Recipient email
+ * @param {string} params.subject - Email subject
+ * @param {string} params.html - HTML email content
  */
-const sendRegMail = async (to, subject, html, club) => {
+const sendRegMail = async ({ to, subject, html }) => {
   try {
-    const fromAddress = club
-      ? `"${club.contactName}" <${club.contactEmail}>`
-      : `"Tournament System" <${process.env.EMAIL_USER}>`;
+    // Safety check
+    if (!to || typeof to !== "string") {
+      console.warn("⚠️ Invalid email skipped:", to);
+      return;
+    }
 
-    const info = await transporter.sendMail({
-      from: fromAddress,
-      replyTo: club?.contactEmail, // replies go to club
+    console.log("📨 To:", to);
+    console.log("📨 Subject:", subject);
+
+    const info = await resend.emails.send({
+      // Use this until your domain is verified in Resend
+      from: "Ballarat Masters Badminton Club <onboarding@resend.dev>",
       to,
       subject,
       html,
     });
 
-    console.log("📧 Email sent:", info.messageId);
+    console.log("📧 Email sent:", info);
     return info;
   } catch (err) {
     console.error("❌ Email error:", err);
