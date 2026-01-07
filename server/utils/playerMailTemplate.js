@@ -49,8 +49,8 @@ const buildPlayerMailBody = ({ teamName, tournamentDetail, playerOneName }) => {
 
     <p>
       * Website:
-      <a href="https://smash-schedule.vercel.app/">
-        smash-schedule
+      <a href="Smash Schedule">
+        https://smash-schedule.vercel.app/
       </a>
       <br />
       * Viewing Score Access Code:
@@ -90,7 +90,7 @@ const buildPlayerMailBody = ({ teamName, tournamentDetail, playerOneName }) => {
 
   <p style="margin-top:30px; text-align:center;">
   Kind regards,<br />
-  <strong>Ballarat Masters Badminton Club</strong><br /><br />
+  <strong>Ballarat Masters Badminton Club</strong><br />
 
 
 </p>
