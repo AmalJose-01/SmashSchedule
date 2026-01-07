@@ -109,7 +109,7 @@ const TournamentList = () => {
                       View Details
                     </button>
 
-                    {tournament.status === "Create" &&
+                    {tournament.status === "Create" || tournament.status === "" &&
                       tournament.registeredTeamsCount <
                         tournament.maximumParticipants && (
                         <button
@@ -141,7 +141,7 @@ const TournamentList = () => {
                         setVerificationOpen(true);
                       }}
                       className={`flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors ${
-                        tournament.status === "Create" ? "hidden" : ""
+                        tournament.status === "Create" || tournament.status === "" ? "hidden" : ""
                       }`}
                     >
                       View Score
