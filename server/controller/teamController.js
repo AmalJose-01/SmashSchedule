@@ -230,7 +230,7 @@ const teamController = {
 
       const { tournamentId } = req.params;
       const tournamentGroup = await Group.find({ tournamentId: tournamentId });
-      const tournamentMatches = await GroupMatch.find({
+      let tournamentMatches = await GroupMatch.find({
         tournamentId: tournamentId,
       });
 
@@ -244,6 +244,68 @@ const teamController = {
           .status(404)
           .json({ message: "No matches found for this tournament" });
       }
+
+
+
+
+ // ===============================
+    // 🔄 SORT BUT KEEP FLAT STRUCTURE
+    // ===============================
+    const grouped = {};
+
+    tournamentMatches.forEach((m) => {
+      const gid = m.group.toString();
+      if (!grouped[gid]) grouped[gid] = [];
+      grouped[gid].push(m);
+    });
+
+    const sortedFlatMatches = [];
+
+    Object.keys(grouped).forEach((gid) => {
+      const rounds = [];
+
+      grouped[gid].forEach((match) => {
+        let placed = false;
+
+        for (const round of rounds) {
+          if (round.length >= 2) continue;
+
+          const teams = new Set();
+          round.forEach((r) => {
+            teams.add(r.teamsHome.toString());
+            teams.add(r.teamsAway.toString());
+          });
+
+          if (
+            !teams.has(match.teamsHome.toString()) &&
+            !teams.has(match.teamsAway.toString())
+          ) {
+            round.push(match);
+            placed = true;
+            break;
+          }
+        }
+
+        if (!placed) rounds.push([match]);
+      });
+
+      // 🔽 flatten rounds back to array (IMPORTANT)
+      rounds.forEach((round) => {
+        round.forEach((match) => {
+          sortedFlatMatches.push(match);
+        });
+      });
+    });
+
+    // overwrite order ONLY
+    tournamentMatches = sortedFlatMatches;
+
+
+
+
+
+
+
 
       res.status(200).json({
         message: "Tournament details retrieved successfully",
