@@ -17,6 +17,7 @@ const sendEmail = require("../utils/sendEmail.js");
 const { generateGroupMatchPDF } = require("../utils/groupMatchPdf.js");
 const buildPlayerMailBody = require("../utils/playerMailTemplate.js");
 const buildAdminMailBody = require("../utils/adminMailTemplate.js");
+const sendRegistrationEmails = require("../routes/admin/sendRegistrationEmails.js");
 
 const generateUnique4DigitKey = () => {
   return ((Date.now() % 9000) + 1000).toString();
@@ -273,60 +274,79 @@ const adminTeamController = {
       const adminMailSubject = "📢 New Team Registered";
 
       // Send emails
-      await Promise.allSettled(
-        savedTeams.flatMap((team) => {
-          const playerMailBody = buildPlayerMailBody({
-            teamName: team.teamName,
-            playerOneName: team.playerOneName,
-            playerTwoName: team.playerTwoName,
-            tournamentDetail,
-          });
+      // await Promise.allSettled(
+      //   savedTeams.flatMap((team) => {
+      //     const playerMailBody = buildPlayerMailBody({
+      //       teamName: team.teamName,
+      //       playerOneName: team.playerOneName,
+      //       playerTwoName: team.playerTwoName,
+      //       tournamentDetail,
+      //     });
 
-          const tasks = [
-            sendEmail({
-              to: team.playerOneEmail,
-              subject: playerMailSubject,
-              html: playerMailBody,
-            }),
-            sendEmail({
-              to: team.playerTwoEmail,
-              subject: playerMailSubject,
-              html: playerMailBody,
-            }),
-          ];
+      //     const tasks = [
+      //       sendEmail({
+      //         to: team.playerOneEmail,
+      //         subject: playerMailSubject,
+      //         html: playerMailBody,
+      //       }),
+      //       sendEmail({
+      //         to: team.playerTwoEmail,
+      //         subject: playerMailSubject,
+      //         html: playerMailBody,
+      //       }),
+      //     ];
 
-          if (AdminUserDetail?.emailID) {
-            const adminMailBody = buildAdminMailBody({
-              teamName: team.teamName,
-              tournamentId,
-              playerOneName: team.playerOneName,
-              playerOneEmail: team.playerOneEmail,
-              playerTwoName: team.playerTwoName,
-              playerTwoEmail: team.playerTwoEmail,
-            });
-            tasks.push(
-              sendEmail({
-                to: AdminUserDetail.emailID,
-                subject: adminMailSubject,
-                html: adminMailBody,
-              })
-            );
-          }
+      //     if (AdminUserDetail?.emailID) {
+      //       const adminMailBody = buildAdminMailBody({
+      //         teamName: team.teamName,
+      //         tournamentId,
+      //         playerOneName: team.playerOneName,
+      //         playerOneEmail: team.playerOneEmail,
+      //         playerTwoName: team.playerTwoName,
+      //         playerTwoEmail: team.playerTwoEmail,
+      //       });
+      //       tasks.push(
+      //         sendEmail({
+      //           to: AdminUserDetail.emailID,
+      //           subject: adminMailSubject,
+      //           html: adminMailBody,
+      //         })
+      //       );
+      //     }
 
-          return tasks;
-        })
-      );
+      //     return tasks;
+      //   })
+      // );
 
 
       /* -------------------- FINAL RESPONSE -------------------- */
       if (savedTeams.length > 0) {
-        return res.status(201).json({
+         res.status(201).json({
           message: "Teams import completed",
           insertedCount: savedTeams.length,
           skippedCount: skippedTeams.length,
           insertedTeams: savedTeams,
           skippedTeams,
         });
+
+            // 3️⃣ Fire-and-forget email sending 🔥
+
+
+        (async () => {
+          try {
+            await sendRegistrationEmails({
+              teams: savedTeams,
+              playerMailSubject: "✅ Team Registration Successful",
+              adminMailSubject: "📋 New Team Registration",
+              tournamentDetail: req.body.tournamentDetail,
+              AdminUserDetail: req.admin,
+            });
+          } catch (err) {
+            console.error("❌ Background email error:", err);
+          }
+        })();
+        
+  return;
       }
 
       return res.status(409).json({
