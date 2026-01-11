@@ -18,7 +18,7 @@ import tournamentSetupSchema from "../../../utils/validationSchemas";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { saveTournamentAPI } from "../../services/admin/adminTeamServices";
+import {  updateTournamentAPI } from "../../services/admin/adminTeamServices";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
@@ -34,13 +34,13 @@ const EditTournament = () => {
   const { state } = useLocation();
   const tournamentDetail = state?.tournamentDetail;
 
+  const [matchTypeValue, setMatchTypeValue] = useState(
+    tournamentDetail.matchType ? tournamentDetail.matchType : "Singles"
+  ); // state to hold selected value
+  const [playTypeValue, setPlayTypeValue] = useState(
+    tournamentDetail.playType ? tournamentDetail.playType : "Round Robbin"
+  ); // state to hold selected value
 
-  const [matchTypeValue, setMatchTypeValue] = useState(tournamentDetail.matchType ? tournamentDetail.matchType : "Singles"); // state to hold selected value
-  const [playTypeValue, setPlayTypeValue] = useState(tournamentDetail.playType ? tournamentDetail.playType : "Round Robbin"); // state to hold selected value
-
-
-
-  
   // ---------------------------
   // FORM VALIDATION (YUP)
   // ---------------------------
@@ -64,13 +64,16 @@ const EditTournament = () => {
   // ---------------------------
   const { mutateAsync, isPending } = useMutation({
     mutationKey: ["saveTournament"],
-    mutationFn: saveTournamentAPI,
+    mutationFn: updateTournamentAPI,
     onMutate: () =>
       toast.loading("Saving tournament...", { id: "saveTournament" }),
     onSuccess: () => {
       toast.dismiss();
       toast.success("Tournament saved successfully!");
       queryClient.invalidateQueries({ queryKey: ["adminTournamentList"] });
+            queryClient.invalidateQueries({ queryKey: ["teams"] });
+
+      
       navigate(location.state?.from || "/setup-tournament", {
         replace: true,
       });
@@ -102,7 +105,7 @@ const EditTournament = () => {
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
-    defaultValues: {
+    defaultValues: tournamentDetail || {
       tournamentName: "My Tournament",
       teamsPerGroup: 4,
       playType: "Round Robbin",
@@ -187,8 +190,8 @@ const EditTournament = () => {
                 <div>
                   <input
                     type="text"
-                    value={tournamentDetail.tournamentName
-}
+                    // value={tournamentDetail.tournamentName}
+                    onChange={(e) => setValue("tournamentName", e.target.value)}
                     placeholder="Tournament Name"
                     {...register("tournamentName")}
                     className="w-full p-2 border rounded"
@@ -211,7 +214,7 @@ const EditTournament = () => {
                   type="date"
                   id="date"
                   name="date"
-                  value={tournamentDetail.date}
+                  // value={tournamentDetail.date}
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   {...register("date")}
@@ -230,7 +233,7 @@ const EditTournament = () => {
                   type="time"
                   id="time"
                   name="time"
-                    value={tournamentDetail.time}
+                  // value={tournamentDetail.time}
                   //   value={formData.time}
                   //   onChange={handleChange}
                   required
@@ -255,7 +258,7 @@ const EditTournament = () => {
                     placeholder="Tournament Name"
                     {...register("location")}
                     className="w-full p-2 border rounded"
-                      value={tournamentDetail.location}
+                    // value={tournamentDetail.location}
                   />
                   {errors.location && (
                     <p className="text-red-500 text-sm">
@@ -276,7 +279,7 @@ const EditTournament = () => {
                   type="number"
                   id="maxParticipants"
                   name="maxParticipants"
-                    value={tournamentDetail.maximumParticipants}
+                  // value={tournamentDetail.maximumParticipants}
                   // value={formData.maxParticipants}
                   // onChange={handleChange}
                   required
@@ -300,7 +303,7 @@ const EditTournament = () => {
                   type="number"
                   id=" registrationFee"
                   name=" registrationFee"
-                    value={tournamentDetail.registrationFee}
+                  // value={tournamentDetail.registrationFee}
                   required
                   {...register("registrationFee")}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -354,7 +357,7 @@ const EditTournament = () => {
                     type="number"
                     id="teamsPerGroup"
                     name="teamsPerGroup"
-                      value={tournamentDetail.teamsPerGroup}
+                    // value={tournamentDetail.teamsPerGroup}
                     required
                     min="2"
                     {...register("teamsPerGroup")}
@@ -407,7 +410,9 @@ const EditTournament = () => {
                     <input
                       type="number"
                       min="1"
-                        value={tournamentDetail.numberOfPlayersQualifiedToKnockout}
+                      // value={
+                      //   tournamentDetail.numberOfPlayersQualifiedToKnockout
+                      // }
                       {...register("numberOfPlayersQualifiedToKnockout")}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
@@ -428,7 +433,7 @@ const EditTournament = () => {
                     type="number"
                     id="numberOfCourts"
                     name="numberOfCourts"
-                      value={tournamentDetail.numberOfCourts}
+                    // value={tournamentDetail.numberOfCourts}
                     // value={formData.courtsAvailable}
                     // onChange={handleChange}
                     required
@@ -456,7 +461,7 @@ const EditTournament = () => {
                 <textarea
                   id="description"
                   name="description"
-                    value={tournamentDetail.description}
+                  // value={tournamentDetail.description}
                   // value={formData.description}
                   // onChange={handleChange}
                   rows={4}

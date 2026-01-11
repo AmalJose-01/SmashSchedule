@@ -14,6 +14,10 @@ const {
 } = require("../helpers/matchHelpers.js");
 const AdminUser = require("../model/adminUser.js");
 const sendEmail = require("../utils/sendEmail.js");
+const buildPlayerMailBody = require("../utils/playerMailTemplate.js");
+const buildAdminMailBody = require("../utils/adminMailTemplate.js");
+
+
 
 // Create a new team
 const teamController = {
@@ -94,47 +98,19 @@ const teamController = {
       // ==========================
       console.log("AdminUserDetail", AdminUserDetail);
 
+
+
+      
       // 1️⃣ Email to Players
       const playerMailSubject = "✅ Team Registration Successful";
+      const adminMailSubject = "📢 New Team Registered";
 
-      const playerMailBody = `
-  <h2>🏸 Team Registration Confirmed</h2>
-
-  <p>Hi <strong>${playerOneName}</strong>,</p>
-
-  <p>Your team <strong>${teamName}</strong> has been successfully registered for the tournament.</p>
-
-  <hr />
-
-  <h3>📅 Match Details</h3>
-  <ul>
-    <li><strong>Date:</strong> ${
-      tournamentDetail.date || "To be announced"
-    }</li>
-    <li><strong>Time:</strong> ${
-      tournamentDetail.time || "To be announced"
-    }</li>
-    <li><strong>Location:</strong> ${
-      tournamentDetail.location || "To be announced"
-    }</li>
-    <li><strong>Tournament Access Code:</strong> ${
-      tournamentDetail.uniqueKey
-    }</li>
-  </ul>
-
-  <h3>👥 Team Members</h3>
-  <ul>
-    <li>${playerOneName}</li>
-    <li>${playerTwoName}</li>
-  </ul>
-
-  <p>Best of luck for the tournament! 🏆</p>
-
-  <p style="margin-top:20px;">
-    Regards,<br/>
-    <strong>Webfluence Tournament Team</strong>
-  </p>
-`;
+      const playerMailBody = buildPlayerMailBody({
+        teamName,
+        playerOneName,
+        playerTwoName,
+        tournamentDetail,
+      });
 
       await Promise.all([
         sendEmail({
@@ -152,23 +128,22 @@ const teamController = {
       if (AdminUserDetail?.emailID) {
         const adminMailSubject = "📢 New Team Registered";
 
-        const adminMailBody = `
-    <h3>New Team Registration</h3>
-    <p><strong>Team Name:</strong> ${teamName}</p>
-    <p><strong>Tournament ID:</strong> ${tournamentId}</p>
-    <p><strong>Players:</strong></p>
-    <ul>
-      <li>${playerOneName} (${playerOneEmail})</li>
-      <li>${playerTwoName} (${playerTwoEmail})</li>
-    </ul>
-  `;
+        const adminMailBody = buildAdminMailBody({
+          teamName,
+          tournamentId,
+          playerOneName,
+          playerOneEmail,
+          playerTwoName,
+          playerTwoEmail
+        });
 
         await sendEmail({
           to: AdminUserDetail.emailID,
           subject: adminMailSubject,
-          html: adminMailBody,
+          html: adminMailBody
         });
       }
+     
 
       res
         .status(201)
@@ -178,25 +153,6 @@ const teamController = {
       res.status(500).json({ message: "Server Error", error: error.message });
     }
   },
-
-  // getTournaments: async (req, res) => {
-  //   try {
-  //     const tournaments = await Tournament.find().select(
-  //       "_id tournamentName numberOfPlayersQualifiedToKnockout date time status registrationFee maximumParticipants"
-  //     );
-  //     console.log(
-  //       "Tournaments fetched===========================================================================:",
-  //       tournaments
-  //     );
-  //     res.status(200).json({
-  //       message: "Tournaments retrieved successfully",
-  //       tournaments: tournaments,
-  //     });
-  //   } catch (error) {
-  //     console.log("Get tournaments error", error);
-  //     res.status(500).json({ message: "Server Error", error: error.message });
-  //   }
-  // },
 
   getTournaments: async (req, res) => {
     try {
@@ -274,7 +230,7 @@ const teamController = {
 
       const { tournamentId } = req.params;
       const tournamentGroup = await Group.find({ tournamentId: tournamentId });
-      const tournamentMatches = await GroupMatch.find({
+      let tournamentMatches = await GroupMatch.find({
         tournamentId: tournamentId,
       });
 
@@ -288,6 +244,68 @@ const teamController = {
           .status(404)
           .json({ message: "No matches found for this tournament" });
       }
+
+
+
+
+ // ===============================
+    // 🔄 SORT BUT KEEP FLAT STRUCTURE
+    // ===============================
+    const grouped = {};
+
+    tournamentMatches.forEach((m) => {
+      const gid = m.group.toString();
+      if (!grouped[gid]) grouped[gid] = [];
+      grouped[gid].push(m);
+    });
+
+    const sortedFlatMatches = [];
+
+    Object.keys(grouped).forEach((gid) => {
+      const rounds = [];
+
+      grouped[gid].forEach((match) => {
+        let placed = false;
+
+        for (const round of rounds) {
+          if (round.length >= 2) continue;
+
+          const teams = new Set();
+          round.forEach((r) => {
+            teams.add(r.teamsHome.toString());
+            teams.add(r.teamsAway.toString());
+          });
+
+          if (
+            !teams.has(match.teamsHome.toString()) &&
+            !teams.has(match.teamsAway.toString())
+          ) {
+            round.push(match);
+            placed = true;
+            break;
+          }
+        }
+
+        if (!placed) rounds.push([match]);
+      });
+
+      // 🔽 flatten rounds back to array (IMPORTANT)
+      rounds.forEach((round) => {
+        round.forEach((match) => {
+          sortedFlatMatches.push(match);
+        });
+      });
+    });
+
+    // overwrite order ONLY
+    tournamentMatches = sortedFlatMatches;
+
+
+
+
+
+
+
 
       res.status(200).json({
         message: "Tournament details retrieved successfully",

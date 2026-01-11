@@ -3,6 +3,11 @@ import ButtonWithIcon from "../../components/ButtonWithIcon";
 import Navbar from "../../components/Navbar";
 import bgImage from "/src/assets/icon/bg_Web.svg";
 import HeroBanner from "../user/HeroBanner";
+import bbIcon from "../../assets/icon/bb_s.png";
+import bvIcon from "../../assets/icon/bv_s.png";
+import bmIcon from "../../assets/icon/bm_s.png";
+import webfluenceLogo from "../../assets/icon/webfluence_logo.png"; 
+
 
 const Home = () => {
   const navigate = useNavigate();
@@ -16,28 +21,37 @@ const Home = () => {
   <HeroBanner />
       <div className=" bg-white rounded-lg shadow-xl p-4">
         <div className="flex flex-col  md:flex-row justify-between items-start">
-          <div className="flex justify-between items-start">
+          <div className="flex justify-center items-center w-full  mb-6 md:mb-0 ">
             <div>
-              <h1 className="font-bold text-lg text-blue-600">
-                Club Tournament Schedule
+              <h1 className="font-bold text-4xl text-blue-600 text-center">
+               Our Partners
               </h1>
-              <p className="text-gray-600 mb-4">
-                Date: Saturday, 10 January 2026 <br />
-                Time: 9:00 AM – 4:00 PM <br />
-                Venue: Ken Kay Badminton Stadium, Wendouree <br />
-                Event: Men’s Doubles (18+)
-              </p>
+              <div className="flex flex-col md:flex-row items-center justify-center gap-8 mt-4">
+                <img
+                  src={bbIcon}
+                  alt="Partner 1"
+                  className="h-28"
+                />
+                <img
+                  src={bvIcon}
+                  alt="Partner 2"
+                  className="h-28"
+                />
+                <img
+                  src={bmIcon}
+                  alt="Partner 3"
+                  className="h-28"
+                />
+                 <img
+                  src={webfluenceLogo}
+                  alt="Partner 3"
+                  className="h-28"
+                />
+              </div>
+            
             </div>
           </div>
-          <div className="items-center justify-center">
-            <ButtonWithIcon
-              title="View Tournaments"
-              icon="trophy"
-              buttonBGColor="bg-green-600"
-              textColor="text-white"
-              onClick={() => navigate("/tournamentList")}
-            />
-          </div>
+          
         </div>
       </div>
       </div>

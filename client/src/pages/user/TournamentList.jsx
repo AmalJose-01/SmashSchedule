@@ -108,8 +108,8 @@ const TournamentList = () => {
                     >
                       View Details
                     </button>
-
-                    {tournament.status === "Create" &&
+{/* comment for the tournament registration button */}
+                    {/* {tournament.status === "Create"  &&
                       tournament.registeredTeamsCount <
                         tournament.maximumParticipants && (
                         <button
@@ -129,7 +129,7 @@ const TournamentList = () => {
                         >
                           Register
                         </button>
-                      )}
+                      )} */}
                     <button
                       // onClick={(e) => {
                       //   dispatch(setTournamentData(tournament));
