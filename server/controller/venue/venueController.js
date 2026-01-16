@@ -1,0 +1,66 @@
+const Venue = require("../../model/venue/venueModel");
+
+const venueController = {
+  createVenue: async (req, res) => {
+    try {
+      const { venueName, location, userId } = req.body;
+
+      // Validate required fields
+
+      if (!venueName || !location || !userId) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      //   check if venue already exists combination of name , location and userId
+      const existingVenue = await Venue.findOne({
+        venueName,
+        location,
+        userId,
+      });
+      if (existingVenue) {
+        console.log("Existing Venue:", existingVenue);
+        return res
+          .status(400)
+          .json({
+            error:
+              "Venue with the same name and location already exists for this user",
+          });
+      }
+
+      // Assuming you have a Court model
+      const savedVenue = await Venue.create({
+        venueName,
+        location,
+        userId,
+      });
+
+      res
+        .status(201)
+        .json({ message: "Venue saved successfully", venue: savedVenue });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+
+  getVenuesByUserId: async (req, res) => {
+    try {
+      console.log("getVenuesByUserId called with params:", req.params);
+
+      const { userId } = req.params;
+      if (!userId) {
+        return res.status(400).json({ error: "User ID is required" });
+      }
+      const venues = await Venue.find({ userId });
+      if (venues.length === 0) {
+        return res.status(404).json({ error: "No venues found for this user" });
+      }
+
+      res.status(200).json({ venues });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+  
+};
+
+module.exports = venueController;

@@ -13,9 +13,15 @@ import SaveTeamRegistration from "./pages/user/SaveTeamRegistration.jsx";
 import CheckoutPage from "./pages/admin/CheckoutPage.jsx";
 import Success from "./pages/common/Success.jsx";
 import ViewTournamentDetail from "./pages/user/ViewTournamentDetail.jsx";
+import { LoadScript } from "@react-google-maps/api";
+import { googleMapsApiKey } from "../utils/config.js";
+import LocationSearch from "./components/LocationSearch.jsx";
+
+
 
 function App() {
   const [count, setCount] = useState(0);
+const libraries = ["places"];
 
   return (
     <>
@@ -48,7 +54,20 @@ function App() {
         </Router>
         <Toaster richColors position="top-center" />
       </div>
+
+
+        <LoadScript
+      googleMapsApiKey={googleMapsApiKey}
+      libraries={libraries}
+    >
+      {/* <LocationSearch /> */}
+    </LoadScript>
     </>
+
+
+
+
+
   );
 }
 

@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Trophy, PlusCircle,BookOpen, Calendar, LogOut } from "lucide-react";
+import { Trophy, PlusCircle, BookOpen, Calendar, LogOut } from "lucide-react";
 import Logout from "../../components/Logout";
 
 const AdminHome = () => {
@@ -27,6 +27,13 @@ const AdminHome = () => {
       icon: <BookOpen className="w-8 h-8 text-purple-600" />,
       action: () => navigate("/create-play-type"),
       color: "bg-purple-50 border-purple-200",
+    },
+    {
+      title: "Venue Management",
+      description: "Manage venues and courts.",
+      icon: <Trophy className="w-8 h-8 text-orange-600" />,
+      action: () => navigate("/venue-list"),
+      color: "bg-orange-50 border-orange-200",
     },
     // Add more dashboard items here
   ];

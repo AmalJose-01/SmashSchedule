@@ -384,10 +384,10 @@ const CreateTournament = () => {
                     <option value="Singles">Singles</option>
                     <option value="Doubles">Doubles</option>
                     <option value="Mixed Doubles">Mixed Doubles</option>
-                    {/* <option value="Mens Singles">Men's Singles</option>
+                    <option value="Mens Singles">Men's Singles</option>
                     <option value="Mens Doubles">Men's Doubles</option>
                     <option value="Womens Singles">Women's Singles</option>
-                    <option value="Womens Doubles">Women's Doubles</option> */}
+                    <option value="Womens Doubles">Women's Doubles</option>
                   </select>
                   {errors.matchType && (
                     <p className="text-red-600 text-sm">
