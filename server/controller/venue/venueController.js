@@ -60,7 +60,49 @@ const venueController = {
       res.status(500).json({ error: error.message });
     }
   },
-  
+  deleteVenue: async (req, res) => {
+    try {
+      const { venueId } = req.params;
+      if (!venueId) {
+        return res.status(400).json({ error: "Venue ID is required" });
+      }
+
+      const deletedVenue = await Venue.findByIdAndDelete(venueId);
+      if (!deletedVenue) {
+        return res.status(404).json({ error: "Venue not found" });
+      }
+
+      res.status(200).json({ message: "Venue deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+
+  //   Additional methods like updateVenue can be added here
+  updateVenue: async (req, res) => {
+    try {
+      const { venueId } = req.params;
+      const { venueName, location } = req.body;
+
+      if (!venueId) {
+        return res.status(400).json({ error: "Venue ID is required" });
+      }
+
+      const updatedVenue = await Venue.findByIdAndUpdate(
+        venueId,
+        { venueName, location },
+        { new: true }
+      );
+
+      if (!updatedVenue) {
+        return res.status(404).json({ error: "Venue not found" });
+      }
+
+      res.status(200).json({ message: "Venue updated successfully", venue: updatedVenue });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
 };
 
 module.exports = venueController;

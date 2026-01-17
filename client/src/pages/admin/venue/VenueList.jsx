@@ -1,41 +1,31 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Plus, Edit2, Trash2, MapPin, Building } from "lucide-react";
-import { deleteVenueAPI } from "../../../services/admin/venueServices";
-import { toast } from "sonner";
 import Logout from "../../../components/Logout";
 import useGetVenue from "../../../hooks/venue/useGetVenue";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { FaTrash } from "react-icons/fa";
+import ConfirmModal from "../../../components/AlertView";
+import useDeleteVenue from "../../../hooks/venue/useDeleteVenue";
 
 const VenueList = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [deleteVenueId, setDeleteVenueId] = useState(null);
 
   // Fetch Venues using Hook
   const { venues, isLoading, isError } = useGetVenue();
 
-  // Delete Mutation
-  const deleteMutation = useMutation({
-    mutationFn: deleteVenueAPI,
-    onSuccess: () => {
-      toast.success("Venue deleted successfully");
-      queryClient.invalidateQueries(["venueList"]);
-    },
-    onError: (error) => {
-      toast.error(error?.response?.data?.message || "Failed to delete venue");
-    },
-  });
+  const { deleteVenue, isPending } = useDeleteVenue();
+const handleDelete = async () => {
+  console.log("handleDelete id:", deleteVenueId);
 
-  const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this venue?")) {
-      deleteMutation.mutate(id);
-    }
-  };
+  await deleteVenue(deleteVenueId);  // wait first
+  setShowConfirm(false);             // then close
+};
 
-  useEffect(() => {
-    console.log("venue3456789", venues);
-  }, [venues]);
+  useEffect(() => {}, [venues]);
 
   // if (isLoading) return <LoadingSpinner />;
   // if (isError) return <div className="text-center mt-10 text-red-500">Failed to load venues.</div>;
@@ -58,7 +48,7 @@ const VenueList = () => {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto p-6 mt-8">
+      <div className="max-w-full mx-auto p-6 mt-8">
         {/* Actions */}
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -91,7 +81,7 @@ const VenueList = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {venues?.map((venue) => (
               <div
-                key={venue._id}
+                key={venue.id}
                 className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all overflow-hidden group"
               >
                 <div className="p-5">
@@ -115,20 +105,19 @@ const VenueList = () => {
                         onClick={() =>
                           navigate(`/venue-management/edit/${venue._id}`)
                         }
-                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                        className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center"
                         title="Edit"
                       >
-                        <Edit2 className="w-4 h-4" />
+                        <Edit2 className="" />
                       </button>
 
                       <button
                         className="p-2 bg-red-500 text-white rounded hover:bg-red-600 flex items-center justify-center"
-                        // onClick={(e) => {
-                        //   e.stopPropagation(); // Prevent li click
-                        //   setDeleteTournamentId(tournament._id);
-                        //   setShowConfirm(true);
-                        // }}
-                        onClick={() => handleDelete(venue._id)}
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent li click
+                          setDeleteVenueId(venue.id);
+                          setShowConfirm(true);
+                        }}
                       >
                         <Trash2 />
                       </button>
@@ -140,6 +129,18 @@ const VenueList = () => {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={showConfirm}
+        title="Delete Tournament"
+        message="This action cannot be undone. Do you want to proceed?"
+        confirmText="YES"
+        cancelText="NO"
+        danger
+        loading={isLoading}
+        onConfirm={handleDelete} // call delete function here
+        onCancel={() => setShowConfirm(false)} // close modal
+      />
     </div>
   );
 };

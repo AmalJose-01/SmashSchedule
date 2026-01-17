@@ -27,7 +27,6 @@ const useSaveVenue = () => {
         queryKey: ["venueList"],
       });
 
-      console.log("onSuccess data:", data);
       
 
       return data;
