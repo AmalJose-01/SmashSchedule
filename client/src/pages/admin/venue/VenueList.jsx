@@ -18,9 +18,6 @@ const VenueList = () => {
   // Fetch Venues using Hook
   const { venues, isLoading, isError } = useGetVenue();
   const { deleteVenue, isPending } = useDeleteVenue();
-
-
-
 const handleDelete = async () => {
   console.log("handleDelete id:", deleteVenueId);
 
