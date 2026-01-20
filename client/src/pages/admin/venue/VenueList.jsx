@@ -32,8 +32,6 @@ const handleDelete = async () => {
 
   useEffect(() => {}, [venues]);
 
-  // if (isLoading) return <LoadingSpinner />;
-  // if (isError) return <div className="text-center mt-10 text-red-500">Failed to load venues.</div>;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">

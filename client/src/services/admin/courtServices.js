@@ -4,7 +4,7 @@ import apiClient from "../api/axiosInstance";
 
 export const addCourtAPI = async (data) => {
     try {
-        const response = await apiClient.post(`${BASE_URL}/venue/add-court`, data, headerData());
+        const response = await apiClient.post(`${BASE_URL}/court/add-court`, data, headerData());
         return response.data;
     } catch (error) {
         throw error;

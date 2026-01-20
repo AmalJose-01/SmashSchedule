@@ -4,7 +4,7 @@ const adminCourtController = require("../../../controller/venue/courtController"
 
 const router = express.Router();
 
-router.post("/create-court", auth, adminCourtController.createCourt);
+router.post("/add-court", auth, adminCourtController.createCourt);
 router.get("/get-courts/:venueId", auth, adminCourtController.getCourtsByVenueId);
 router.delete("/delete-court/:courtId", auth, adminCourtController.deleteCourt);
 

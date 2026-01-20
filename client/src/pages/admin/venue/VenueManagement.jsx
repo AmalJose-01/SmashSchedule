@@ -79,8 +79,7 @@ const VenueManagement = () => {
 
 useEffect(() => {
   if (isEditMode && venueDetail) {
-    setValue("venueName", venueDetail.name || "");
-    setValue("location", venueDetail.location || "");
+
  console.log("venueDetail", venueDetail);
  
   }
@@ -106,7 +105,7 @@ useEffect(() => {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto p-6 mt-8">
+      <div className="max-full mx-auto p-6 mt-8">
         {/* Add Venue Section */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 mb-8">
           <div className="flex items-center gap-3 mb-6">
@@ -199,20 +198,31 @@ useEffect(() => {
         </div>
 
         {/* Courts List */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3">
-            <div className="flex justify-between items-start">
-              <div className="flex items-center gap-2">
-                <Grid3x3 className="w-5 h-5 text-purple-500" />
-                <span className="font-bold text-slate-700">Court 1</span>
+        {venueDetail?.courts && venueDetail.courts.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {venueDetail.courts.map((court) => (
+              <div key={court._id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-2">
+                    <Grid3x3 className="w-5 h-5 text-purple-500" />
+                    <span className="font-bold text-slate-700">{court.courtName}</span>
+                  </div>
+                  <span className={`px-2 py-1 text-xs rounded-full font-medium ${court.status === "Available" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}`}>
+                    {court.status}
+                  </span>
+                </div>
+                <div className="text-sm text-slate-500">{court.courtType} • {court.surface}</div>
+                <button className="mt-auto text-red-500 hover:text-red-700 flex items-center gap-2 text-sm">
+                  <Trash2 className="w-4 h-4" />
+                  Delete
+                </button>
               </div>
-              <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">
-                Available
-              </span>
-            </div>
-            <div className="text-sm text-slate-500">Indoor • Synthetic</div>
+            ))}
           </div>
-        </div>
+        ) : (
+          <div className="text-center py-8 text-slate-500">No courts added yet</div>
+        )}
+       
       </div>
 
       {/* Create Court Modal */}

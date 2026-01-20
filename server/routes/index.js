@@ -20,7 +20,7 @@ router.use("/admin", adminTeamRouter);
 router.use("/admin", adminKnockoutRouter);
 router.use("/payment", paymentRouter);
 router.use("/venue",venueRouter);
-router.use("/venue",courtRouter);
+router.use("/court",courtRouter);
 
 router.use("/mail", mailTest);
 

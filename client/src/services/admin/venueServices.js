@@ -39,14 +39,7 @@ export const getVenueDetailByIdAPI = async (venueId, userId) => {
 
 
 
-export const addCourtAPI = async (data) => {
-    try {
-        const response = await axios.post(`${BASE_URL}/venue/add-court`, data, headerData());
-        return response.data;
-    } catch (error) {
-        throw error;
-    }
-};
+
 
 
 export const updateVenueAPI = async (data) => {

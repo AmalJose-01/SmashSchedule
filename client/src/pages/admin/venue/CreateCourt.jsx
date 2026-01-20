@@ -12,18 +12,38 @@ import {
   Building,
   ListPlus,
 } from "lucide-react";
+import venueValidationSchemas from "../../../../utils/venueValidationSchemas";
+import useSaveCourt from "../../../hooks/venue/useSaveCourt";
+import { u } from "framer-motion/client";
+import { useParams } from "react-router-dom";
+import { useSelector } from "react-redux";
 function CreateCourt({ setShowCourtModal }) {
   const [isMultipleCourts, setIsMultipleCourts] = useState(false);
- 
-   // --- Form Schema ---
-   const schema = venueValidationSchemas.pick(["venueName", "location"]);
- 
- 
+
+  // --- Form Schema ---
+  const schema = venueValidationSchemas.pick(["courtName", "courtType"]);
+  const { saveCourt } = useSaveCourt();
+
+   const user = useSelector((state) => state.user.user);
+    const userId = user?._id;
+
+  const { venue_Id } = useParams();
+
+
+
   const {
     register: registerCourt,
     handleSubmit: handleSubmitCourt,
     formState: { errors: courtErrors },
-  } = useForm();
+  } = useForm({
+    defaultValues: {
+      courtName: "",
+      courtType: "Synthetic",
+      userId: userId,
+      venueId: venue_Id,
+      isMultipleCourts: isMultipleCourts,
+    },
+  });
 
   const onSubmitCourt = async (data) => {
     console.log("Court Form Data:", data);
@@ -90,13 +110,19 @@ function CreateCourt({ setShowCourtModal }) {
       courtsToCreate.push({
         courtName: data.courtName,
         courtType: data.courtType,
+        userId: userId,
+        venueId: venue_Id,
+        isMultipleCourts: isMultipleCourts,
       });
     }
 
     console.log("Courts Generated:", courtsToCreate);
-    toast.success(
-      `Generated ${courtsToCreate.length} court(s)! Check console.`
-    );
+
+    await saveCourt(courtsToCreate);
+
+    // toast.success(
+    //   `Generated ${courtsToCreate.length} court(s)! Check console.`
+    // );
 
     setShowCourtModal(false);
   };

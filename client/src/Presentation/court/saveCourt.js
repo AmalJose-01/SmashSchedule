@@ -1,5 +1,20 @@
 export const saveCourtUseCase = async (courtData, courtRepository) => {
-  if (!courtData.courtName) {
+
+
+ console.log("courtData:", courtData);
+// Check court data is array
+if (Array.isArray(courtData)) {
+    for (const court of courtData) {
+        if (!court.courtName) {
+            throw new Error("Court name is required for all courts");
+        }
+        if (!court.venueId) {
+            throw new Error("Venue ID is required for all courts");
+        }
+    }
+    return await courtRepository.saveCourt(courtData);
+} else {
+    if (!courtData.courtName) {
     throw new Error("Court name is required");
 
   }
@@ -7,4 +22,7 @@ export const saveCourtUseCase = async (courtData, courtRepository) => {
     throw new Error("Venue ID is required");
   }
     return await courtRepository.saveCourt(courtData);
+}
+
+
 };

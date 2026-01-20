@@ -16,9 +16,7 @@ const useGetVenue = () => {
         queryKey: ["venueList", userId],
         queryFn: () => getVenueUseCase(userId, venueRepository),
         enabled: !!userId, // Only fetch if userId exists
-        onError: (error) => {
-            console.log("44554545");
-            
+        onError: (error) => {            
             toast.dismiss();
             if (error?.response?.status === 401) {
                 toast.error(error.response.data.message || "Session expired");
