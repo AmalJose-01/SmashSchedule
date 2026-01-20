@@ -21,8 +21,6 @@ const VenueList = () => {
 
 
 
-
-
 const handleDelete = async () => {
   console.log("handleDelete id:", deleteVenueId);
 
