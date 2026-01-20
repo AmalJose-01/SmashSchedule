@@ -1,0 +1,54 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { saveCourtUseCase } from "../../Presentation/court/saveCourt";
+
+const useSaveCourt = () => {
+  // Hook implementation goes here
+const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationKey: ["saveCourt"],
+    // mutationFn: addCourtAPI,
+    mutationFn: (courtData) =>
+        saveCourtUseCase(courtData, courtRepository),
+
+    onMutate: () => {
+      toast.dismiss();
+      toast.loading("Saving court...");
+    },
+
+    onSuccess: (data) => {
+      toast.dismiss();
+      toast.success("Court saved successfully!");
+
+      queryClient.invalidateQueries({
+        queryKey: ["courtList"],
+      });
+
+      
+
+      return data;
+    },
+
+    onError: (error) => {
+      toast.dismiss();
+      toast.error(
+        error?.response?.data?.error || "Failed to save court"
+      );
+    },
+  });
+
+  const saveCourt = async (courtData) => {
+    return await mutation.mutateAsync(courtData);
+  };
+
+  return {
+    saveCourt,
+    isSaving: mutation.isPending,
+    isSuccess: mutation.isSuccess,
+    isError: mutation.isError,
+    error: mutation.error,
+    data: mutation.data,
+  };
+
+};
+export default useSaveCourt;

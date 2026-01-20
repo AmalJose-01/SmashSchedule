@@ -5,11 +5,6 @@ import {
   getUser,
 } from "../../../utils/storageHandler";
 
-// const initialUserDetail = {
-//   user: getUser() || null,
-//    accessToken: null,
-//   refreshToken: null,
-// };
 
 const initialUserDetail = {
   user: getUser() || null,

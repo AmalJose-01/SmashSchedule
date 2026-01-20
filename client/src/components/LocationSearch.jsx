@@ -1,7 +1,7 @@
 import { Autocomplete } from "@react-google-maps/api";
 import { useRef } from "react";
 
-const LocationSearch = ({ onSelect }) => {
+const LocationSearch = ({ onSelect, value }) => {
   const autoRef = useRef(null);
 
   const onLoad = (autocomplete) => {
@@ -41,6 +41,7 @@ const LocationSearch = ({ onSelect }) => {
       }}
     >
       <input
+        defaultValue={value}
         type="text"
         placeholder="Search business or address"
         className="w-full pl-10 px-4 py-3 border rounded-xl"

@@ -66,7 +66,7 @@ const AdminRoutes = () => {
         }
       />
       <Route
-        path="/venue-management/edit/:id"
+        path="/venue-management/edit/:venue_Id"
         element={
           <ProtectedRoute role="admin">
             <VenueManagement />

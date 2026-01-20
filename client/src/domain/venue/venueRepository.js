@@ -1,6 +1,6 @@
 import { get } from "react-hook-form";
-import { addVenueAPI, deleteVenueAPI, getAllVenuesAPI } from "../../services/admin/venueServices";
-import { mapVenueResponse } from "../mapper/venueMapper";
+import { addVenueAPI, deleteVenueAPI, getAllVenuesAPI, getVenueDetailByIdAPI } from "../../services/admin/venueServices";
+import { mapVenueDetailResponse, mapVenueResponse } from "../mapper/venueMapper";
 
 export const venueRepository = {
   saveVenue: (venueData) => addVenueAPI(venueData),
@@ -29,5 +29,20 @@ if (!venueArray.length) {
   },
 
   deleteVenue: (venueId) => deleteVenueAPI(venueId),
+
+  getVenueById: async (venueId, userId) => {
+     const response = await getVenueDetailByIdAPI(venueId, userId);
+    const venueArray = response?.venueDetail || [];
+    if (!venueArray) {
+      throw new Error("Venue not found");
+    }
+console.log("getVenueById venueArray:", venueArray);
+console.log("getVenueById response:", response);
+
+
+
+
+    return mapVenueDetailResponse(venueArray);
+  },
 
 };

@@ -60,6 +60,30 @@ const venueController = {
       res.status(500).json({ error: error.message });
     }
   },
+getVenueDetailById: async (req, res) => {
+    try {
+      console.log("getVenueDetailById called with params:", req.params);
+
+      const { venueId, userId } = req.params;
+      if (!venueId || !userId) {
+        return res.status(400).json({ error: "Venue ID and User ID are required" });
+      }
+      const venue = await Venue.findOne({ _id: venueId, userId });
+      if (!venue) {
+        return res.status(404).json({ error: "Venue not found for this user" });
+      }
+      
+
+      console.log("Venue detail fetched:", venue);
+      res.status(200).json({ venueDetail: venue });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+
+
+
+
   deleteVenue: async (req, res) => {
     try {
       const { venueId } = req.params;

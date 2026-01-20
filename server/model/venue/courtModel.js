@@ -20,6 +20,11 @@ const courtSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    courtType: {
+        type: String,
+        enum: ['synthetic', 'wood', 'Clay', 'Grass'],
+        required: true
+    },
     createdAt: {
         type: Date,
         default: Date.now

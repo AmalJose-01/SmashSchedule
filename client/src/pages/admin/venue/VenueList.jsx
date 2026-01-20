@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { FaTrash } from "react-icons/fa";
 import ConfirmModal from "../../../components/AlertView";
 import useDeleteVenue from "../../../hooks/venue/useDeleteVenue";
+import { setVenueData } from "../../../redux/slices/venueSlice";
 
 const VenueList = () => {
   const navigate = useNavigate();
@@ -16,8 +17,12 @@ const VenueList = () => {
 
   // Fetch Venues using Hook
   const { venues, isLoading, isError } = useGetVenue();
-
   const { deleteVenue, isPending } = useDeleteVenue();
+
+
+
+
+
 const handleDelete = async () => {
   console.log("handleDelete id:", deleteVenueId);
 
@@ -102,9 +107,10 @@ const handleDelete = async () => {
                     </div>
                     <div className="flex gap-2">
                       <button
-                        onClick={() =>
-                          navigate(`/venue-management/edit/${venue._id}`)
-                        }
+                        onClick={() => {
+                          setVenueData(venue);
+                          navigate(`/venue-management/edit/${venue.id}`);
+                        }}
                         className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center"
                         title="Edit"
                       >

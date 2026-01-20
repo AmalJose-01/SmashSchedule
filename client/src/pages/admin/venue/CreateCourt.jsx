@@ -14,6 +14,11 @@ import {
 } from "lucide-react";
 function CreateCourt({ setShowCourtModal }) {
   const [isMultipleCourts, setIsMultipleCourts] = useState(false);
+ 
+   // --- Form Schema ---
+   const schema = venueValidationSchemas.pick(["venueName", "location"]);
+ 
+ 
   const {
     register: registerCourt,
     handleSubmit: handleSubmitCourt,

@@ -15,9 +15,8 @@ import Success from "./pages/common/Success.jsx";
 import ViewTournamentDetail from "./pages/user/ViewTournamentDetail.jsx";
 import { LoadScript } from "@react-google-maps/api";
 import { googleMapsApiKey } from "../utils/config.js";
-import LocationSearch from "./components/LocationSearch.jsx";
-
-
+ import {useJsApiLoader} from '@react-google-maps/api';
+import GoogleMapsProvider from "./providers/GoogleMapsProvider.jsx";
 
 function App() {
   const [count, setCount] = useState(0);
@@ -26,6 +25,8 @@ const libraries = ["places"];
   return (
     <>
       <div className="w-full h-full bg-slate-200 overflow-x-hidden">
+           <GoogleMapsProvider>
+
         <Router>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -51,17 +52,16 @@ const libraries = ["places"];
             {AdminRoutes()}
           </Routes>
           <Footer />
+             
         </Router>
+            </GoogleMapsProvider>
+
         <Toaster richColors position="top-center" />
       </div>
 
 
-        <LoadScript
-      googleMapsApiKey={googleMapsApiKey}
-      libraries={libraries}
-    >
-      {/* <LocationSearch /> */}
-    </LoadScript>
+
+    
     </>
 
 

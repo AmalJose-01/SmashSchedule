@@ -28,6 +28,14 @@ export const getAllVenuesAPI = async (userId) => {
     }
 };
 
+export const getVenueDetailByIdAPI = async (venueId, userId) => {
+    try {
+        const response = await apiClient.get(`${BASE_URL}/venue/get-venue-detail/${venueId}/${userId}`, headerData());
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
 
 
 

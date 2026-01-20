@@ -1,4 +1,4 @@
-import React, { use, useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import {
   MapPin,
@@ -9,7 +9,7 @@ import {
   Building,
   Trash2,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Logout from "../../../components/Logout";
 import { toast } from "sonner";
 import CreateCourt from "./CreateCourt";
@@ -18,6 +18,7 @@ import venueValidationSchemas from "../../../../utils/venueValidationSchemas";
 import { yupResolver } from "@hookform/resolvers/yup";
 import useSaveVenue from "../../../hooks/venue/useSaveVenue";
 import { useSelector } from "react-redux";
+import useGetDetailVenue from "../../../hooks/venue/useVenueDetail";
 
 const DAYS_OF_WEEK = [
   "Monday",
@@ -36,11 +37,15 @@ const VenueManagement = () => {
 
   const { saveVenue, isSaving } = useSaveVenue();
 
+  const { venue_Id } = useParams();
+  const isEditMode = Boolean(venue_Id);
+  // console.log("isEditMode", isEditMode);
+  
+
+  const { venueDetail, isLoading: isVenueDetailLoading } = useGetDetailVenue();
+
   // --- Form Schema ---
-  const schema = venueValidationSchemas.pick([
-    "venueName",
-    "location",
-  ]);
+  const schema = venueValidationSchemas.pick(["venueName", "location"]);
 
   // --- useForm Setup ---
   const {
@@ -58,39 +63,8 @@ const VenueManagement = () => {
       location: "",
       // status: "Open",
       userId: user._id,
-      // availability: DAYS_OF_WEEK.map((day) => ({
-      //   day,
-      //   enabled: true,
-      //   timeSlots: [{ startTime: "09:00", endTime: "22:00" }],
-      // })),
     },
   });
-
-  // const { fields: availabilityFields } = useFieldArray({
-  //   control,
-  //   name: "availability",
-  // });
-
-  // // Helper to add time slot
-  // const addTimeSlot = (dayIndex) => {
-  //   const currentSlots = watch(`availability.${dayIndex}.timeSlots`);
-  //   setValue(`availability.${dayIndex}.timeSlots`, [
-  //     ...currentSlots,
-  //     { startTime: "", endTime: "" },
-  //   ]);
-  // };
-
-  // // Helper to remove time slot
-  // const removeTimeSlot = (dayIndex, slotIndex) => {
-  //   const currentSlots = watch(`availability.${dayIndex}.timeSlots`);
-  //   if (currentSlots.length === 1) {
-  //     toast.warning("At least one slot required if day is enabled.");
-  //     return;
-  //   }
-  //   const updatedSlots = currentSlots.filter((_, idx) => idx !== slotIndex);
-  //   setValue(`availability.${dayIndex}.timeSlots`, updatedSlots);
-  // };
-
 
   // --- Submit Handler ---
   const onSubmitVenue = async (data) => {
@@ -98,12 +72,21 @@ const VenueManagement = () => {
     // Backend should handle validation based on 'enabled' flag if schema requires it.
     // However, schema says 'at least one availability day', so we ensure valid data.
 
-
-  
-
     console.log("Venue Form Data:", data);
     await saveVenue(data);
   };
+
+
+useEffect(() => {
+  if (isEditMode && venueDetail) {
+    setValue("venueName", venueDetail.name || "");
+    setValue("location", venueDetail.location || "");
+ console.log("venueDetail", venueDetail);
+ 
+  }
+}, [isEditMode, venueDetail, setValue]);
+
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
@@ -150,6 +133,7 @@ const VenueManagement = () => {
                 Venue Name
               </label>
               <input
+              value={venueDetail?.venueName || ""}
                 type="text"
                 {...registerVenue("venueName")}
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
@@ -171,6 +155,7 @@ const VenueManagement = () => {
                 <MapPin className="absolute left-3 top-3.5 w-5 h-5 text-slate-400" />
                 <div className="w-full left-3 top-3.5">
                   <LocationSearch
+                    value={venueDetail?.location || ""}
                     onSelect={(location) => {
                       setValue("location", location.address, {
                         shouldDirty: true,
@@ -187,8 +172,6 @@ const VenueManagement = () => {
                 </p>
               )}
             </div>
-
-        
 
             {/* Submit */}
             <div className="col-span-2 flex justify-end gap-3 mt-4 border-t pt-4 border-slate-100">
