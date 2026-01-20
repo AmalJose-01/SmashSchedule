@@ -3,8 +3,8 @@ export const saveCourtUseCase = async (courtData, courtRepository) => {
 
  console.log("courtData:", courtData);
 // Check court data is array
-if (Array.isArray(courtData)) {
-    for (const court of courtData) {
+if (Array.isArray(courtData.courts)) {
+    for (const court of courtData.courts) {
         if (!court.courtName) {
             throw new Error("Court name is required for all courts");
         }
@@ -23,6 +23,5 @@ if (Array.isArray(courtData)) {
   }
     return await courtRepository.saveCourt(courtData);
 }
-
 
 };

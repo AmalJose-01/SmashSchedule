@@ -117,9 +117,11 @@ function CreateCourt({ setShowCourtModal }) {
     }
 
     console.log("Courts Generated:", courtsToCreate);
+    let saveCourtInput = {courts: courtsToCreate};
 
-    await saveCourt(courtsToCreate);
 
+
+    await saveCourt(saveCourtInput);
     // toast.success(
     //   `Generated ${courtsToCreate.length} court(s)! Check console.`
     // );

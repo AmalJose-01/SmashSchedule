@@ -13,29 +13,31 @@ const courtController = {
       if (!Array.isArray(courts)) {
         return res.status(400).json({ error: "Court data must be an array" });
       }
+
+       let savedCourts = [];
+        let unsavedCourts = [];
       for (const court of courts) {
         console.log("Court Data:", court);
-        const { name, venueId, courtNumber, courtType } = court;
-
+        const { courtName, userId, venueId, courtType } = court;
+        let savedCourt;
         // Validate required fields
-        if (!name || !venueId || !courtNumber || !courtType) {
+        if (!courtName || !venueId || !userId || !courtType) {
           return res.status(400).json({ error: "Missing required fields" });
         }
         // Check court is available for the same venue
-        const existingCourt = await Court.findOne({ venueId, courtNumber });
+        const existingCourt = await Court.findOne({ venueId: venueId, userId: userId, name: courtName, courtType });
         if (existingCourt) {
           return res
             .status(400)
             .json({
-              error: `Court number ${courtNumber} already exists for this venue`,
+              error: `Court  ${courtName} already exists for this venue`,
             });
-        }
-
-        // Assuming you have a Court model
-        const savedCourt = await Court.create({
-          name: court.name,
+        }else{
+           // Assuming you have a Court model
+         savedCourt = await Court.create({
+          name: court.courtName,
           venueId: court.venueId,
-          courtNumber: court.courtNumber,
+          userId: court.userId,
           courtType,
         });
 
@@ -43,11 +45,30 @@ const courtController = {
         await Venue.findByIdAndUpdate(venueId, {
           $push: { courts: savedCourt._id },
         });
+        }
+
+       
+
+
+
+          if (savedCourt) {
+            savedCourts.push(savedCourt);
+          } else {
+            unsavedCourts.push(court);
+          }
+
+
+
+
+        }
+       
+       
+        
 
         res
           .status(201)
-          .json({ message: "Court saved successfully", court: savedCourt });
-      }
+          .json({ message: "Court saved successfully", court: savedCourts ,unsavedCourts});
+      
     } catch (error) {
       res.status(500).json({ error: error.message });
     }

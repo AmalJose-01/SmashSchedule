@@ -32,17 +32,12 @@ if (!venueArray.length) {
 
   getVenueById: async (venueId, userId) => {
      const response = await getVenueDetailByIdAPI(venueId, userId);
-    const venueArray = response?.venueDetail || [];
-    if (!venueArray) {
-      throw new Error("Venue not found");
-    }
-console.log("getVenueById venueArray:", venueArray);
-console.log("getVenueById response:", response);
+ 
 
 
 
 
-    return mapVenueDetailResponse(venueArray);
+    return mapVenueDetailResponse(response);
   },
 
 };

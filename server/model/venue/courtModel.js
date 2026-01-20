@@ -13,6 +13,11 @@ const courtSchema = new mongoose.Schema({
     },
     courtNumber: {
         type: Number,
+        required: false
+    },
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'AdminUser',
         required: true
     },
     
@@ -20,20 +25,20 @@ const courtSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+     gameStatus: {
+        type: Boolean,
+        default: false
+    },
     courtType: {
         type: String,
-        enum: ['synthetic', 'wood', 'Clay', 'Grass'],
+        enum: ['synthetic', 'wooden', 'clay', 'grass'],
+        lowercase: true,
+        uppercase: true,
+        caseSensitive: true,
         required: true
     },
-    createdAt: {
-        type: Date,
-        default: Date.now
-    },
-    updatedAt: {
-        type: Date,
-        default: Date.now
-    }
-});
+   
+}, { timestamps: true });
 
 
 const Court = mongoose.model("Court", courtSchema);

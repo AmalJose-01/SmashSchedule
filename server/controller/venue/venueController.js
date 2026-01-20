@@ -1,3 +1,4 @@
+const Court = require("../../model/venue/courtModel");
 const Venue = require("../../model/venue/venueModel");
 
 const venueController = {
@@ -72,10 +73,12 @@ getVenueDetailById: async (req, res) => {
       if (!venue) {
         return res.status(404).json({ error: "Venue not found for this user" });
       }
+      // Get Court List corresponding to this venue
+       const courts = await Court.find({ venueId: venueId });
       
 
-      console.log("Venue detail fetched:", venue);
-      res.status(200).json({ venueDetail: venue });
+      console.log("Venue detail fetched:", venue, courts);
+      res.status(200).json({ venueDetail: venue, courtList: courts });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
