@@ -10,7 +10,12 @@ const useGetDetailVenue = () => {
    const user = useSelector((state) => state.user.user);
     const userId = user?._id;
 
-  const { venue_Id } = useParams();
+
+ const venue = useSelector((state) => state.venue.venueData);
+
+  const venue_Id = venue?.id;
+
+
   const isEditMode = Boolean(venue_Id);
 
   console.log("isEditMode", isEditMode);

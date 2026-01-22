@@ -1,10 +1,12 @@
-import { useJsApiLoader } from "@react-google-maps/api";
+
+import { googleMapsApiKey } from "../../utils/config.js";
+ import {useJsApiLoader} from '@react-google-maps/api';
 
 const libraries = ["places"];
 
 const GoogleMapsProvider = ({ children }) => {
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_KEY,
+    googleMapsApiKey: googleMapsApiKey,
     libraries,
   });
 

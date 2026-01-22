@@ -24,12 +24,12 @@ function CreateCourt({ setShowCourtModal }) {
   const schema = venueValidationSchemas.pick(["courtName", "courtType"]);
   const { saveCourt } = useSaveCourt();
 
-   const user = useSelector((state) => state.user.user);
-    const userId = user?._id;
+  const user = useSelector((state) => state.user.user);
+  const userId = user?._id;
 
-  const { venue_Id } = useParams();
+  const venue = useSelector((state) => state.venue.venueData);
 
-
+  const venue_Id = venue?.id;
 
   const {
     register: registerCourt,
@@ -78,6 +78,9 @@ function CreateCourt({ setShowCourtModal }) {
           courtsToCreate.push({
             courtName: `${prefixValue} ${i}`.trim(),
             courtType,
+            userId: userId,
+            venueId: venue_Id,
+            isMultipleCourts: isMultipleCourts,
           });
         }
       } else if (
@@ -99,6 +102,9 @@ function CreateCourt({ setShowCourtModal }) {
           courtsToCreate.push({
             courtName: `${prefix} ${String.fromCharCode(i)}`.trim(),
             courtType,
+            userId: userId,
+            venueId: venue_Id,
+            isMultipleCourts: isMultipleCourts,
           });
         }
       } else {
@@ -117,9 +123,7 @@ function CreateCourt({ setShowCourtModal }) {
     }
 
     console.log("Courts Generated:", courtsToCreate);
-    let saveCourtInput = {courts: courtsToCreate};
-
-
+    let saveCourtInput = { courts: courtsToCreate };
 
     await saveCourt(saveCourtInput);
     // toast.success(

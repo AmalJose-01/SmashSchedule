@@ -13,9 +13,7 @@ import SaveTeamRegistration from "./pages/user/SaveTeamRegistration.jsx";
 import CheckoutPage from "./pages/admin/CheckoutPage.jsx";
 import Success from "./pages/common/Success.jsx";
 import ViewTournamentDetail from "./pages/user/ViewTournamentDetail.jsx";
-import { LoadScript } from "@react-google-maps/api";
-import { googleMapsApiKey } from "../utils/config.js";
- import {useJsApiLoader} from '@react-google-maps/api';
+
 import GoogleMapsProvider from "./providers/GoogleMapsProvider.jsx";
 
 function App() {

@@ -54,7 +54,7 @@ const AdminHome = () => {
       </div>
 
       {/* DASHBOARD CONTENT */}
-      <div className="max-w-5xl mx-auto p-6 mt-8">
+      <div className="max-full mx-auto p-6 mt-8">
         <h1 className="text-3xl font-bold text-slate-900 mb-8">Welcome, Admin</h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

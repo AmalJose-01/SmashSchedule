@@ -2,10 +2,18 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { saveCourtUseCase } from "../../Presentation/court/saveCourt";
 import { toast } from "sonner";
 import { courtRepository } from "../../domain/venue/courtRepository";
+import { useSelector } from "react-redux";
 
 const useSaveCourt = () => {
   // Hook implementation goes here
 const queryClient = useQueryClient();
+
+ const venue = useSelector((state) => state.venue.venueData);
+
+  const venue_Id = venue?.id;
+
+   const user = useSelector((state) => state.user.user);
+    const userId = user?._id;
 
   const mutation = useMutation({
     mutationKey: ["saveCourt"],
@@ -22,8 +30,9 @@ const queryClient = useQueryClient();
       toast.dismiss();
       toast.success("Court saved successfully!");
 
+    
       queryClient.invalidateQueries({
-        queryKey: ["courtList"],
+        queryKey: ["venueDetail", venue_Id, userId],
       });
       return data;
     },

@@ -99,6 +99,9 @@ getVenueDetailById: async (req, res) => {
         return res.status(404).json({ error: "Venue not found" });
       }
 
+      // Delete associated courts
+      await Court.deleteMany({ venueId: venueId });
+
       res.status(200).json({ message: "Venue deleted successfully" });
     } catch (error) {
       res.status(500).json({ error: error.message });

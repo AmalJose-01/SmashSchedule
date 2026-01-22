@@ -2,9 +2,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { saveVenueUseCase } from "../../Presentation/venue/saveVenue";
 import { venueRepository } from "../../domain/venue/venueRepository";
+import { setVenueData } from "../../redux/slices/venueSlice";
+import { useDispatch } from "react-redux";
 
 const useSaveVenue = () => {
   const queryClient = useQueryClient();
+  const dispatch = useDispatch();
 
   const mutation = useMutation({
     mutationKey: ["saveVenue"],
@@ -24,6 +27,9 @@ const useSaveVenue = () => {
         queryKey: ["venueList"],
       });
 
+
+
+    dispatch(setVenueData(data));
       
 
       return data;

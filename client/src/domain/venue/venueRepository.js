@@ -3,7 +3,13 @@ import { addVenueAPI, deleteVenueAPI, getAllVenuesAPI, getVenueDetailByIdAPI } f
 import { mapVenueDetailResponse, mapVenueResponse } from "../mapper/venueMapper";
 
 export const venueRepository = {
-  saveVenue: (venueData) => addVenueAPI(venueData),
+  saveVenue: async (venueData) => {
+    const response = await addVenueAPI(venueData);
+    console.log("venueRepository saveVenue response:", response);
+
+
+    return mapVenueResponse(response.venue);
+  },
 
 // getVenues: async (userId) => getAllVenuesAPI(userId),
 

@@ -19,6 +19,9 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import useSaveVenue from "../../../hooks/venue/useSaveVenue";
 import { useSelector } from "react-redux";
 import useGetDetailVenue from "../../../hooks/venue/useVenueDetail";
+import useDeleteCourt from "../../../hooks/venue/useDeleteCourt";
+import ConfirmModal from "../../../components/AlertView";
+
 
 const DAYS_OF_WEEK = [
   "Monday",
@@ -37,7 +40,12 @@ const VenueManagement = () => {
 
   const { saveVenue, isSaving } = useSaveVenue();
 
-  const { venue_Id } = useParams();
+   const venue = useSelector((state) => state.venue.venueData);
+     const [deleteCourtId, setDeleteCourtId] = useState(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+
+  const venue_Id = venue?.id;
   const isEditMode = Boolean(venue_Id);
   // console.log("isEditMode", isEditMode);
   
@@ -51,6 +59,7 @@ const VenueManagement = () => {
   const {
     register: registerVenue,
     handleSubmit: handleSubmitVenue,
+    reset,
     control,
     formState: { errors: venueErrors },
     setValue,
@@ -58,7 +67,7 @@ const VenueManagement = () => {
     watch,
   } = useForm({
     resolver: yupResolver(schema),
-    defaultValues: {
+    defaultValues: venueDetail || {
       venueName: "",
       location: "",
       // status: "Open",
@@ -77,11 +86,26 @@ const VenueManagement = () => {
   };
 
 
+    const { deleteCourt, isDeleting } = useDeleteCourt();
+const handleDelete = async () => {
+  console.log("handleDelete id:", deleteCourtId);
+
+  await deleteCourt(deleteCourtId);  // wait first
+  setShowConfirm(false);             // then close
+};
+
+
 useEffect(() => {
   if (isEditMode && venueDetail) {
 
- console.log("venueDetail", venueDetail);
- 
+ if (isEditMode && venueDetail) {
+    reset({
+      venueName: venueDetail.venueName,
+      location: venueDetail.location,
+      userId: user._id,
+      id: venueDetail.id,
+    });
+  } 
   }
 }, [isEditMode, venueDetail, setValue]);
 
@@ -132,7 +156,7 @@ useEffect(() => {
                 Venue Name
               </label>
               <input
-              value={venueDetail?.venueName || ""}
+              //  value={venueDetail?.venueName || ""}
                 type="text"
                 {...registerVenue("venueName")}
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
@@ -212,10 +236,25 @@ useEffect(() => {
                   </span>
                 </div>
                 <div className="text-sm text-slate-500">{court.courtType} </div>
-                <button className="mt-auto text-red-500 hover:text-red-700 flex items-center gap-2 text-sm">
+                {/* <button className="mt-auto text-red-500 hover:text-red-700 flex items-center gap-2 text-sm">
                   <Trash2 className="w-4 h-4" />
                   Delete
-                </button>
+                </button> */}
+
+
+  <button
+                        className="p-2 bg-red-500 text-white rounded hover:bg-red-600 flex items-center justify-center"
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent li click
+                          setDeleteCourtId(court.id);
+                          setShowConfirm(true);
+                        }}
+                      >
+                        <Trash2 />
+                      </button>
+
+
+
               </div>
             ))}
           </div>
@@ -227,8 +266,21 @@ useEffect(() => {
 
       {/* Create Court Modal */}
       {showCourtModal && <CreateCourt setShowCourtModal={setShowCourtModal} />}
+   
+     <ConfirmModal
+        isOpen={showConfirm}
+        title="Delete Court"
+        message="This action cannot be undone. Do you want to proceed?"
+        confirmText="YES"
+        cancelText="NO"
+        danger
+        loading={isDeleting}
+        onConfirm={handleDelete} // call delete function here
+        onCancel={() => setShowConfirm(false)} // close modal
+      />
+   
     </div>
-  );
+  );  
 };
 
 export default VenueManagement;

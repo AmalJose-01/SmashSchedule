@@ -4,8 +4,8 @@ const Venue = require("../../model/venue/venueModel");
 const courtController = {
   createCourt: async (req, res) => {
     try {
-        console.log("req", req.body);
-        
+      console.log("req", req.body);
+
       // court may be multiple per venue
       const { courts } = req.body;
 
@@ -14,61 +14,49 @@ const courtController = {
         return res.status(400).json({ error: "Court data must be an array" });
       }
 
-       let savedCourts = [];
-        let unsavedCourts = [];
+      let savedCourts = [];
+      let duplicateCourts = [];
       for (const court of courts) {
         console.log("Court Data:", court);
         const { courtName, userId, venueId, courtType } = court;
-        let savedCourt;
+
         // Validate required fields
         if (!courtName || !venueId || !userId || !courtType) {
           return res.status(400).json({ error: "Missing required fields" });
         }
+
         // Check court is available for the same venue
-        const existingCourt = await Court.findOne({ venueId: venueId, userId: userId, name: courtName, courtType });
-        if (existingCourt) {
-          return res
-            .status(400)
-            .json({
-              error: `Court  ${courtName} already exists for this venue`,
-            });
-        }else{
-           // Assuming you have a Court model
-         savedCourt = await Court.create({
-          name: court.courtName,
-          venueId: court.venueId,
-          userId: court.userId,
+        const existingCourt = await Court.findOne({
+          venueId: venueId,
+          userId: userId,
+          name: courtName,
           courtType,
         });
 
-        // update the venue to include this court
-        await Venue.findByIdAndUpdate(venueId, {
-          $push: { courts: savedCourt._id },
-        });
+        if (existingCourt) {
+          duplicateCourts.push(courtName);
+        } else {
+          // Assuming you have a Court model
+          const savedCourt = await Court.create({
+            name: court.courtName,
+            venueId: court.venueId,
+            userId: court.userId,
+            courtType,
+          });
+
+          // update the venue to include this court
+          await Venue.findByIdAndUpdate(venueId, {
+            $push: { courts: savedCourt._id },
+          });
+          savedCourts.push(savedCourt);
         }
+      }
 
-       
-
-
-
-          if (savedCourt) {
-            savedCourts.push(savedCourt);
-          } else {
-            unsavedCourts.push(court);
-          }
-
-
-
-
-        }
-       
-       
-        
-
-        res
-          .status(201)
-          .json({ message: "Court saved successfully", court: savedCourts ,unsavedCourts});
-      
+      res.status(201).json({
+        message: "Court saved successfully",
+        court: savedCourts,
+        duplicates: duplicateCourts,
+      });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
@@ -92,8 +80,12 @@ const courtController = {
       res.status(500).json({ error: error.message });
     }
   },
+
   deleteCourt: async (req, res) => {
     try {
+console.log("deleteCourt",req);
+
+
       const { courtId } = req.params;
       if (!courtId) {
         return res.status(400).json({ error: "Court ID is required" });

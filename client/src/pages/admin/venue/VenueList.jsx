@@ -8,9 +8,12 @@ import { FaTrash } from "react-icons/fa";
 import ConfirmModal from "../../../components/AlertView";
 import useDeleteVenue from "../../../hooks/venue/useDeleteVenue";
 import { setVenueData } from "../../../redux/slices/venueSlice";
+import { useDispatch } from "react-redux";
 
 const VenueList = () => {
   const navigate = useNavigate();
+    const dispatch = useDispatch();
+
   const queryClient = useQueryClient();
   const [showConfirm, setShowConfirm] = useState(false);
   const [deleteVenueId, setDeleteVenueId] = useState(null);
@@ -101,7 +104,7 @@ const handleDelete = async () => {
                     <div className="flex gap-2">
                       <button
                         onClick={() => {
-                          setVenueData(venue);
+                             dispatch(setVenueData(venue));
                           navigate(`/venue-management/edit/${venue.id}`);
                         }}
                         className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center"

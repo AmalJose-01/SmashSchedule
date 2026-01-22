@@ -10,3 +10,11 @@ export const addCourtAPI = async (data) => {
         throw error;
     }
 };
+export const deleteCourtAPI = async (courtID) => {
+    try{
+        const response = await apiClient.delete(`${BASE_URL}/court/delete-court/${courtID}`,headerData());
+        return response.data;
+    }catch(error){
+        throw error;
+    }
+}

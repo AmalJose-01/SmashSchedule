@@ -14,7 +14,11 @@ const tournamentSlice = createSlice({
     },
     getTournamentData: (state) => {
       return state.tournamentData;
-    }
+    },
+    clearTournamentData: (state) => {
+      state.tournamentData = {};
+      localStorage.removeItem("tournamentDetail");
+    },
   },
 });
 
