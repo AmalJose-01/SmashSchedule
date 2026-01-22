@@ -10,12 +10,70 @@ import CreateTournament from "../pages/admin/CreateTournament";
 import AdminTournamentList from "../pages/admin/AdminTournamentList";
 import EditTournament from "../pages/admin/EditTournament";
 import EditTeam from "../pages/admin/EditTeam";
+import AdminHome from "../pages/admin/AdminHome";
+import CreateSession from "../pages/admin/CreateSession";
+import CreatePlayType from "../pages/admin/CreatePlayType";
+import VenueManagement from "../pages/admin/venue/VenueManagement";
+import VenueList from "../pages/admin/venue/VenueList";
 
 const AdminRoutes = () => {
   const user = useSelector((state) => state.user.user);
 
   return (
     <>
+      <Route
+        path="/admin-home"
+        element={
+          <ProtectedRoute role="admin">
+            <AdminHome />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/create-session"
+        element={
+          <ProtectedRoute role="admin">
+            <CreateSession />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/create-play-type"
+        element={
+          <ProtectedRoute role="admin">
+            <CreatePlayType />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Venue Routes */}
+      <Route
+        path="/venue-list"
+        element={
+          <ProtectedRoute role="admin">
+            <VenueList />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/venue-management/add"
+        element={
+          <ProtectedRoute role="admin">
+            <VenueManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/venue-management/edit/:venue_Id"
+        element={
+          <ProtectedRoute role="admin">
+            <VenueManagement />
+          </ProtectedRoute>
+        }
+      />
+
       <Route
         path="/tournament-list"
         element={
@@ -86,18 +144,12 @@ const AdminRoutes = () => {
           ) : user.accountType === "admin" && !user.isVerified ? (
             <Navigate to="/checkout" replace />
           ) : (
-            <Navigate to="/tournament-list" replace />
+            <Navigate to="/admin-home" replace />
           )
         }
       />
 
-      <Route
-        path="/login"
-        element={
-          !user ? <Login /> : <Navigate to="/tournament-list" replace />
-          // !user ? <Login /> : <Navigate to="/checkout" replace />
-        }
-      />
+
 
       {/* Add more admin routes here */}
     </>

@@ -252,11 +252,6 @@ const adminTeamController = {
         });
       }
 
-      // // Insert new teams
-      // const savedTeams =
-      //   teamsToInsert.length > 0
-      //     ? await Team.insertMany(teamsToInsert, { ordered: false })
-      //     : [];
 
       if (!savedTeams || savedTeams.length === 0) {
         return res.status(500).json({ message: "Failed to import team" });
@@ -269,54 +264,6 @@ const adminTeamController = {
       const AdminUserDetail = await AdminUser.findById(
         tournamentDetail.adminId
       ).select("emailID");
-
-      const playerMailSubject = "✅ Team Registration Successful";
-      const adminMailSubject = "📢 New Team Registered";
-
-      // Send emails
-      // await Promise.allSettled(
-      //   savedTeams.flatMap((team) => {
-      //     const playerMailBody = buildPlayerMailBody({
-      //       teamName: team.teamName,
-      //       playerOneName: team.playerOneName,
-      //       playerTwoName: team.playerTwoName,
-      //       tournamentDetail,
-      //     });
-
-      //     const tasks = [
-      //       sendEmail({
-      //         to: team.playerOneEmail,
-      //         subject: playerMailSubject,
-      //         html: playerMailBody,
-      //       }),
-      //       sendEmail({
-      //         to: team.playerTwoEmail,
-      //         subject: playerMailSubject,
-      //         html: playerMailBody,
-      //       }),
-      //     ];
-
-      //     if (AdminUserDetail?.emailID) {
-      //       const adminMailBody = buildAdminMailBody({
-      //         teamName: team.teamName,
-      //         tournamentId,
-      //         playerOneName: team.playerOneName,
-      //         playerOneEmail: team.playerOneEmail,
-      //         playerTwoName: team.playerTwoName,
-      //         playerTwoEmail: team.playerTwoEmail,
-      //       });
-      //       tasks.push(
-      //         sendEmail({
-      //           to: AdminUserDetail.emailID,
-      //           subject: adminMailSubject,
-      //           html: adminMailBody,
-      //         })
-      //       );
-      //     }
-
-      //     return tasks;
-      //   })
-      // );
 
 
       /* -------------------- FINAL RESPONSE -------------------- */

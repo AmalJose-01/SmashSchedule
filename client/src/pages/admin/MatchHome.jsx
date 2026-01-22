@@ -81,14 +81,6 @@ const MatchHome = () => {
     );
   };
 
-// const handleDownload = (pdfUrl) => {
-//   const pdfUrl = tournamentDetail?.pdfUrl;
-
-//   const link = document.createElement("a");
-//   link.href = `${BASE_URL}${pdfUrl}`;
-//   link.download = "Match_Sheets.pdf";
-//   link.click();
-// };
 
 
 const handleDownload = async () => {

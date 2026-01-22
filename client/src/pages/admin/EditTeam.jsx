@@ -5,7 +5,8 @@ import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { updateTeamAPI } from "../../services/teamServices";
 import { toast } from "sonner"; // make sure react-toastify is installed
-import Navbar from "../../components/Navbar";
+// import Navbar from "../../components/Navbar";
+import Logout from "../../components/Logout";
 import {
   X,
   Users,
@@ -25,8 +26,8 @@ const TeamSetup = () => {
   const { state } = location;
   const team = state?.team;
 
-  console.log("team",team);
-  
+  console.log("team", team);
+
 
   const tournament = useSelector((state) => state.tournament.tournamentData);
 
@@ -101,13 +102,30 @@ const TeamSetup = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white ">
-      <Navbar />
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white p-3">
-        <div className="card w-full max-w-xl mx-auto shadow-lg rounded-lg bg-blue-600 items-center mt-2">
+      {/* Header */}
+      <div className="flex justify-between items-center bg-white p-4  shadow-lg sticky top-0">
+        <div className="flex items-center gap-4">
+          <Trophy
+            className="w-8 h-8 text-blue-600"
+            onClick={() => navigate("/")}
+          />
+
+          <h2 className="text-xl font-semibold text-blue-800">
+            Edit Team
+          </h2>
+        </div>
+
+        <div className="flex gap-2">
+          <Logout />
+        </div>
+      </div>
+
+      <div className="p-5">
+        <div className="card w-full max-w-xl mx-auto shadow-lg rounded-lg bg-blue-600 items-center">
           <div className="flex  items-center justify-between p-4">
             <div className="flex  items-center gap-3">
               <Users className="w-6 h-6 text-white" />
-              <h2 className="text-2xl  text-white">Team Registration</h2>
+              <h2 className="text-2xl  text-white">Edit Team</h2>
             </div>
             <button
               onClick={onClose}

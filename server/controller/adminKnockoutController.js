@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 const KnockoutTeam = require("../model/knockoutTeam");
 const KnockoutMatch = require("../model/knockoutMatch.js");
-// const Tournament = require("../model/Tournament");
 const Group = require("../model/groupTournament");
 const {
   determineKnockoutWinnerAndStatus,

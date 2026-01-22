@@ -14,12 +14,17 @@ import CheckoutPage from "./pages/admin/CheckoutPage.jsx";
 import Success from "./pages/common/Success.jsx";
 import ViewTournamentDetail from "./pages/user/ViewTournamentDetail.jsx";
 
+import GoogleMapsProvider from "./providers/GoogleMapsProvider.jsx";
+
 function App() {
   const [count, setCount] = useState(0);
+const libraries = ["places"];
 
   return (
     <>
       <div className="w-full h-full bg-slate-200 overflow-x-hidden">
+           <GoogleMapsProvider>
+
         <Router>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -45,10 +50,22 @@ function App() {
             {AdminRoutes()}
           </Routes>
           <Footer />
+             
         </Router>
+            </GoogleMapsProvider>
+
         <Toaster richColors position="top-center" />
       </div>
+
+
+
+    
     </>
+
+
+
+
+
   );
 }
 

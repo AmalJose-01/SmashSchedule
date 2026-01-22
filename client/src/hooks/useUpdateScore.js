@@ -4,7 +4,7 @@ import { saveScoreAPI } from "../services/admin/adminTeamServices";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
-export const useUpdateScore = (input) => {
+export const useUpdateScore = () => {
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
     const navigate = useNavigate();

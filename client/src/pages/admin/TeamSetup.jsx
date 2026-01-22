@@ -5,7 +5,8 @@ import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { saveTeamAPI } from "../../services/teamServices";
 import { toast } from "sonner"; // make sure react-toastify is installed
-import Navbar from "../../components/Navbar";
+// import Navbar from "../../components/Navbar";
+import Logout from "../../components/Logout";
 import {
   X,
   Users,
@@ -15,6 +16,8 @@ import {
   Upload,
   UserPlus,
   Save,
+  User,
+  Calendar,
 } from "lucide-react";
 import { useSelector } from "react-redux";
 
@@ -95,9 +98,26 @@ const TeamSetup = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white ">
-      <Navbar />
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white p-3">
-        <div className="card w-full max-w-xl mx-auto shadow-lg rounded-lg bg-blue-600 items-center mt-2">
+      {/* Header */}
+      <div className="flex justify-between items-center bg-white p-4  shadow-lg sticky top-0">
+        <div className="flex items-center gap-4">
+          <Trophy
+            className="w-8 h-8 text-blue-600"
+            onClick={() => navigate("/")}
+          />
+
+          <h2 className="text-xl font-semibold text-blue-800">
+            Team Registration
+          </h2>
+        </div>
+
+        <div className="flex gap-2">
+          <Logout />
+        </div>
+      </div>
+
+      <div className="p-5">
+        <div className="card w-full max-w-xl mx-auto shadow-lg rounded-lg bg-blue-600 items-center">
           <div className="flex  items-center justify-between p-4">
             <div className="flex  items-center gap-3">
               <Users className="w-6 h-6 text-white" />
@@ -116,7 +136,9 @@ const TeamSetup = () => {
               onSubmit={handleSubmit(onSubmit)}
             >
               {/* Team Information */}
-              <h3 className="text-lg  pb-2 border-b">Team Information</h3>
+              <h3 className="text-lg font-bold pb-2 border-b">
+                Team Information
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="md:col-span-2">
                   <label
@@ -142,36 +164,66 @@ const TeamSetup = () => {
                 </div>
               </div>
               {/* Team Members */}
-              <h3 className="text-lg  pb-2 border-b mt-6">Team Information</h3>
+              <h3 className="text-lg font-bold pb-2 border-b mt-6">
+                Team Information
+              </h3>
 
               {/* Player One */}
               <div className="rounded-md bg-gray-100 p-2">
-                <span className="text-sm text-gray-600 ">Member 1</span>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <input
-                    type="text"
-                    placeholder="Full Name"
-                    {...register("playerOneName")}
-                    className="w-full p-2 border rounded"
-                  />
-                  {errors.playerOneName && (
-                    <p className="text-red-500 text-sm">
-                      {errors.playerOneName.message}
-                    </p>
-                  )}
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    {...register("playerOneEmail")}
-                    className="w-full p-2 border rounded "
-                  />
-                  {errors.playerOneEmail && (
-                    <p className="text-red-500 text-sm">
-                      {errors.playerOneEmail.message}
-                    </p>
-                  )}
+                {/* <span className="text-sm text-gray-600 ">Member 1</span> */}
 
-                  <input
+               
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+ <div>
+                  <div className="flex items-center gap-2 text-gray-700 mb-2">
+                    <User className="w-4 h-4" />
+                    Player 1
+                  </div>
+
+
+                    <input
+                      type="text"
+                      placeholder="Full Name"
+                      {...register("playerOneName")}
+                      className="w-full p-2 border rounded"
+                    />
+                    {errors.playerOneName && (
+                      <p className="text-red-500 text-sm">
+                        {errors.playerOneName.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2 text-gray-700 mb-2">
+                      <Mail className="w-4 h-4" />
+                      Plater 1 Mail
+                    </div>
+
+                    <input
+                      type="email"
+                      placeholder="Email"
+                      {...register("playerOneEmail")}
+                      className="w-full p-2 border rounded "
+                    />
+                    {errors.playerOneEmail && (
+                      <p className="text-red-500 text-sm">
+                        {errors.playerOneEmail.message}
+                      </p>
+                    )}
+                  </div>
+
+
+
+
+<div>
+    <div className="flex items-center gap-2 text-gray-700 mb-2">
+                      <Mail className="w-4 h-4" />
+                      Plater 1 Mail
+                    </div>
+
+                     <input
                     type="text"
                     placeholder="Phone"
                     {...register("playerOneContact")}
@@ -183,7 +235,15 @@ const TeamSetup = () => {
                     </p>
                   )}
 
-                  <input
+</div>
+
+
+<div>
+    <div className="flex items-center gap-2 text-gray-700 mb-2">
+                      <Mail className="w-4 h-4" />
+                      Plater 1 Mail
+                    </div>
+  <input
                     type="date"
                     {...register("playerOneDOB")}
                     className="w-full p-2 border rounded"
@@ -193,6 +253,10 @@ const TeamSetup = () => {
                       {errors.playerOneDOB.message}
                     </p>
                   )}
+
+                                        </div>
+
+                
                 </div>
               </div>
 

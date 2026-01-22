@@ -1,0 +1,49 @@
+import { get } from "react-hook-form";
+import { addVenueAPI, deleteVenueAPI, getAllVenuesAPI, getVenueDetailByIdAPI } from "../../services/admin/venueServices";
+import { mapVenueDetailResponse, mapVenueResponse } from "../mapper/venueMapper";
+
+export const venueRepository = {
+  saveVenue: async (venueData) => {
+    const response = await addVenueAPI(venueData);
+    console.log("venueRepository saveVenue response:", response);
+
+
+    return mapVenueResponse(response.venue);
+  },
+
+// getVenues: async (userId) => getAllVenuesAPI(userId),
+
+
+
+  getVenues: async (userId) => {
+    try {
+      const response = await getAllVenuesAPI(userId);
+      console.log("getAllVenuesAPI response:", response);
+      
+
+const venueArray = response?.venues || [];  
+if (!venueArray.length) {
+        return [];
+      }
+    return venueArray.map(mapVenueResponse);
+
+    } catch (error) {
+      log("venueRepository getVenues error:", error);
+     
+      throw error;
+    }
+  },
+
+  deleteVenue: (venueId) => deleteVenueAPI(venueId),
+
+  getVenueById: async (venueId, userId) => {
+     const response = await getVenueDetailByIdAPI(venueId, userId);
+ 
+
+
+
+
+    return mapVenueDetailResponse(response);
+  },
+
+};
