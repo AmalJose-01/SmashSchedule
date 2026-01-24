@@ -26,9 +26,7 @@ function CreateCourt({ setShowCourtModal }) {
 
   const user = useSelector((state) => state.user.user);
   const userId = user?._id;
-
   const venue = useSelector((state) => state.venue.venueData);
-
   const venue_Id = venue?.id;
 
   const {
@@ -126,10 +124,7 @@ function CreateCourt({ setShowCourtModal }) {
     let saveCourtInput = { courts: courtsToCreate };
 
     await saveCourt(saveCourtInput);
-    // toast.success(
-    //   `Generated ${courtsToCreate.length} court(s)! Check console.`
-    // );
-
+    
     setShowCourtModal(false);
   };
 
