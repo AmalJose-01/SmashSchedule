@@ -471,7 +471,11 @@ const CreateTournament = () => {
                     <MapPin className="w-4 h-4" />
                     Number of Courts Available
                   </div>
-                  <input
+                 
+                
+                 
+                 
+                  {/* <input
                     type="number"
                     id="numberOfCourts"
                     name="numberOfCourts"
@@ -482,7 +486,20 @@ const CreateTournament = () => {
                     {...register("numberOfCourts")}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter number of courts"
-                  />
+                    // onFocus={  navigate("/select-Venue")}
+                  /> */}
+
+
+<input
+  type="number"
+  readOnly
+  {...register("numberOfCourts")}
+  onClick={() => navigate("/select-Venue")}
+  placeholder="Select courts"
+  className="w-full px-4 py-2 border border-gray-300 rounded-lg cursor-pointer bg-gray-50"
+/>
+
+
                   {errors.numberOfCourts && (
                     <p className="text-red-600 text-sm">
                       {errors.numberOfCourts.message}

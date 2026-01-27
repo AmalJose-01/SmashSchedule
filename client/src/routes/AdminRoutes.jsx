@@ -15,6 +15,7 @@ import CreateSession from "../pages/admin/CreateSession";
 import CreatePlayType from "../pages/admin/CreatePlayType";
 import VenueManagement from "../pages/admin/venue/VenueManagement";
 import VenueList from "../pages/admin/venue/VenueList";
+import SelectVenueAndCourt from "../pages/admin/tournament/selectVenueAndCourt";
 
 const AdminRoutes = () => {
   const user = useSelector((state) => state.user.user);
@@ -135,6 +136,18 @@ const AdminRoutes = () => {
           </ProtectedRoute>
         }
       />
+
+<Route
+path="/select-Venue"
+element={
+   <ProtectedRoute role="admin">
+            <SelectVenueAndCourt />
+          </ProtectedRoute>
+}
+/>
+
+
+
 
       <Route
         path="/login"
