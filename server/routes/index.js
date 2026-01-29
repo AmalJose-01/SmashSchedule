@@ -9,6 +9,8 @@ const stripeWebhook = require("./stripeWebhook")
 const mailTest = require("./admin/mailTest")
 const venueRouter = require("./admin/venue/venueRouter")
 const courtRouter = require("./admin/venue/courtRouter")
+const tournamentRouter = require("./admin/tournament/tournamentRouter")
+
 const router = express();
 
 
@@ -21,6 +23,7 @@ router.use("/admin", adminKnockoutRouter);
 router.use("/payment", paymentRouter);
 router.use("/venue",venueRouter);
 router.use("/court",courtRouter);
+router.use("/admin/tournament",tournamentRouter)
 
 router.use("/mail", mailTest);
 

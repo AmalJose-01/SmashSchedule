@@ -15,4 +15,19 @@ export const mapVenueDetailResponse = (apiData) => ({
     courtType: court.courtType,
     courtStatus: court.isActive,
   })),
+
+
+
+});
+
+export const mapVenueList = (response) => ({
+id: response._id,
+venueName: response.venueName
+});
+
+export const mapCourtList = (response) => ({
+id: response._id,
+venueId: response.venueId,
+courtName: response.name,
+
 });

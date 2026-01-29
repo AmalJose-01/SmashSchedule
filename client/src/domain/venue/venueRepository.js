@@ -39,10 +39,6 @@ if (!venueArray.length) {
   getVenueById: async (venueId, userId) => {
      const response = await getVenueDetailByIdAPI(venueId, userId);
  
-
-
-
-
     return mapVenueDetailResponse(response);
   },
 
