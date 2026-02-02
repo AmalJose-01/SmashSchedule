@@ -100,7 +100,7 @@ registerUser: async (req, res) => {
 getUserDetail: async (req,res) => {
   {
 
-    console.log("sghfgsdfsdghf");
+    console.log("getUserDetail req.userId", req.userId);
     
     try {
       const userId = req.userId;
