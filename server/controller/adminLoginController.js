@@ -2,7 +2,33 @@ require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const AdminUser = require("../model/adminUser")
 const adminLoginController = {
-    createUserWithGoogle: async (req, res) => {
+registerUser: async (req, res) => {
+    try {
+      const { firstName, lastName, email, password, accountType } = req.body;
+
+      // Check if user already exists
+      const existingUser = await AdminUser.findOne({ emailID: email });
+      if (existingUser) {
+        return res.status(400).json({ message: "User already exists" });
+      }
+
+      // Create new user
+      const newUser = await AdminUser.create({
+        firstName,
+        lastName,
+        emailID: email,
+        password,
+        accountType,
+      });
+
+      res.status(201).json({ message: "User registered successfully", user: newUser });
+    } catch (error) {
+      console.error("Error registering user:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  },
+
+  createUserWithGoogle: async (req, res) => {
     console.log("req.body", req.body);
 
     try {
