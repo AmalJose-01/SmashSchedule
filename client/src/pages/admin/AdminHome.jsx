@@ -38,7 +38,8 @@ const AdminHome = () => {
     // Add more dashboard items here
   ];
 
-  return (
+  return ( 
+    
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       {/* HEADER */}
       <div className="flex justify-between items-center bg-white p-4 shadow-sm sticky top-0 z-10">
