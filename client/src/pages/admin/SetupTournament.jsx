@@ -328,6 +328,24 @@ const SetupTournament = () => {
     }
   };
 
+  useEffect(() => {
+    if (papaData.length > 0) {
+      handleSyncTeams();
+    }
+  }, [papaData]);
+
+  useEffect(() => {
+    if (successImportTeam || importError || bulkRRAddMutation.isSuccess || bulkRRAddMutation.isError) {
+      setData([]); // clear parsed data
+      setTeamFile(null); // clear uploaded file
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  }, [successImportTeam, importError, bulkRRAddMutation.isSuccess, bulkRRAddMutation.isError]);
+
+
   const handleSyncTeams = () => {
     if (!papaData.length || !tournamentDetail._id) return;
 
@@ -352,23 +370,6 @@ const SetupTournament = () => {
       handleUseImportTeam(payload);
     }
   };
-
-  useEffect(() => {
-    if (papaData.length > 0) {
-      handleSyncTeams();
-    }
-  }, [papaData]);
-
-  useEffect(() => {
-    if (successImportTeam || importError || bulkRRAddMutation.isSuccess || bulkRRAddMutation.isError) {
-      setData([]); // clear parsed data
-      setTeamFile(null); // clear uploaded file
-      setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
-  }, [successImportTeam, importError, bulkRRAddMutation.isSuccess, bulkRRAddMutation.isError]);
 
   // Wait until tournamentDetail is loaded
   if (!tournamentDetail) {
