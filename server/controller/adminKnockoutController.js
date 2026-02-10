@@ -22,8 +22,8 @@ function getRoundNumber(numTeams) {
 }
 
 const getKnockoutSize = (count) => {
-  console.log("getKnockoutSize",count);
-  
+  console.log("getKnockoutSize", count);
+
   if (count >= 9) return 16;
   if (count >= 7) return 8;
   if (count >= 5) return 6;
@@ -123,7 +123,7 @@ const adminKnockoutController = {
           }));
         qualifiedTeams.push(...topTeams);
 
-      
+
 
         // Take exactly the next top team from each group
         const nextTeam = sortedTeams[numberOfPlayersQualifiedToKnockout];
@@ -138,9 +138,9 @@ const adminKnockoutController = {
       });
 
 
-  const targetSize = getKnockoutSize(qualifiedTeams.length);
+      const targetSize = getKnockoutSize(qualifiedTeams.length);
 
-        console.log("targetSize", targetSize);
+      console.log("targetSize", targetSize);
 
 
       console.log("Qualified Team1", qualifiedTeams);
@@ -309,6 +309,94 @@ const adminKnockoutController = {
         .json({ message: "Knockout score saved successfully", match });
     } catch (error) {
       console.error("Error saving knockout score:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  },
+
+  updateMatchDetails: async (req, res) => {
+    try {
+      const { matchId } = req.params;
+      const {
+        courtId,
+        venueId,
+        courtNumber,
+        startTime,
+        endTime,
+        isWalkover,
+        winner,
+      } = req.body;
+
+      const match = await KnockoutMatch.findById(matchId);
+      if (!match) {
+        return res.status(404).json({ message: "Match not found" });
+      }
+
+      // 1. Check Court Availability if courtId and times are provided
+      if (courtId && startTime) {
+        // Default duration if endTime is missing (e.g., 45 mins)
+        // For strict checking, we should require endTime or calculate it.
+        // Assuming endTime is provided or we just check strictly overlapping if both exist.
+
+        const start = new Date(startTime);
+        const end = endTime ? new Date(endTime) : new Date(start.getTime() + 45 * 60000); // Default 45 mins
+
+        // Find any other match on the same court that overlaps
+        const conflictingMatch = await KnockoutMatch.findOne({
+          courtId: courtId,
+          _id: { $ne: matchId }, // exclude current match
+          status: { $ne: "finished" },
+          $or: [
+            { startTime: { $lt: end }, endTime: { $gt: start } }, // Overlaps
+          ],
+        });
+
+        if (conflictingMatch) {
+          return res.status(400).json({
+            message: "Court is busy! Another match is scheduled during this time.",
+          });
+        }
+      }
+
+      // 2. Update Basic Fields
+      if (startTime) match.startTime = startTime;
+      if (endTime) match.endTime = endTime;
+      if (courtId) match.courtId = courtId;
+      if (venueId) match.venueId = venueId;
+      if (courtNumber) match.courtNumber = courtNumber;
+
+      // 3. Handle Walkover
+      if (isWalkover) {
+        match.isWalkover = true;
+        match.status = "finished";
+        match.winner = winner; // 'home' or 'away'
+      } else {
+        // If un-setting walkover, we might need to reset status if it was finished by walkover?
+        // For now, assume we just set what's passed.
+        if (match.isWalkover && !isWalkover) {
+          match.isWalkover = false;
+          match.status = "scheduled"; // Reset to scheduled if walkover removed?
+          match.winner = null;
+        }
+      }
+
+      await match.save();
+
+      // 4. If finished (walkover), check for next round generation
+      if (match.status === "finished") {
+        const unfinishedMatches = await KnockoutMatch.find({
+          tournamentId: match.tournamentId,
+          round: match.round,
+          status: { $ne: "finished" },
+        });
+
+        if (unfinishedMatches.length === 0) {
+          await generateNextRound(match.tournamentId, match.round);
+        }
+      }
+
+      res.status(200).json({ message: "Match details updated successfully", match });
+    } catch (error) {
+      console.error("Error updating match details:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   },

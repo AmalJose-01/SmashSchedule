@@ -6,7 +6,7 @@ import { headerData } from "../../../utils/storageHandler.js";
 
 export const importTeamAPI = async (teamData) => {
   try {
-    const response = await axios.post(`${BASE_URL}/admin/teams`, teamData,headerData());
+    const response = await axios.post(`${BASE_URL}/admin/teams`, teamData, headerData());
     return response.data;
   } catch (error) {
     throw error;
@@ -15,15 +15,23 @@ export const importTeamAPI = async (teamData) => {
 
 
 export const getTeamListAPI = async (tournamentId) => {
-  console.log("getTeamListAPI called"); // <--- should log when triggered
-try {
-
- const response = await axios.get(
-      `${BASE_URL}/admin/get-teams/${tournamentId}`,headerData()
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/admin/get-teams/${tournamentId}`, headerData()
     );
-  console.log("getTeamListAPI response:====", response.data); // <--- log the full response
-  return response.data;
-   }catch (error) {
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getTournamentPlayersAPI = async (tournamentId) => {
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/admin/round-robin/get-tournament-players/${tournamentId}`, headerData()
+    );
+    return response.data;
+  } catch (error) {
     throw error;
   }
 };
@@ -36,13 +44,13 @@ export const saveTournamentAPI = async (tournamentData) => {
   try {
     const response = await axios.post(
       `${BASE_URL}/admin/create-tournament`,
-      tournamentData, headerData()           
-                    
+      tournamentData, headerData()
+
     );
     return response.data;
   } catch (error) {
-    console.log("saveTournamentAPI error",error);
-    
+    console.log("saveTournamentAPI error", error);
+
     throw error
   }
 };
@@ -54,13 +62,13 @@ export const updateTournamentAPI = async (tournamentData) => {
   try {
     const response = await axios.put(
       `${BASE_URL}/admin/update-tournament`,
-      tournamentData, headerData()           
-                    
+      tournamentData, headerData()
+
     );
     return response.data;
   } catch (error) {
-    console.log("updateTournamentAPI error",error);
-    
+    console.log("updateTournamentAPI error", error);
+
     throw error
   }
 };
@@ -72,13 +80,13 @@ export const saveMatchesAPI = async (tournamentData) => {
   try {
     const response = await axios.post(
       `${BASE_URL}/admin/create-matches`,
-      tournamentData, { headers: headerData().headers }            
-                    
+      tournamentData, { headers: headerData().headers }
+
     );
     return response.data;
   } catch (error) {
-    console.log("saveMatchesAPI error",error);
-    
+    console.log("saveMatchesAPI error", error);
+
     throw error
   }
 };
@@ -91,14 +99,14 @@ export const saveMatchesAPI = async (tournamentData) => {
 export const getAdminTournamentListAPI = async () => {
 
   try {
-      console.log("getAdminTournamentListAPI called"); // <--- should log when triggered
+    console.log("getAdminTournamentListAPI called"); // <--- should log when triggered
 
-  const response = await axios.get(`${BASE_URL}/admin/get-tournaments`,headerData());
-  console.log("getTournamentListAPI response:====", response); // <--- log the full response
-  return response.data;
-  }catch (error) {
-    console.log("getAdminTournamentListAPI error",error);
-    
+    const response = await axios.get(`${BASE_URL}/admin/get-tournaments`, headerData());
+    console.log("getTournamentListAPI response:====", response); // <--- log the full response
+    return response.data;
+  } catch (error) {
+    console.log("getAdminTournamentListAPI error", error);
+
     throw error
   }
 
@@ -111,13 +119,13 @@ export const getAdminTournamentInformationAPI = async (tournamentId) => {
 
   try {
     const response = await axios.get(
-      `${BASE_URL}/admin/get-tournament-information/${tournamentId}`,headerData() 
+      `${BASE_URL}/admin/get-tournament-information/${tournamentId}`, headerData()
     );
     console.log("getTournamentInformationAPI response:====", response.data); // <--- log the full response
     return response.data;
   } catch (error) {
-   console.log("getAdminTournamentListAPI error",error);
-    
+    console.log("getAdminTournamentListAPI error", error);
+
     throw error
   }
 };
@@ -128,12 +136,12 @@ export const getAdminTournamentDetailsAPI = async (tournamentId) => {
 
   try {
     const response = await axios.get(
-      `${BASE_URL}/admin/get-tournamentDetails/${tournamentId}`,headerData() 
+      `${BASE_URL}/admin/get-tournamentDetails/${tournamentId}`, headerData()
     );
     console.log("getTournamentDetailsAPI response:====", response.data); // <--- log the full response
     return response.data;
   } catch (error) {
-     throw error
+    throw error
   }
 };
 
@@ -142,11 +150,11 @@ export const getAdminTournamentDetailsAPI = async (tournamentId) => {
 
 
 export const saveScoreAPI = async (scoreData) => {
-  console.log("saveScoreAPI called",scoreData);
+  console.log("saveScoreAPI called", scoreData);
   try {
     const response = await axios.post(
       `${BASE_URL}/admin/save-score`,
-      scoreData,headerData()
+      scoreData, headerData()
     );
     return response.data;
   } catch (error) {
@@ -158,27 +166,27 @@ export const saveScoreAPI = async (scoreData) => {
 
 
 export const saveMultipleScoreAPI = async (scoreData) => {
-  console.log("saveMultipleScoreAPI called",scoreData);
+  console.log("saveMultipleScoreAPI called", scoreData);
   try {
     const response = await axios.post(
       `${BASE_URL}/admin/save-multiple-score`,
-      scoreData,headerData()
+      scoreData, headerData()
     );
     return response.data;
   } catch (error) {
-   console.log("saveMultipleScoreAPI error",error);
-    
+    console.log("saveMultipleScoreAPI error", error);
+
     throw error
   }
 };
 export const deleteTournamentAPI = async (tournamentId) => {
   try {
     const response = await axios.delete(
-      `${BASE_URL}/admin/delete-tournament/${tournamentId}`,headerData()
+      `${BASE_URL}/admin/delete-tournament/${tournamentId}`, headerData()
     );
     return response.data;
   } catch (error) {
-     throw new Error(
+    throw new Error(
       error.response?.data?.message || "Failed to delete tournament"
     );
   }
@@ -187,11 +195,11 @@ export const deleteTournamentAPI = async (tournamentId) => {
 export const deleteTeamAPI = async (teamId) => {
   try {
     const response = await axios.delete(
-      `${BASE_URL}/admin/delete-team/${teamId}`,headerData()
+      `${BASE_URL}/admin/delete-team/${teamId}`, headerData()
     );
     return response.data;
   } catch (error) {
-      throw error
+    throw error
   }
 };
 
@@ -200,22 +208,22 @@ export const createKnockoutScheduleAPI = async (tournament) => {
 
   try {
     const response = await axios.post(
-      `${BASE_URL}/admin/create-knockout-matches`,tournament,headerData()
+      `${BASE_URL}/admin/create-knockout-matches`, tournament, headerData()
     );
     console.log("createKnockoutScheduleAPI response:====", response.data); // <--- log the full response
     return response.data;
   } catch (error) {
-      throw error
+    throw error
   }
 };
 
 export const saveKnockoutScoreAPI = async (scoreData) => {
-  console.log("saveKnockoutScoreAPI called",scoreData);
-  
+  console.log("saveKnockoutScoreAPI called", scoreData);
+
   try {
     const response = await axios.post(
       `${BASE_URL}/admin/saveKnockoutScore/${scoreData.matchId}`,
-      scoreData,headerData()
+      scoreData, headerData()
     );
     return response.data;
   } catch (error) {
@@ -230,12 +238,12 @@ export const getAdminKnockoutScheduleAPI = async (tournamentId) => {
 
   try {
     const response = await axios.get(
-      `${BASE_URL}/admin/get-knockout-matches/${tournamentId}`,headerData()
+      `${BASE_URL}/admin/get-knockout-matches/${tournamentId}`, headerData()
     );
     console.log("getKnockoutScheduleAPI response:====", response.data); // <--- log the full response
     return response.data;
   } catch (error) {
-     throw error
+    throw error
   }
 };
 
@@ -249,6 +257,20 @@ export const verifyUserAPI = async (data) => {
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || "User verify failed");
+  }
+};
+
+
+export const updateKnockoutMatchAPI = async (matchId, matchDetails) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/admin/update-match-details/${matchId}`,
+      matchDetails,
+      headerData()
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
   }
 };
 

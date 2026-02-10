@@ -10,20 +10,22 @@ const mailTest = require("./admin/mailTest")
 const venueRouter = require("./admin/venue/venueRouter")
 const courtRouter = require("./admin/venue/courtRouter")
 const tournamentRouter = require("./admin/tournament/tournamentRouter")
+const roundRobinRouter = require("./admin/roundRobinRouter");
 
 const router = express();
 
 
 
-router.use("/tournament",teamRouter);
+router.use("/tournament", teamRouter);
 router.use("/knockout", knockoutRouter);
 router.use("/admin", adminLoginRouter);
 router.use("/admin", adminTeamRouter);
 router.use("/admin", adminKnockoutRouter);
 router.use("/payment", paymentRouter);
-router.use("/venue",venueRouter);
-router.use("/court",courtRouter);
-router.use("/admin/tournament",tournamentRouter)
+router.use("/venue", venueRouter);
+router.use("/court", courtRouter);
+router.use("/admin/tournament", tournamentRouter)
+router.use("/admin/round-robin", roundRobinRouter);
 
 router.use("/mail", mailTest);
 

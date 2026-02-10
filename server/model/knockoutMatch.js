@@ -17,8 +17,14 @@ const KnockoutMatchSchema = new mongoose.Schema({
     teamName: { type: String, required: true }
   },
   scores: { type: [SetSchema], default: [] },
-  status: { type: String, enum: ["scheduled","ongoing", "finished"], default: "scheduled" },
-  winner: { type: String, default: null }
+  status: { type: String, enum: ["scheduled", "ongoing", "finished"], default: "scheduled" },
+  winner: { type: String, default: null },
+  courtId: { type: mongoose.Schema.Types.ObjectId, ref: "Court" },
+  venueId: { type: mongoose.Schema.Types.ObjectId, ref: "Venue" },
+  courtNumber: { type: String },
+  startTime: { type: Date },
+  endTime: { type: Date },
+  isWalkover: { type: Boolean, default: false }
 });
 
 const KnockoutMatch = mongoose.model("KnockoutMatch", KnockoutMatchSchema);

@@ -14,6 +14,7 @@ import { isMatchDecided } from "../../../utils/helpers/matchUtils";
 import StatusBadge from "../../components/StatusBadge";
 import { motion } from "framer-motion";
 import winnerGif from "../../assets/fireworks.gif";
+import EditMatchModal from "./EditMatchModal";
 
 export function getRoundName(round) {
   switch (round) {
@@ -165,10 +166,29 @@ const KnockoutFixtures = () => {
     }
   };
 
+  const [selectedMatch, setSelectedMatch] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleEditClick = (match) => {
+    setSelectedMatch(match);
+    setIsModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setSelectedMatch(null);
+  };
+
+  const handleMatchUpdate = () => {
+    queryClient.invalidateQueries({ queryKey: ["knockoutSchedule"] });
+    // Force refresh matches list if needed, or rely on react-query invalidation
+    window.location.reload(); // Simple reload to fetch fresh data for now as simple invalidation might not trigger re-render if using custom hook logic inside useGetKnockoutList that doesn't react to query cache instantly in this structure
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white ">
       {/* Header */}
-      <div className="flex justify-between items-center bg-white p-4  shadow-lg sticky top-0">
+      <div className="flex justify-between items-center bg-white p-4  shadow-lg sticky top-0 z-40">
         <div className="flex items-center gap-4">
           <Table
             className="w-8 h-8 text-blue-600"
@@ -195,44 +215,59 @@ const KnockoutFixtures = () => {
         </div>
       </div>
 
+      <EditMatchModal
+        match={selectedMatch}
+        isOpen={isModalOpen}
+        onClose={handleModalClose}
+        onUpdate={handleMatchUpdate}
+      />
+
       {/* ROUNDS + MATCHES */}
       {matches.length > 0 ? (
         <div className="grid grid-cols-1 gap-6 bg-white p-6 rounded-3xl shadow-lg">
           {Object.keys(groupedMatches).map((round) => (
             <div key={round} className="space rounded-3xl shadow-lg ">
               {/* ROUND HEADER */}
-           
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 rounded-t-3xl">
-                               <h2 className="text-2xl text-white flex items-center gap-2">
-                               <Trophy className="w-6 h-6" />
-                              {getRoundName(Number(round))}
-                            </h2>
-                            </div>
 
-                             <h3 className="mb-4 flex items-center gap-2 text-gray-700 m-4">
-                      <Calendar className="w-5 h-5" />
-                      Matches
-                    </h3>
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 rounded-t-3xl">
+                <h2 className="text-2xl text-white flex items-center gap-2">
+                  <Trophy className="w-6 h-6" />
+                  {getRoundName(Number(round))}
+                </h2>
+              </div>
+
+              <h3 className="mb-4 flex items-center gap-2 text-gray-700 m-4">
+                <Calendar className="w-5 h-5" />
+                Matches
+              </h3>
 
               {getRoundName(Number(round)) === "Final" ? (
                 <div className="grid md:grid-cols-1 gap-4 p-6">
                   {groupedMatches[round].map((match) => (
                     <div
                       key={match._id}
-                                            className="card p-4 border border-gray-200 rounded-xl bg-blue-50 hover:bg-blue-100 transition flex flex-col items-center justify-center"
+                      className="card p-4 border border-gray-200 rounded-xl bg-blue-50 hover:bg-blue-100 transition flex flex-col items-center justify-center relative"
 
-                      // className={`w-full p-4 shadow rounded-xl border text-white ${
-                      //   match.status === "finished"
-                      //     ? "bg-gradient-to-r from-red-400 via-green-300 to-purple-200 "
-                      //     : "bg-slate-200"
-                      // }`}
-                      // style={{
-                      //   backgroundImage:
-                      //     match.status === "finished"
-                      //       ? `url(${winnerGif})`
-                      //       : "none",
-                      // }}
+                    // className={`w-full p-4 shadow rounded-xl border text-white ${
+                    //   match.status === "finished"
+                    //     ? "bg-gradient-to-r from-red-400 via-green-300 to-purple-200 "
+                    //     : "bg-slate-200"
+                    // }`}
+                    // style={{
+                    //   backgroundImage:
+                    //     match.status === "finished"
+                    //       ? `url(${winnerGif})`
+                    //       : "none",
+                    // }}
                     >
+                      <button
+                        onClick={() => handleEditClick(match)}
+                        className="absolute top-2 right-2 text-blue-600 hover:text-blue-800 p-1 bg-white rounded-full shadow-sm"
+                        title="Edit Schedule / Court"
+                      >
+                        <Calendar className="w-5 h-5" />
+                      </button>
+
                       {match.status === "finished" && match.winner && (
                         <div className="flex items-center gap-2 justify-center mb-10">
                           <Trophy className="w-10 h-10 text-green-600" />
@@ -241,22 +276,30 @@ const KnockoutFixtures = () => {
                             {match.winner === "home"
                               ? match.teamsHome.teamName
                               : match.teamsAway.teamName}
+                            {match.isWalkover && <span className="text-sm text-red-500 block">(Walkover)</span>}
                           </h1>
                         </div>
                       )}
 
-                     <div className="w-full flex items-center justify-center mb-3 gap-5">
-                        <div className="flex items-center justify-center ">
+                      <div className="w-full flex items-center justify-center mb-3 gap-5">
+                        <div className="flex items-center justify-center flex-col">
                           <div
-                            className={`font-bold ${
-                              match.status === "finished"
-                                ? "text-gray-800"
-                                : "text-gray-800"
-                            } text-center text-lg`}
+                            className={`font-bold ${match.status === "finished"
+                              ? "text-gray-800"
+                              : "text-gray-800"
+                              } text-center text-lg`}
                           >
                             {match.teamsHome.teamName} vs{" "}
                             {match.teamsAway.teamName}
                           </div>
+                          {/* Display Schedule Info */}
+                          {match.startTime && (
+                            <div className="text-sm text-gray-500 mt-1 flex flex-col items-center">
+                              <span>{new Date(match.startTime).toLocaleString()}</span>
+                              {match.courtNumber && <span className="text-blue-600 font-medium">Court: {match.courtNumber}</span>}
+                              {match.courtId && <span className="text-blue-600 font-medium">Venue Court Assigned</span>}
+                            </div>
+                          )}
                         </div>
                         <StatusBadge status={match.status} />
                       </div>
@@ -266,7 +309,7 @@ const KnockoutFixtures = () => {
                         {match.scores.map((set, idx) => {
                           const matchFinished = isMatchDecided(
                             match.scores.slice(0, 2)
-                          );
+                          ) || match.status === 'finished';
 
                           let disableHome = true;
                           let disableAway = true;
@@ -290,8 +333,8 @@ const KnockoutFixtures = () => {
                             matchFinished && homeScoreTotal > awayScoreTotal
                               ? "home"
                               : matchFinished && awayScoreTotal > homeScoreTotal
-                              ? "away"
-                              : null;
+                                ? "away"
+                                : null;
 
                           return (
                             <div
@@ -302,14 +345,13 @@ const KnockoutFixtures = () => {
                                 type="number"
                                 min={0}
                                 max={21}
-                                className={`w-20 md:w-40 p-1 border rounded text-center text-black ${
-                                  isSameScore
-                                    ? "border-red-500"
-                                    : "border-gray-500"
-                                }`}
+                                className={`w-20 md:w-40 p-1 border rounded text-center text-black ${isSameScore
+                                  ? "border-red-500"
+                                  : "border-gray-500"
+                                  }`}
                                 value={set.home === 0 ? "" : set.home}
                                 disabled={
-                                  idx === 2 && matchFinished
+                                  (idx === 2 && matchFinished) || match.status === 'finished'
                                     ? disableHome
                                     : false
                                 }
@@ -331,14 +373,13 @@ const KnockoutFixtures = () => {
                                 type="number"
                                 min={0}
                                 max={21}
-                                className={`w-20 md:w-40 p-1 border rounded text-center text-black ${
-                                  isSameScore
-                                    ? "border-red-500"
-                                    : "border-gray-500"
-                                }`}
+                                className={`w-20 md:w-40 p-1 border rounded text-center text-black ${isSameScore
+                                  ? "border-red-500"
+                                  : "border-gray-500"
+                                  }`}
                                 value={set.away === 0 ? "" : set.away}
                                 disabled={
-                                  idx === 2 && matchFinished
+                                  (idx === 2 && matchFinished) || match.status === 'finished'
                                     ? disableAway
                                     : false
                                 }
@@ -363,8 +404,9 @@ const KnockoutFixtures = () => {
                       {/* Update Score Button */}
                       <div className="mt-2 items-center flex justify-center">
                         <button
-                          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                           onClick={() => updateScore(match._id)}
+                          disabled={match.status === 'finished'}
                         >
                           Update Score
                         </button>
@@ -377,14 +419,32 @@ const KnockoutFixtures = () => {
                   {groupedMatches[round].map((match) => (
                     <div
                       key={match._id}
-                      className="card p-4 border border-gray-200 rounded-xl bg-blue-50 hover:bg-blue-100 transition flex flex-col items-center justify-center"
+                      className="card p-4 border border-gray-200 rounded-xl bg-blue-50 hover:bg-blue-100 transition flex flex-col items-center justify-center relative"
                     >
-                     <div className="w-full flex items-center justify-between mb-3">
+                      <button
+                        onClick={() => handleEditClick(match)}
+                        className="absolute top-2 right-2 text-blue-600 hover:text-blue-800 p-1 bg-white rounded-full shadow-sm"
+                        title="Edit Schedule / Court"
+                      >
+                        <Calendar className="w-5 h-5" />
+                      </button>
+
+                      <div className="w-full flex items-center justify-between mb-3">
                         <div className="flex-1">
                           <div className="font-semibold text-gray-800">
                             {match.teamsHome.teamName} vs{" "}
                             {match.teamsAway.teamName}
                           </div>
+                          {/* Display Schedule Info */}
+                          {match.startTime && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              <span>{new Date(match.startTime).toLocaleString()}</span> <br />
+                              {match.courtNumber && <span className="text-blue-600 font-medium">Court: {match.courtNumber}</span>}
+                              {match.courtId && <span className="text-blue-600 font-medium">Venue Court Assigned</span>}
+                            </div>
+                          )}
+                          {match.isWalkover && <span className="text-xs text-red-500 block font-bold">(Walkover)</span>}
+
                         </div>
                         <StatusBadge status={match.status} />
                       </div>
@@ -394,7 +454,7 @@ const KnockoutFixtures = () => {
                         {match.scores.map((set, idx) => {
                           const matchFinished = isMatchDecided(
                             match.scores.slice(0, 2)
-                          );
+                          ) || match.status === 'finished';
 
                           let disableHome = true;
                           let disableAway = true;
@@ -413,14 +473,13 @@ const KnockoutFixtures = () => {
                                 type="number"
                                 min={0}
                                 max={21}
-                                className={`w-20 md:w-40 p-1 border rounded text-center text-black ${
-                                  isSameScore
-                                    ? "border-red-500"
-                                    : "border-gray-500"
-                                }`}
+                                className={`w-20 md:w-40 p-1 border rounded text-center text-black ${isSameScore
+                                  ? "border-red-500"
+                                  : "border-gray-500"
+                                  }`}
                                 value={set.home === 0 ? "" : set.home}
                                 disabled={
-                                  idx === 2 && matchFinished
+                                  (idx === 2 && matchFinished) || match.status === 'finished'
                                     ? disableHome
                                     : false
                                 }
@@ -442,14 +501,13 @@ const KnockoutFixtures = () => {
                                 type="number"
                                 min={0}
                                 max={21}
-                                className={`w-20 md:w-40 p-1 border rounded text-center text-black ${
-                                  isSameScore
-                                    ? "border-red-500"
-                                    : "border-gray-500"
-                                }`}
+                                className={`w-20 md:w-40 p-1 border rounded text-center text-black ${isSameScore
+                                  ? "border-red-500"
+                                  : "border-gray-500"
+                                  }`}
                                 value={set.away === 0 ? "" : set.away}
                                 disabled={
-                                  idx === 2 && matchFinished
+                                  (idx === 2 && matchFinished) || match.status === 'finished'
                                     ? disableAway
                                     : false
                                 }
@@ -474,8 +532,9 @@ const KnockoutFixtures = () => {
                       {/* Update Score Button */}
                       <div className="mt-2 items-center flex justify-center">
                         <button
-                          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                           onClick={() => updateScore(match._id)}
+                          disabled={match.status === 'finished'}
                         >
                           Update Score
                         </button>

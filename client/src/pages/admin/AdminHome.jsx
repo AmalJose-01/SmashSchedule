@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Trophy, PlusCircle, BookOpen, Calendar, LogOut } from "lucide-react";
+import { Trophy, PlusCircle, BookOpen, Calendar, LogOut, Users } from "lucide-react";
 import Logout from "../../components/Logout";
 
 const AdminHome = () => {
@@ -35,11 +35,17 @@ const AdminHome = () => {
       action: () => navigate("/venue-list"),
       color: "bg-orange-50 border-orange-200",
     },
-    // Add more dashboard items here
+    {
+      title: "Round Robin Pool",
+      description: "Manage pool of round robin players.",
+      icon: <Users className="w-8 h-8 text-teal-600" />,
+      action: () => navigate("/round-robin-manage"),
+      color: "bg-teal-50 border-teal-200",
+    },
   ];
 
-  return ( 
-    
+  return (
+
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       {/* HEADER */}
       <div className="flex justify-between items-center bg-white p-4 shadow-sm sticky top-0 z-10">

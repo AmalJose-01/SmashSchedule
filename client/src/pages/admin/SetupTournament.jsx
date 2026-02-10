@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { getTeamListAPI } from "../../services/admin/adminTeamServices";
+import { getTeamListAPI, getTournamentPlayersAPI } from "../../services/admin/adminTeamServices";
 import ConfirmModal from "../../components/AlertView";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -40,6 +40,7 @@ import { readExcelFile, readCsvFile } from "../../../utils/fileReaders";
 
 import { convertToTeamsPayload } from "../../../utils/converters/convertToTeamsPayload";
 import { useDeleteTeam } from "../../hooks/useDeleteTeam";
+import { useRemovePlayerFromTournament, useBulkAddPlayersToTournament } from "../../hooks/roundRobin/useRoundRobin";
 
 const SetupTournament = () => {
   // ---------------------------
@@ -79,6 +80,7 @@ const SetupTournament = () => {
   const { handleUseMatchScheduling } = useMatchSave(tournament?._id);
   const { handleUseImportTeam, successImportTeam, importError } =
     useImportTeam();
+  const bulkRRAddMutation = useBulkAddPlayersToTournament();
   const fileInputRef = useRef(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -108,19 +110,24 @@ const SetupTournament = () => {
         return "Knockout Only";
       case "group-knockout":
         return "Group + Knockout";
+      case "round-robin":
+        return "Round Robin";
       default:
         return playType;
     }
   };
 
   // ---------------------------
-  // FETCH TEAMS
+  // FETCH TEAMS / PLAYERS
   // ---------------------------
   let loadingToast;
+  const isRoundRobin = tournament?.playType === "round-robin";
+
   const { data, isLoading, isFetching, error } = useQuery({
-    queryKey: ["teams"],
-    queryFn: () => getTeamListAPI(tournament._id),
-    onSuccess: (res) => toast.success("Teams loaded!"),
+    queryKey: ["tournamentPlayers", tournament?._id],
+    queryFn: () => isRoundRobin ? getTournamentPlayersAPI(tournament._id) : getTeamListAPI(tournament._id),
+    enabled: !!tournament?._id,
+    onSuccess: (res) => toast.success(`${isRoundRobin ? 'Players' : 'Teams'} loaded!`),
     onError: (error) => {
       console.log("MUTATION ERROR:", error);
       toast.dismiss();
@@ -174,6 +181,11 @@ const SetupTournament = () => {
   // ---------------------------
   const onSubmit = async () => {
     if (tournamentDetail.status === "Create") {
+      if (tournamentDetail.playType === "round-robin") {
+        navigate(`/round-robin-groups/${tournamentDetail._id}`, { state: { tournamentDetail } });
+        return;
+      }
+
       if (selectedPlayers.length < tournamentDetail.teamsPerGroup) {
         toast.error("Not enough teams to form groups");
         return;
@@ -239,6 +251,7 @@ const SetupTournament = () => {
   } = useDeleteTournament();
 
   const { handleTeamDelete } = useDeleteTeam();
+  const removeRRPlayerMutation = useRemovePlayerFromTournament();
 
   const handleConfirmDelete = () => {
     if (!confirmConfig.id || !confirmConfig.type) return;
@@ -248,7 +261,16 @@ const SetupTournament = () => {
     }
 
     if (confirmConfig.type === "team") {
-      handleTeamDelete(confirmConfig.id); //
+      if (isRoundRobin) {
+        // Simple removal for Round Robin players
+        removeRRPlayerMutation.mutate({
+          tournamentId: tournament._id,
+          playerId: confirmConfig.id
+        });
+      } else {
+        // Standard team deletion
+        handleTeamDelete(confirmConfig.id);
+      }
     }
 
     setConfirmConfig({ open: false, type: null, id: null });
@@ -266,7 +288,7 @@ const SetupTournament = () => {
   const handleLogoUpload = async (e) => {
 
 
-        console.log("papaData after setData:");
+    console.log("papaData after setData:");
 
     if (isUploading) {
       toast.warning("Upload already in progress. Please wait.");
@@ -302,56 +324,51 @@ const SetupTournament = () => {
       console.log("papaData", rows);
 
       setData(rows);
-       e.target.value = "";
+      e.target.value = "";
+    }
+  };
+
+  const handleSyncTeams = () => {
+    if (!papaData.length || !tournamentDetail._id) return;
+
+    if (isRoundRobin) {
+      // For Round Robin, we map standard team fields or simpler player fields
+      const players = papaData.map(row => {
+        // Find email - search for common variants
+        const email = row.Email || row.email || row['Player Email'] || row['Player One Email'] || '';
+        const name = row.Name || row.name || row['Player Name'] || row['Player One Name'] || '';
+        const contact = row.Contact || row.contact || row.Phone || row['Player Contact'] || '';
+        const grade = row.Grade || row.grade || row.Level || '';
+
+        return { name, email, contact, grade };
+      }).filter(p => p.email);
+
+      bulkRRAddMutation.mutate({
+        tournamentId: tournamentDetail._id,
+        players
+      });
+    } else {
+      const payload = convertToTeamsPayload(papaData, tournamentDetail._id);
+      handleUseImportTeam(payload);
     }
   };
 
   useEffect(() => {
-    if (papaData.length === 0) return;
-
-    console.log("papaData after setData:", papaData);
-
-    // Convert to payload or do other processing
-    const payload = convertToTeamsPayload(papaData, tournamentDetail._id);
-
-    console.log("convertToTeamsPayloadsetData:", payload);
-
-    try {
-      handleUseImportTeam(payload);
-      // setTeamFile(null);
-    } catch (err) {
-      console.error("Error:", err);
+    if (papaData.length > 0) {
+      handleSyncTeams();
     }
-  }, [papaData,setTeamFile]);
+  }, [papaData]);
 
   useEffect(() => {
-    if (successImportTeam || importError) {
+    if (successImportTeam || importError || bulkRRAddMutation.isSuccess || bulkRRAddMutation.isError) {
       setData([]); // clear parsed data
       setTeamFile(null); // clear uploaded file
       setIsUploading(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
-      //  if (successImportTeam){
-      //    toast.success("Teams imported successfully!"); // optional
-      //  }
-     
     }
-  }, [successImportTeam, importError]);
-
-  const handleSyncTeams = () => {
-    if (!papaData.length || !tournamentDetail._id) return;
-
-    const payload = convertToTeamsPayload(papaData);
-    console.log("payload", payload);
-
-    try {
-      handleUseImportTeam(payload);
-    } catch (err) {
-      setData([]);
-      console.error("Error:", err);
-    }
-  };
+  }, [successImportTeam, importError, bulkRRAddMutation.isSuccess, bulkRRAddMutation.isError]);
 
   // Wait until tournamentDetail is loaded
   if (!tournamentDetail) {
@@ -386,9 +403,7 @@ const SetupTournament = () => {
                 },
               })
             }
-            className={`${
-              tournamentDetail.status != "Create" ? "hidden" : ""
-            } flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors`}
+            className={`${(tournamentDetail.status !== "Create" || tournamentDetail.playType === "round-robin") ? "hidden" : ""} flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors`}
           >
             <UserPlus className="w-5 h-5" />
             <span className="hidden md:flex">
@@ -403,9 +418,8 @@ const SetupTournament = () => {
                 state: { tournamentDetail },
               })
             }
-            className={`${
-              tournamentDetail.status != "Create" ? "hidden" : ""
-            } flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors`}
+            className={`${tournamentDetail.status != "Create" ? "hidden" : ""
+              } flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors`}
           >
             <Edit className="w-5 h-5" />
             <span className="hidden md:flex">Edit Details</span>
@@ -434,9 +448,8 @@ const SetupTournament = () => {
                   {tournamentDetail.matchType}
                 </span>
                 <span
-                  className={`px-3 py-1 rounded-full text-sm ${
-                    tournamentDetail.isPublic ? "bg-green-500" : "bg-gray-500"
-                  }`}
+                  className={`px-3 py-1 rounded-full text-sm ${tournamentDetail.isPublic ? "bg-green-500" : "bg-gray-500"
+                    }`}
                 >
                   {tournamentDetail.isPublic ? "Public" : "Private"}
                 </span>
@@ -545,7 +558,7 @@ const SetupTournament = () => {
                 <div className="flex items-start gap-3">
                   <Grid3x3 className="w-5 h-5 text-gray-400 mt-0.5" />
                   <div>
-                    <div className="text-sm text-gray-600">Teams per Group</div>
+                    <div className="text-sm text-gray-600">{isRoundRobin ? 'Players per Group' : 'Teams per Group'}</div>
                     <div>{tournamentDetail.teamsPerGroup}</div>
                   </div>
                 </div>
@@ -582,7 +595,7 @@ const SetupTournament = () => {
                   <div className="flex items-center gap-3">
                     <Users className="w-5 h-5 text-blue-600" />
 
-                    <h2>Registered Players ({data?.teams?.length})</h2>
+                    <h2>{isRoundRobin ? 'Registered Players' : 'Registered Teams'} ({data?.teams?.length})</h2>
                   </div>
                   {data?.teams?.length > 0 && (
                     <span className="text-gray-600">
@@ -610,11 +623,10 @@ const SetupTournament = () => {
 
                           <div className="flex gap-2">
                             <button
-                              className={`${
-                                tournamentDetail.status != "Create"
-                                  ? "hidden"
-                                  : ""
-                              } ml-auto p-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center`}
+                              className={`${tournamentDetail.status != "Create"
+                                ? "hidden"
+                                : ""
+                                } ml-auto p-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center`}
                               // onClick={(e) => {
                               //   e.stopPropagation();
                               //   setConfirmConfig({
@@ -634,11 +646,10 @@ const SetupTournament = () => {
                             </button>
 
                             <button
-                              className={`${
-                                tournamentDetail.status != "Create"
-                                  ? "hidden"
-                                  : ""
-                              } ml-auto p-2 bg-red-500 text-white rounded hover:bg-red-600 flex items-center justify-center`}
+                              className={`${tournamentDetail.status != "Create"
+                                ? "hidden"
+                                : ""
+                                } ml-auto p-2 bg-red-500 text-white rounded hover:bg-red-600 flex items-center justify-center`}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setConfirmConfig({
@@ -660,7 +671,7 @@ const SetupTournament = () => {
             ) : (
               <div className="bg-white rounded-3xl shadow-lg p-6 max-h-96 overflow-y-auto mt-4 ml-4 mr-4">
                 <h2 className="text-xl font-semibold mb-4">
-                  No Teams Available. Please add teams to schedule a tournament.
+                  No {isRoundRobin ? 'Players' : 'Teams'} Available. Please add {isRoundRobin ? 'players' : 'teams'} to schedule a tournament.
                 </h2>
               </div>
             )}
@@ -674,7 +685,7 @@ const SetupTournament = () => {
                   <div>
                     <label className="flex items-center gap-2 text-gray-700 mb-2">
                       <Upload className="w-4 h-4" />
-                      Import Team
+                      Import {isRoundRobin ? 'Players' : 'Team'}
                     </label>
                     <p className="text-sm text-gray-500 mb-3">
                       {teamFile
@@ -692,29 +703,41 @@ const SetupTournament = () => {
                   /> */}
                 </div>
 
-                <div className="flex items-center gap-4">
-                  <label className="flex-1 cursor-pointer">
-                    <div
-                      className={`px-4 py-2 ${
-                        tournamentDetail.status === "Create"
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-4">
+                    <label className="flex-1 cursor-pointer">
+                      <div
+                        className={`px-4 py-2 ${tournamentDetail.status === "Create"
                           ? "bg-orange-600 text-white rounded-lg hover:bg-orange-700"
                           : "bg-orange-200 text-white rounded-lg hover:bg-orange-200"
-                      } border-gray-400 rounded-lg transition-colors text-center`}
+                          } border-gray-400 rounded-lg transition-colors text-center`}
+                      >
+                        {tournamentDetail.matchType === "Doubles"
+                          ? "Upload Team"
+                          : "Upload Player"}
+                      </div>
+                      <input
+                        type="file"
+                        accept=".csv,.xls,.xlsx"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                        disabled={
+                          tournamentDetail.status === "Create" ? false : true
+                        }
+                      />
+                    </label>
+                  </div>
+
+                  {/* ROUND ROBIN ADD EXISTING PLAYERS BUTTON */}
+                  {tournamentDetail.playType === "round-robin" && tournamentDetail.status === "Create" && (
+                    <button
+                      onClick={() => navigate("/round-robin-select", { state: { tournamentId: tournamentDetail._id } })}
+                      className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center justify-center gap-2"
                     >
-                      {tournamentDetail.matchType === "Doubles"
-                        ? "Upload Team"
-                        : "Upload Player"}
-                    </div>
-                    <input
-                      type="file"
-                      accept=".csv,.xls,.xlsx"
-                      onChange={handleLogoUpload}
-                      className="hidden"
-                      disabled={
-                        tournamentDetail.status === "Create" ? false : true
-                      }
-                    />
-                  </label>
+                      <UserPlus className="w-4 h-4" />
+                      Add Existing Players
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -722,11 +745,10 @@ const SetupTournament = () => {
 
               <button
                 onClick={() => navigate("/teams")}
-                className={`w-full px-4 py-2 transition-colors flex items-center justify-center gap-2 ${
-                  tournamentDetail.status === "Create"
-                    ? "bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                    : "bg-purple-200 text-white rounded-lg hover:bg-purple-200"
-                }`}
+                className={`w-full px-4 py-2 transition-colors flex items-center justify-center gap-2 ${tournamentDetail.status === "Create" && tournamentDetail.playType !== "round-robin"
+                  ? "bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                  : (tournamentDetail.status === "Create" && tournamentDetail.playType === "round-robin") ? "hidden" : "bg-purple-200 text-white rounded-lg hover:bg-purple-200"
+                  }`}
                 disabled={tournamentDetail.status === "Create" ? false : true}
               >
                 <UserPlus className="w-4 h-4" />
@@ -742,11 +764,10 @@ const SetupTournament = () => {
                     state: { tournamentDetail },
                   })
                 }
-                className={`w-full px-4 py-2 transition-colors flex items-center justify-center gap-2 ${
-                  tournamentDetail.status === "Create"
-                    ? "bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                    : "bg-blue-200 text-white rounded-lg hover:bg-blue-200"
-                }`}
+                className={`w-full px-4 py-2 transition-colors flex items-center justify-center gap-2 ${tournamentDetail.status === "Create"
+                  ? "bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  : "bg-blue-200 text-white rounded-lg hover:bg-blue-200"
+                  }`}
                 disabled={tournamentDetail.status === "Create" ? false : true}
               >
                 <Edit className="w-4 h-4" />

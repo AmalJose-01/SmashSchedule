@@ -5,8 +5,9 @@ const adminKnockoutController = require("../../controller/adminKnockoutControlle
 
 const router = express.Router();
 
-router.post("/create-knockout-matches",auth, adminKnockoutController.createTeamsForKnockout);
- router.get("/get-knockout-matches/:tournamentId",auth, adminKnockoutController.getKnockoutMatches);
- router.post("/saveKnockoutScore/:matchId",auth, adminKnockoutController.saveKnockoutScore);
+router.post("/create-knockout-matches", auth, adminKnockoutController.createTeamsForKnockout);
+router.get("/get-knockout-matches/:tournamentId", auth, adminKnockoutController.getKnockoutMatches);
+router.post("/saveKnockoutScore/:matchId", auth, adminKnockoutController.saveKnockoutScore);
+router.post("/update-match-details/:matchId", auth, adminKnockoutController.updateMatchDetails);
 
 module.exports = router;

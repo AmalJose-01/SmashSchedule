@@ -25,7 +25,7 @@ const validationSchemas = Yup.object().shape({
     .max(8)
     .required("Teams per group is required"),
   playType: Yup.string()
-    .oneOf(["group", "knockout", "group-knockout"])
+    .oneOf(["group", "knockout", "group-knockout", "round-robin"])
     .required("Play type is required"),
   numberOfCourts: Yup.number()
     .min(1)
@@ -44,7 +44,11 @@ const validationSchemas = Yup.object().shape({
     .required("Maximum participants is required")
     .moreThan(0, "Maximum participants must be greater than 2"),
   registrationFee: Yup.string().required("Registration Fee is required"),
-
-    
+  roundRobinConfig: Yup.object({
+    groupingStrategy: Yup.string().oneOf(["random", "by-grade", "balanced"]),
+    groupByGrade: Yup.boolean(),
+    balancedGrouping: Yup.boolean(),
+    generated: Yup.boolean()
+  }),
 });
 export default validationSchemas;

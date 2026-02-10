@@ -16,6 +16,9 @@ import CreatePlayType from "../pages/admin/CreatePlayType";
 import VenueManagement from "../pages/admin/venue/VenueManagement";
 import VenueList from "../pages/admin/venue/VenueList";
 import SelectVenueAndCourt from "../pages/admin/tournament/selectVenueAndCourt";
+import RoundRobinManage from "../pages/admin/RoundRobinManage";
+import RoundRobinSelect from "../pages/admin/RoundRobinSelect";
+import RoundRobinGroups from "../pages/admin/RoundRobinGroups";
 
 const AdminRoutes = () => {
   const user = useSelector((state) => state.user.user);
@@ -137,14 +140,42 @@ const AdminRoutes = () => {
         }
       />
 
-<Route
-path="/select-Venue"
-element={
-   <ProtectedRoute role="admin">
+
+      <Route
+        path="/select-Venue"
+        element={
+          <ProtectedRoute role="admin">
             <SelectVenueAndCourt />
           </ProtectedRoute>
-}
-/>
+        }
+      />
+
+      <Route
+        path="/round-robin-manage"
+        element={
+          <ProtectedRoute role="admin">
+            <RoundRobinManage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/round-robin-select"
+        element={
+          <ProtectedRoute role="admin">
+            <RoundRobinSelect />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/round-robin-groups/:id"
+        element={
+          <ProtectedRoute role="admin">
+            <RoundRobinGroups />
+          </ProtectedRoute>
+        }
+      />
 
 
 

@@ -59,6 +59,8 @@ const ViewTournamentDetail = () => {
         return "Knockout Only";
       case "group-knockout":
         return "Group + Knockout";
+      case "round-robin":
+        return "Round Robin";
       default:
         return playType;
     }

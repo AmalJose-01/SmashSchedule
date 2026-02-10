@@ -5,7 +5,7 @@ const tournamentSchema = new mongoose.Schema(
     tournamentName: { type: String, required: true },
     playType: {
       type: String,
-      enum: ["group", "knockout", "group-knockout"],
+      enum: ["group", "knockout", "group-knockout", "round-robin"],
       default: "group-knockout",
     },
     teamsPerGroup: { type: Number, required: true },
@@ -19,7 +19,7 @@ const tournamentSchema = new mongoose.Schema(
     ],
     status: {
       type: String,
-      enum: ["Create","Scheduled", "Ongoing", "GroupStage", "KnockoutStage", "finished"],
+      enum: ["Create", "Scheduled", "Ongoing", "GroupStage", "KnockoutStage", "finished"],
       default: "Create",
     },
     adminId: {
@@ -31,16 +31,26 @@ const tournamentSchema = new mongoose.Schema(
     date: { type: String },
     time: { type: String },
     location: { type: String },
-    maximumParticipants:  { type: Number, required: true },
+    maximumParticipants: { type: Number, required: true },
     matchType: {
       type: String,
       enum: ["Singles", "Doubles"],
       default: "Singles",
     },
     description: { type: String },
-    registrationFee: { type: String ,  required: true },
-    uniqueKey:  { type: String },
-
+    registrationFee: { type: String, required: true },
+    uniqueKey: { type: String },
+    roundRobinConfig: {
+      groupingStrategy: {
+        type: String,
+        enum: ["random", "by-grade", "balanced"],
+        default: "random"
+      },
+      groupByGrade: { type: Boolean, default: false }, // Legacy
+      balancedGrouping: { type: Boolean, default: false }, // Legacy
+      crossGroupMatches: { type: Boolean, default: false },
+      generated: { type: Boolean, default: false },
+    },
   },
   { timestamps: true }
 );
