@@ -112,37 +112,40 @@ const teamController = {
         tournamentDetail,
       });
 
-      await Promise.all([
-        sendEmail({
-          to: playerOneEmail,
-          subject: playerMailSubject,
-          html: playerMailBody,
-        }),
-        sendEmail({
-          to: playerTwoEmail,
-          subject: playerMailSubject,
-          html: playerMailBody,
-        }),
-      ]);
 
-      if (AdminUserDetail?.emailID) {
-        const adminMailSubject = "📢 New Team Registered";
+      // Need to uncomment in production, 
+      // await Promise.all([
+      //   sendEmail({
+      //     to: playerOneEmail,
+      //     subject: playerMailSubject,
+      //     html: playerMailBody,
+      //   }),
+      //   sendEmail({
+      //     to: playerTwoEmail,
+      //     subject: playerMailSubject,
+      //     html: playerMailBody,
+      //   }),
+      // ]);
 
-        const adminMailBody = buildAdminMailBody({
-          teamName,
-          tournamentId,
-          playerOneName,
-          playerOneEmail,
-          playerTwoName,
-          playerTwoEmail
-        });
+      // if (AdminUserDetail?.emailID) {
+      //   const adminMailSubject = "📢 New Team Registered";
 
-        await sendEmail({
-          to: AdminUserDetail.emailID,
-          subject: adminMailSubject,
-          html: adminMailBody
-        });
-      }
+      //   const adminMailBody = buildAdminMailBody({
+      //     teamName,
+      //     tournamentId,
+      //     playerOneName,
+      //     playerOneEmail,
+      //     playerTwoName,
+      //     playerTwoEmail
+      //   });
+
+      //   await sendEmail({
+      //     to: AdminUserDetail.emailID,
+      //     subject: adminMailSubject,
+      //     html: adminMailBody
+      //   });
+      // }
+      // 
      
 
       res

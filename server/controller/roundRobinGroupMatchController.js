@@ -26,53 +26,47 @@ const roundRobinGroupMatchController = {
 
             let groupsData = [];
             const groupingStrategy = tournament.roundRobinConfig?.groupingStrategy || "random";
+            const targetSize = tournament.teamsPerGroup || 4;
+            const numGroups = Math.max(1, Math.ceil(players.length / targetSize));
+
+            const gradeOrder = ['A', 'B', 'C', 'D', 'E', 'Unrated'];
+            const sortByGrade = (arr) => arr.sort((a, b) => {
+                const aIdx = gradeOrder.indexOf(a.grade || 'Unrated');
+                const bIdx = gradeOrder.indexOf(b.grade || 'Unrated');
+                return (aIdx === -1 ? gradeOrder.length : aIdx) - (bIdx === -1 ? gradeOrder.length : bIdx);
+            });
 
             if (groupingStrategy === "by-grade") {
-                // Group by Grade
-                const grouped = players.reduce((acc, player) => {
-                    const grade = player.grade || "Unrated";
-                    if (!acc[grade]) acc[grade] = [];
-                    acc[grade].push(player);
-                    return acc;
-                }, {});
-
-                for (const [grade, groupPlayers] of Object.entries(grouped)) {
-                    const targetSize = tournament.teamsPerGroup || 5;
-                    const numGroups = Math.max(1, Math.floor(groupPlayers.length / targetSize));
-
-                    const gradeGroups = Array.from({ length: numGroups }, (_, i) => ({
-                        groupName: `Grade ${grade} - Group ${i + 1}`,
-                        players: []
-                    }));
-
-                    groupPlayers.forEach((player, i) => {
-                        const groupIndex = i % numGroups;
-                        gradeGroups[groupIndex].players.push({ playerId: player._id, name: player.name });
-                    });
-
-                    groupsData.push(...gradeGroups.filter(g => g.players.length > 0));
-                }
-
-            } else if (groupingStrategy === "balanced") {
-                // Balanced Grouping: Snake draft by grade
-                const gradeOrder = { 'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'Unrated': 6 };
-                const sortedPlayers = players.sort((a, b) => (gradeOrder[a.grade] || 99) - (gradeOrder[b.grade] || 99));
-
-                const targetSize = tournament.teamsPerGroup || 4;
-                const numGroups = Math.max(1, Math.ceil(sortedPlayers.length / targetSize));
+                // Group by Grade: same grade players together, fill with next highest grade if not enough
+                sortByGrade(players);
 
                 groupsData = Array.from({ length: numGroups }, (_, i) => ({
                     groupName: `Group ${String.fromCharCode(65 + i)}`,
                     players: []
                 }));
 
-                // Snake draft
+                let currentGroupIdx = 0;
+                players.forEach((player) => {
+                    groupsData[currentGroupIdx].players.push({ playerId: player._id, name: player.name });
+                    if (groupsData[currentGroupIdx].players.length >= targetSize && currentGroupIdx < numGroups - 1) {
+                        currentGroupIdx++;
+                    }
+                });
+
+            } else if (groupingStrategy === "balanced") {
+                // Balanced: Snake draft by grade so each group gets a mix
+                sortByGrade(players);
+
+                groupsData = Array.from({ length: numGroups }, (_, i) => ({
+                    groupName: `Group ${String.fromCharCode(65 + i)}`,
+                    players: []
+                }));
+
                 let direction = 1;
                 let groupIndex = 0;
 
-                sortedPlayers.forEach((player) => {
+                players.forEach((player) => {
                     groupsData[groupIndex].players.push({ playerId: player._id, name: player.name });
-
                     groupIndex += direction;
 
                     if (groupIndex >= numGroups) {
@@ -87,8 +81,6 @@ const roundRobinGroupMatchController = {
             } else {
                 // Random distribution
                 const shuffled = players.sort(() => 0.5 - Math.random());
-                const targetSize = tournament.teamsPerGroup || 4;
-                const numGroups = Math.max(1, Math.floor(shuffled.length / targetSize));
 
                 groupsData = Array.from({ length: numGroups }, (_, i) => ({
                     groupName: `Group ${String.fromCharCode(65 + i)}`,

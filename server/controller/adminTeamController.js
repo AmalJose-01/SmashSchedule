@@ -281,13 +281,13 @@ const adminTeamController = {
 
         (async () => {
           try {
-            await sendRegistrationEmails({
-              teams: savedTeams,
-              playerMailSubject: "✅ Team Registration Successful",
-              adminMailSubject: "📋 New Team Registration",
-              tournamentDetail: req.body.tournamentDetail,
-              AdminUserDetail: req.admin,
-            });
+            // await sendRegistrationEmails({
+            //   teams: savedTeams,
+            //   playerMailSubject: "✅ Team Registration Successful",
+            //   adminMailSubject: "📋 New Team Registration",
+            //   tournamentDetail: req.body.tournamentDetail,
+            //   AdminUserDetail: req.admin,
+            // });
           } catch (err) {
             console.error("❌ Background email error:", err);
           }

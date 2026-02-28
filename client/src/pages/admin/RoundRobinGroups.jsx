@@ -29,7 +29,7 @@ import {
     GripVertical
 } from "lucide-react";
 
-import { getTeamListAPI } from "../../services/admin/adminTeamServices";
+import {  getTournamentPlayersAPI } from "../../services/admin/adminTeamServices";
 import { autoGroupAPI, saveGroupsAPI, getGroupsAPI } from "../../services/admin/roundRobinService";
 
 // --- Draggable Item Component ---
@@ -122,18 +122,36 @@ const RoundRobinGroups = () => {
 
     const [activeId, setActiveId] = useState(null);
 
-    // --- Fetch Data ---
-    const { data: teamData, isLoading: isTeamLoading } = useQuery({
-        queryKey: ["teams", tournamentId],
-        queryFn: () => getTeamListAPI(tournamentId),
-    });
+
+ const { data: teamData, isFetching, error } = useQuery({
+    queryKey: ["tournamentPlayers", tournamentDetail?._id],
+    queryFn: () => getTournamentPlayersAPI(tournamentDetail._id), 
+    enabled: !!tournamentId,
+    onSuccess: (res) => toast.success(`Players loaded!`),
+    onError: (error) => {
+      console.log("MUTATION ERROR:", error);
+      toast.dismiss();
+      if (error?.response?.status === 401) {
+        toast.error(error.response.data.message || "Session expired");
+
+        dispatch(logOut());
+        navigate("/");
+
+        return;
+      }
+
+      // Fallback for other errors
+      toast.error(error?.response?.data?.message || error.message);
+    },
+  });
+
 
     const { data: groupsData, isLoading: isGroupsLoading } = useQuery({
         queryKey: ["groups", tournamentId],
         queryFn: () => getGroupsAPI(tournamentId),
     });
 
-    const isLoading = isTeamLoading || isGroupsLoading;
+    const isLoading = isFetching || isGroupsLoading;
 
     // --- Initialize Groups ---
     useEffect(() => {

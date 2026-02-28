@@ -121,12 +121,13 @@ const SetupTournament = () => {
   // FETCH TEAMS / PLAYERS
   // ---------------------------
   let loadingToast;
-  const isRoundRobin = tournament?.playType === "round-robin";
+  const isRoundRobin = tournamentDetail?.playType === "round-robin";
+console.log("isRoundRobin:", tournamentDetail, isRoundRobin);
 
   const { data, isLoading, isFetching, error } = useQuery({
-    queryKey: ["tournamentPlayers", tournament?._id],
-    queryFn: () => isRoundRobin ? getTournamentPlayersAPI(tournament._id) : getTeamListAPI(tournament._id),
-    enabled: !!tournament?._id,
+    queryKey: ["tournamentPlayers", tournamentDetail?._id],
+    queryFn: () => isRoundRobin ? getTournamentPlayersAPI(tournamentDetail._id) : getTeamListAPI(tournamentDetail._id),
+    enabled: !!tournamentDetail?._id,
     onSuccess: (res) => toast.success(`${isRoundRobin ? 'Players' : 'Teams'} loaded!`),
     onError: (error) => {
       console.log("MUTATION ERROR:", error);
@@ -169,6 +170,10 @@ const SetupTournament = () => {
     if (!tournament?._id) return;
     try {
       if (!tournamentInfo) return;
+
+
+
+
       setTournamentDetail(tournamentInfo.tournaments ?? tournamentInfo);
     } catch (err) {
       console.error("Error fetching tournament detail:", err);
@@ -683,6 +688,10 @@ const SetupTournament = () => {
             <div className="space-y-2">
               <div className="mt-5">
                 <div className="flex justify-between">
+                
+                  {tournamentDetail.playType !== "round-robin" && tournamentDetail.status === "Create" && (
+
+
                   <div>
                     <label className="flex items-center gap-2 text-gray-700 mb-2">
                       <Upload className="w-4 h-4" />
@@ -694,18 +703,15 @@ const SetupTournament = () => {
                         : "Supported formats: .csv, .xls, .xlsx"}
                     </p>
                   </div>
+                  )}
 
-                  {/* <ButtonWithIcon
-                    title="Import"
-                    icon="sync"
-                    buttonBGColor="bg-green-600"
-                    textColor="text-white"
-                    onClick={handleSyncTeams}
-                  /> */}
+                 
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-4">
+
+                  {tournamentDetail.playType !== "round-robin" && tournamentDetail.status === "Create" && (
+                    <div className="flex items-center gap-4">
                     <label className="flex-1 cursor-pointer">
                       <div
                         className={`px-4 py-2 ${tournamentDetail.status === "Create"
@@ -728,7 +734,9 @@ const SetupTournament = () => {
                       />
                     </label>
                   </div>
-
+                  
+                  )}
+                  
                   {/* ROUND ROBIN ADD EXISTING PLAYERS BUTTON */}
                   {tournamentDetail.playType === "round-robin" && tournamentDetail.status === "Create" && (
                     <button
@@ -736,7 +744,7 @@ const SetupTournament = () => {
                       className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center justify-center gap-2"
                     >
                       <UserPlus className="w-4 h-4" />
-                      Add Existing Players
+                     Manage Players
                     </button>
                   )}
                 </div>

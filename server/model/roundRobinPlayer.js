@@ -12,6 +12,7 @@ const roundRobinPlayerSchema = new mongoose.Schema(
         contact: { type: String },
         grade: { type: String },
         dateOfBirth: { type: String },
+        playerId: { type: mongoose.Schema.Types.ObjectId, ref: "RoundRobinMember", required: true }, // Reference to the Member collection
     },
     { timestamps: true }
 );

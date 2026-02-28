@@ -179,10 +179,16 @@ const roundRobinController = {
             const registeredPlayers = [];
 
             for (const member of members) {
+
+console.log("Processing member:", member);
+
+
+
                 // Check if already registered
                 const existingPlayer = await RoundRobinPlayer.findOne({
                     tournamentId,
-                    email: member.email
+                    email: member.email,
+                    playerId: member._id // Use the member's _id as playerId
                 });
 
                 if (existingPlayer) {
@@ -197,7 +203,8 @@ const roundRobinController = {
                     email: member.email,
                     contact: member.contact || "",
                     grade: member.grade || "",
-                    dateOfBirth: member.dateOfBirth || ""
+                    dateOfBirth: member.dateOfBirth || "",
+                    playerId: member._id // Store the member's _id as playerId for reference
                 });
 
                 await newPlayer.save();
@@ -218,6 +225,7 @@ const roundRobinController = {
     // Get all players registered for a specific tournament
     getTournamentPlayers: async (req, res) => {
         try {
+            console.log("Getting players for tournament:", req.params);
             const { tournamentId } = req.params;
             if (!tournamentId) {
                 return res.status(400).json({ message: "Tournament ID is required" });
@@ -225,6 +233,8 @@ const roundRobinController = {
 
             const players = await RoundRobinPlayer.find({ tournamentId });
 
+            console.log("Found players:", players);
+            
             // Map to a format compatible with the frontend Team list if needed, 
             // but for now we'll just return them as players.
             // SetupTournament expects an object with a 'teams' array.
@@ -246,6 +256,9 @@ const roundRobinController = {
     // Remove a player from a specific tournament
     removePlayerFromTournament: async (req, res) => {
         try {
+
+            console.log("Attempting to remove player from tournament:", req.params);
+            
             const { tournamentId, playerId } = req.params;
 
             if (!tournamentId || !playerId) {
@@ -253,7 +266,7 @@ const roundRobinController = {
             }
 
             const deletedPlayer = await RoundRobinPlayer.findOneAndDelete({
-                _id: playerId,
+                playerId: playerId,
                 tournamentId
             });
 

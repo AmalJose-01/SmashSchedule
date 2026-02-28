@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useGetMembers, useAddMembersToTournament, useGetTournamentPlayers } from "../../hooks/roundRobin/useRoundRobin";
+import { useGetMembers, useAddMembersToTournament, useGetTournamentPlayers, useRemovePlayerFromTournament } from "../../hooks/roundRobin/useRoundRobin";
 import { ArrowLeft, CheckCircle, Search, UserPlus } from "lucide-react";
 import { useEffect } from "react";
 
@@ -17,8 +17,10 @@ const RoundRobinSelect = () => {
     const { data: members, isLoading } = useGetMembers();
     const { data: tournamentData } = useGetTournamentPlayers(tournamentId);
     const addMutation = useAddMembersToTournament();
+    const removeMutation = useRemovePlayerFromTournament();
 
     const [selectedIds, setSelectedIds] = useState([]);
+    const [initialSelectedIds, setInitialSelectedIds] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
 
     // Pre-select players already in the tournament
@@ -31,6 +33,7 @@ const RoundRobinSelect = () => {
                 .map(m => m._id);
 
             setSelectedIds(preSelectedIds);
+            setInitialSelectedIds(preSelectedIds);
         }
     }, [tournamentData, members]);
 
@@ -50,17 +53,33 @@ const RoundRobinSelect = () => {
         }
     };
 
-    const handleConfirm = () => {
-        if (selectedIds.length === 0) return;
+    const handleConfirm = async () => {
+        console.log("initialSelectedIds", initialSelectedIds);
+        console.log("selectedIds", selectedIds);
+        const newlySelected = selectedIds.filter(id => !initialSelectedIds.includes(id));
+        const deselected = initialSelectedIds.filter(id => !selectedIds.includes(id));
+console.log("deselected", deselected);
 
-        addMutation.mutate({
-            tournamentId,
-            memberIds: selectedIds
-        }, {
-            onSuccess: () => {
-                navigate("/setup-tournament", { replace: true });
+        if (newlySelected.length === 0 && deselected.length === 0) return;
+
+        try {
+            // Remove deselected players
+            for (const playerId of deselected) {
+                await removeMutation.mutateAsync({ tournamentId, playerId });
             }
-        });
+
+            // Add newly selected players
+            if (newlySelected.length > 0) {
+                await addMutation.mutateAsync({
+                    tournamentId,
+                    memberIds: newlySelected,
+                });
+            }
+
+            navigate("/setup-tournament", { replace: true });
+        } catch (error) {
+            // Error toasts are handled by the mutation hooks
+        }
     };
 
     const filteredMembers = members?.filter(member =>
@@ -99,10 +118,10 @@ const RoundRobinSelect = () => {
                             </button>
                             <button
                                 onClick={handleConfirm}
-                                disabled={selectedIds.length === 0 || addMutation.isPending}
+                                disabled={addMutation.isPending || removeMutation.isPending}
                                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50 flex items-center gap-2"
                             >
-                                {addMutation.isPending ? "Adding..." : `Add Selected (${selectedIds.length})`}
+                                {addMutation.isPending || removeMutation.isPending ? "Saving..." : `Save Selection (${selectedIds.length})`}
                                 <CheckCircle className="w-5 h-5" />
                             </button>
                         </div>
