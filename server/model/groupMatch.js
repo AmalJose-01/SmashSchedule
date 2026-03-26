@@ -21,12 +21,34 @@ const GroupMatchSchema = new mongoose.Schema({
     ref: "Group",
     required: true,
   },
-  teamsHome: 
+  awayGroup: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Group",
+    default: null,
+  },
+  teamsHome:
     { type: mongoose.Schema.Types.ObjectId, ref: "Team", required: true },
-  
-  teamsAway: 
+
+  teamsAway:
     { type: mongoose.Schema.Types.ObjectId, ref: "Team", required: true },
-  
+
+  player1Home: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Team",
+    default: null, // For doubles matches
+  },
+
+  player1Away: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Team",
+    default: null, // For doubles matches
+  },
+
+  isInterGroup: {
+    type: Boolean,
+    default: false, // True for inter-group matches
+  },
+
   scheduledTime: Date,
   scores: [GameScoreSchema],
   status: { type: String, enum: ["scheduled","ongoing", "finished"], default: "scheduled" },

@@ -36,6 +36,7 @@ const query = useQuery({
     toast.loading("Fetching venue details...");
   },
   onSuccess: (data) => {
+    queryClient.invalidateQueries
     toast.dismiss();
     toast.success("Venue details fetched successfully!");
   },

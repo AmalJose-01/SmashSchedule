@@ -124,9 +124,10 @@ const RoundRobinGroups = () => {
 
 
  const { data: teamData, isFetching, error } = useQuery({
-    queryKey: ["tournamentPlayers", tournamentDetail?._id],
-    queryFn: () => getTournamentPlayersAPI(tournamentDetail._id), 
+    queryKey: ["tournamentPlayers", tournamentId],
+    queryFn: () => getTournamentPlayersAPI(tournamentId),
     enabled: !!tournamentId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
     onSuccess: (res) => toast.success(`Players loaded!`),
     onError: (error) => {
       console.log("MUTATION ERROR:", error);
@@ -149,25 +150,23 @@ const RoundRobinGroups = () => {
     const { data: groupsData, isLoading: isGroupsLoading } = useQuery({
         queryKey: ["groups", tournamentId],
         queryFn: () => getGroupsAPI(tournamentId),
+        staleTime: 5 * 60 * 1000, // 5 minutes
     });
 
     const isLoading = isFetching || isGroupsLoading;
 
     // --- Initialize Groups ---
     useEffect(() => {
+        if (!teamData?.teams) return;
+
         if (groupsData?.groups && groupsData.groups.length > 0) {
-            // We have existing groups
+            // We have existing groups - parse and load them
             const parsedGroups = {};
             const assignedTeamIds = new Set();
 
             groupsData.groups.forEach((g) => {
-                let key = g.groupName.replace(/\s+/g, '').toLowerCase();
-                if (key === 'groupa') key = 'groupA';
-                if (key === 'groupb') key = 'groupB';
-
-                // If key is neither, we might need to dynamically add keys to 'items' state
-                // For now, let's just support A and B, or parse dynamic keys?
-                // To support dynamic keys, we need to ensure 'items' is initialized with them or we add them.
+                // Normalize to camelCase: "Group A" → "groupA", "Group B" → "groupB", etc.
+                let key = g.groupName.replace(/\s+/g, '').replace(/^group(.)/i, (_, c) => `group${c.toUpperCase()}`);
 
                 parsedGroups[key] = g.teams.map(t => {
                     assignedTeamIds.add(t.teamId);
@@ -188,13 +187,13 @@ const RoundRobinGroups = () => {
 
             setItems({ ...parsedGroups, unassigned });
 
-        } else if (teamData?.teams && items.unassigned.length === 0 && Object.keys(items).filter(k => k !== 'unassigned').length === 0) {
-            // Initial state: everyone in unassigned, and no other groups exist
+        } else {
+            // No existing groups - initialize all teams as unassigned
             setItems({
                 unassigned: teamData.teams.map(t => ({ ...t, id: t._id, name: t.teamName, grade: t.grade || "Unknown" })),
             });
         }
-    }, [teamData, groupsData]);
+    }, [teamData?.teams, groupsData?.groups]);
 
 
     // --- DnD Sensors ---
@@ -308,29 +307,8 @@ const RoundRobinGroups = () => {
         mutationFn: autoGroupAPI,
         onSuccess: (data) => {
             toast.success("Groups generated successfully!");
-            // Parse groups from backend to local state
-            // Backend returns: groups: [{ groupName: "Group A", teams: [...] }, ...]
-            // Reset state
-            const parsedGroups = { unassigned: [] };
-
-            data.groups.forEach((g) => {
-                // Simple mapping for demo: "Group A" -> groupA
-                // Or we can just use the groupName as key if we make UI dynamic.
-                // For now, let's try to map to existing keys or add new ones.
-                let key = g.groupName.replace(/\s+/g, '').toLowerCase(); // groupa
-
-                parsedGroups[key] = g.teams.map(t => ({
-                    _id: t.teamId,
-                    id: t.teamId,
-                    name: t.name,
-                    grade: t.grade || "Unknown" // Backend might need to return grade in teams array
-                }));
-            });
-
-            // Any teams not in groups should be in unassigned? 
-            // autoGroup should put everyone in groups.
-
-            setItems(parsedGroups);
+            // Invalidate groups query to refetch from server
+            queryClient.invalidateQueries({ queryKey: ["groups", tournamentId] });
         },
         onError: (err) => {
             toast.error(err.response?.data?.message || "Failed to generate groups");
@@ -341,6 +319,8 @@ const RoundRobinGroups = () => {
         mutationFn: saveGroupsAPI,
         onSuccess: () => {
             toast.success("Groups saved and finalized!");
+            // Invalidate groups query before navigation
+            queryClient.invalidateQueries({ queryKey: ["groups", tournamentId] });
             navigate(`/match/${tournamentId}`);
         },
         onError: (err) => {
@@ -353,6 +333,20 @@ const RoundRobinGroups = () => {
     };
 
     const handleFinalize = () => {
+        const groupKeys = Object.keys(items).filter(k => k !== 'unassigned' && items[k].length > 0);
+        if (groupKeys.length === 0) {
+            toast.error("No groups set up. Assign players to groups first.");
+            return;
+        }
+        if (items.unassigned?.length > 0) {
+            toast.error(`${items.unassigned.length} players are still unassigned. Assign all players before finalizing.`);
+            return;
+        }
+
+console.log("Finalizing groups:", items);
+
+
+
         saveGroupsMutation({ tournamentId, groups: items });
     };
 

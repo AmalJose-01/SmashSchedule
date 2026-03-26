@@ -26,6 +26,9 @@ import {
   Key,
   Pencil,
   Trash2,
+  X,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 import ButtonWithIcon from "../../components/ButtonWithIcon";
 import Logout from "../../components/Logout";
@@ -40,7 +43,7 @@ import { readExcelFile, readCsvFile } from "../../../utils/fileReaders";
 
 import { convertToTeamsPayload } from "../../../utils/converters/convertToTeamsPayload";
 import { useDeleteTeam } from "../../hooks/useDeleteTeam";
-import { useRemovePlayerFromTournament, useBulkAddPlayersToTournament } from "../../hooks/roundRobin/useRoundRobin";
+import { useRemovePlayerFromTournament, useBulkAddPlayersToTournament, useUpdateMember } from "../../hooks/roundRobin/useRoundRobin";
 
 const SetupTournament = () => {
   // ---------------------------
@@ -81,8 +84,33 @@ const SetupTournament = () => {
   const { handleUseImportTeam, successImportTeam, importError } =
     useImportTeam();
   const bulkRRAddMutation = useBulkAddPlayersToTournament();
+  const updateMemberMutation = useUpdateMember();
   const fileInputRef = useRef(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Edit player modal (round-robin)
+  const [editPlayerModal, setEditPlayerModal] = useState(false);
+  const [editPlayerData, setEditPlayerData] = useState({ name: "", grade: "", email: "", contact: "", isMember: true });
+  const [editPlayerId, setEditPlayerId] = useState(null);
+
+  const openEditPlayer = (player) => {
+    setEditPlayerId(player._id);
+    setEditPlayerData({
+      name: player.name || player.teamName || "",
+      grade: player.grade || "",
+      email: player.email || "",
+      contact: player.contact || "",
+      isMember: player.isMember !== undefined ? player.isMember : true,
+    });
+    setEditPlayerModal(true);
+  };
+
+  const handleEditPlayerSubmit = (e) => {
+    e.preventDefault();
+    updateMemberMutation.mutate({ id: editPlayerId, ...editPlayerData }, {
+      onSuccess: () => setEditPlayerModal(false),
+    });
+  };
 
   const { tournamentInfo } = useTournamentInformation(tournament._id, "Admin");
   const getStatusColor = (status) => {
@@ -187,6 +215,12 @@ console.log("isRoundRobin:", tournamentDetail, isRoundRobin);
   const onSubmit = async () => {
     if (tournamentDetail.status === "Create") {
       if (tournamentDetail.playType === "round-robin") {
+        const playerCount = data?.teams?.length || 0;
+        const minRequired = Math.max(tournamentDetail.teamsPerGroup || 3, 3);
+        if (playerCount < minRequired) {
+          toast.error(`At least ${minRequired} players are required to start the tournament. Currently ${playerCount} registered.`);
+          return;
+        }
         navigate(`/round-robin-groups/${tournamentDetail._id}`, { state: { tournamentDetail } });
         return;
       }
@@ -643,9 +677,9 @@ console.log("isRoundRobin:", tournamentDetail, isRoundRobin);
                               // }}
 
                               onClick={() =>
-                                navigate("/edit-team", {
-                                  state: { team },
-                                })
+                                isRoundRobin
+                                  ? openEditPlayer(team)
+                                  : navigate("/edit-team", { state: { team } })
                               }
                             >
                               <Pencil />
@@ -747,6 +781,16 @@ console.log("isRoundRobin:", tournamentDetail, isRoundRobin);
                      Manage Players
                     </button>
                   )}
+                  {/* ROUND ROBIN EDIT GROUPS BUTTON — always visible after groups exist */}
+                  {tournamentDetail.playType === "round-robin" && tournamentDetail.status !== "Create" && (
+                    <button
+                      onClick={() => navigate(`/round-robin-groups/${tournamentDetail._id}`, { state: { tournamentDetail } })}
+                      className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-2"
+                    >
+                      <Grid3x3 className="w-4 h-4" />
+                      Edit Groups
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -813,6 +857,82 @@ console.log("isRoundRobin:", tournamentDetail, isRoundRobin);
             </div>
           </div>
         </div>
+
+        {/* Edit Player Modal (Round Robin) */}
+        {editPlayerModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+              <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+                <h3 className="font-bold text-lg text-gray-800">Edit Player</h3>
+                <button onClick={() => setEditPlayerModal(false)} className="text-gray-500 hover:text-gray-700">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <form onSubmit={handleEditPlayerSubmit} className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                  <input
+                    type="text"
+                    required
+                    className="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                    value={editPlayerData.name}
+                    onChange={(e) => setEditPlayerData({ ...editPlayerData, name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Grade</label>
+                  <select
+                    required
+                    className="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    value={editPlayerData.grade}
+                    onChange={(e) => setEditPlayerData({ ...editPlayerData, grade: e.target.value })}
+                  >
+                    <option value="">Select grade...</option>
+                    {["A", "B", "C", "D", "E"].map(g => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    required
+                    className="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                    value={editPlayerData.email}
+                    onChange={(e) => setEditPlayerData({ ...editPlayerData, email: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
+                  <input
+                    type="text"
+                    className="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                    value={editPlayerData.contact}
+                    onChange={(e) => setEditPlayerData({ ...editPlayerData, contact: e.target.value })}
+                  />
+                </div>
+                <div className="flex items-center gap-2 pt-2">
+                  <input
+                    type="checkbox"
+                    id="editIsMember"
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    checked={editPlayerData.isMember}
+                    onChange={(e) => setEditPlayerData({ ...editPlayerData, isMember: e.target.checked })}
+                  />
+                  <label htmlFor="editIsMember" className="text-gray-700 font-medium select-none">Current Member</label>
+                </div>
+                <button
+                  type="submit"
+                  disabled={updateMemberMutation.isPending}
+                  className="w-full py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50"
+                >
+                  {updateMemberMutation.isPending ? "Saving..." : "Update Player"}
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
 
         <ConfirmModal
           isOpen={confirmConfig.open}

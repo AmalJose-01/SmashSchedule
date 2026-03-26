@@ -4,7 +4,10 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "node index.js"
+      // "dev": "node index.js"
+      "dev": "concurrently \"nodemon index.js\" \"cd ../client && npm start\"",
+          "install-all": "npm install && npm install --prefix client && npm install --prefix server"
+
   },
   "keywords": [],
   "author": "",
@@ -23,6 +26,7 @@
     "nodemailer": "^7.0.12",
     "pdfkit": "^0.17.2",
     "resend": "^6.6.0",
-    "stripe": "^20.0.0"
+    "stripe": "^20.0.0",
+    "concurrently": "^8.0.0"
   }
 }

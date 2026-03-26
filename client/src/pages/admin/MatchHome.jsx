@@ -292,6 +292,40 @@ const handleDownload = async () => {
     );
   }
 
+  // ── Cross-group doubles (round-robin PDF format) detection ──
+  const isCrossGroupDoubles = matches?.some(m => m.awayGroup != null);
+
+  // Derive group pairings from match data (group A ↔ group B, etc.)
+  const groupPairs = (() => {
+    if (!isCrossGroupDoubles) return [];
+    const pairs = [];
+    const paired = new Set();
+    groups.forEach(g => {
+      if (paired.has(g._id?.toString())) return;
+      const match = matches.find(m => m.group?.toString() === g._id?.toString() && m.awayGroup);
+      if (match) {
+        const awayG = groups.find(ag => ag._id?.toString() === match.awayGroup?.toString());
+        if (awayG) {
+          pairs.push({ groupA: g, groupB: awayG });
+          paired.add(g._id?.toString());
+          paired.add(awayG._id?.toString());
+        }
+      }
+    });
+    return pairs;
+  })();
+
+  // Helper: determine winner from sets
+  const getSetWinner = (sets) => {
+    const played = sets.filter(s => s.home > 0 || s.away > 0);
+    if (!played.length) return null;
+    const hw = played.filter(s => s.home > s.away).length;
+    const aw = played.filter(s => s.away > s.home).length;
+    if (hw > aw) return 'home';
+    if (aw > hw) return 'away';
+    return null;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white ">
       {/* Header */}
@@ -342,7 +376,16 @@ const handleDownload = async () => {
               <ChevronDown className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
-          <div className={`flex gap-2${tournamentDetail.knockoutStatus === "scheduled" ? "hidden" : ""}`}> <ButtonWithIcon
+          <div className={`flex gap-2${tournamentDetail.knockoutStatus === "scheduled" ? "hidden" : ""}`}>
+          {tournamentDetail?.playType === 'round-robin' && (
+            <button
+              onClick={() => navigate(`/round-robin-groups/${tournamentId}`, { state: { tournamentDetail } })}
+              className="flex items-center gap-1 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium transition"
+            >
+              Edit Groups
+            </button>
+          )}
+          <ButtonWithIcon
             title="Download Score Sheet"
             icon="save"
             buttonBGColor="bg-yellow-600"
@@ -357,14 +400,111 @@ const handleDownload = async () => {
             textColor="text-white"
             onClick={updateAllScore}
           />
-          
-          
+
+
           </div>
          
         </div>
 
         {/* Group Stage */}
         {groups.length > 0 ? (
+          isCrossGroupDoubles ? (
+            /* ── Cross-group doubles: PDF table format ── */
+            <div className="space-y-8 mx-4 mb-6">
+              {groupPairs.map(({ groupA, groupB }) => {
+                const setMatches = matches.filter(m => m.group?.toString() === groupA._id?.toString());
+                const aWins = setMatches.filter(m => getSetWinner(m.scores?.[0]?.sets || []) === 'home').length;
+                const bWins = setMatches.filter(m => getSetWinner(m.scores?.[0]?.sets || []) === 'away').length;
+
+                return (
+                  <div key={groupA._id} className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-gray-800 text-white">
+                          <th className="p-4 text-center text-base font-bold border border-gray-700">{groupA.groupName}</th>
+                          <th className="p-3 text-center w-12 border border-gray-700 text-sm">VS</th>
+                          <th className="p-4 text-center text-base font-bold border border-gray-700">{groupB.groupName}</th>
+                          <th className="p-3 w-20 border border-gray-700"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {setMatches.map((m, idx) => {
+                          const parts = m.matchName.split(' vs ');
+                          const homeName = parts[0]?.trim() || 'Home';
+                          const awayName = parts[1]?.trim() || 'Away';
+                          const winner = getSetWinner(m.scores?.[0]?.sets || []);
+                          const isFinished = m.status === 'finished';
+
+                          return (
+                            <tr key={m._id} className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                              <td className={`p-3 border border-gray-200 ${winner === 'home' ? 'bg-green-50' : ''}`}>
+                                <div className="font-semibold text-sm mb-2 flex items-center gap-1">
+                                  {winner === 'home' && <Trophy className="w-3 h-3 text-green-600" />}
+                                  {homeName}
+                                </div>
+                                <div className="flex gap-2 flex-wrap">
+                                  {m.scores[0].sets.map((set, sIdx) => (
+                                    <div key={sIdx} className="flex items-center gap-1">
+                                      <span className="text-xs text-gray-400">S{sIdx + 1}</span>
+                                      <input type="number" min={0} max={30}
+                                        className="w-12 p-1 border rounded text-center text-sm"
+                                        value={set.home === 0 ? '' : set.home}
+                                        onChange={(e) => { let v = Number(e.target.value); if (isNaN(v) || v < 0) v = 0; handleSetChange(m._id, sIdx, 'home', v); }}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </td>
+                              <td className="p-2 text-center font-bold text-gray-400 border border-gray-200 text-sm">VS</td>
+                              <td className={`p-3 border border-gray-200 ${winner === 'away' ? 'bg-green-50' : ''}`}>
+                                <div className="font-semibold text-sm mb-2 flex items-center gap-1">
+                                  {winner === 'away' && <Trophy className="w-3 h-3 text-green-600" />}
+                                  {awayName}
+                                </div>
+                                <div className="flex gap-2 flex-wrap">
+                                  {m.scores[0].sets.map((set, sIdx) => (
+                                    <div key={sIdx} className="flex items-center gap-1">
+                                      <span className="text-xs text-gray-400">S{sIdx + 1}</span>
+                                      <input type="number" min={0} max={30}
+                                        className="w-12 p-1 border rounded text-center text-sm"
+                                        value={set.away === 0 ? '' : set.away}
+                                        onChange={(e) => { let v = Number(e.target.value); if (isNaN(v) || v < 0) v = 0; handleSetChange(m._id, sIdx, 'away', v); }}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </td>
+                              <td className="p-3 text-center border border-gray-200">
+                                <button onClick={() => updateScore(m._id)}
+                                  className={`px-3 py-1 rounded text-white text-xs font-medium flex items-center gap-1 mx-auto ${isFinished ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'}`}
+                                >
+                                  <FaSave size={12} />
+                                  {isFinished ? 'Done' : 'Save'}
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-gray-800 text-white font-bold">
+                          <td className="p-4 text-center border border-gray-700">
+                            Result {groupA.groupName} Win <span className="text-yellow-300 text-xl mx-1">{aWins}</span> MATCH
+                          </td>
+                          <td className="border border-gray-700"></td>
+                          <td className="p-4 text-center border border-gray-700">
+                            {groupB.groupName} Win <span className="text-yellow-300 text-xl mx-1">{bWins}</span> MATCH
+                          </td>
+                          <td className="border border-gray-700"></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+          /* ── Standard group-by-group view ── */
           <div
             className={`grid grid-cols-1  ${
               groups.length > 1 && selectedGroup === "all"
@@ -663,6 +803,7 @@ const handleDownload = async () => {
                 );
               })}
           </div>
+          ) /* end standard view */
         ) : (
           <div className="bg-white rounded-3xl shadow-lg p-6 max-h-96 overflow-y-auto mt-4 ml-4 mr-4">
             <h2 className="text-xl font-semibold mb-4">No groups available.</h2>

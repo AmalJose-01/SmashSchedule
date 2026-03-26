@@ -114,246 +114,177 @@ const roundRobinGroupingController = {
         }
     },
 
-    // Save manually adjusted groups from DnD
+    // Save manually adjusted groups from DnD and generate matches per PDF format
     saveGroups: async (req, res) => {
         try {
             const { tournamentId, groups } = req.body;
 
+            console.log("groups received in controller:", groups);
+
             const tournament = await Tournament.findById(tournamentId);
             if (!tournament) return res.status(404).json({ message: "Tournament not found" });
 
-            // 1. Prepare Teams based on Match Type
-            const isDoubles = tournament.matchType === "Doubles";
-
-            await Group.deleteMany({ tournamentId });
-            await GroupMatch.deleteMany({ tournamentId }); // Reset matches too
-
-            const newGroupsData = [];
-            const savedGroupIds = [];
-
-            // Courts logic
             const numberOfCourts = tournament.numberOfCourts || 1;
+            const courtsList = Array.from({ length: numberOfCourts }, (_, i) => `Court ${i + 1}`);
+            const matchType = tournament.matchType || "Singles"; // Singles or Doubles
+            const crossGroupMatches = tournament.roundRobinConfig?.crossGroupMatches || false;
 
-            let validGroupKeys = Object.keys(groups).filter(k => k !== 'unassigned' && groups[k].length > 0);
-            const totalGroups = validGroupKeys.length;
-            const courtsList = Array.from({ length: numberOfCourts }, (_, idx) => `Court ${idx + 1}`);
+            // Reset existing data
+            await Group.deleteMany({ tournamentId });
+            await GroupMatch.deleteMany({ tournamentId });
+            await Team.deleteMany({ tournamentId });
 
-            const baseCourts = Math.floor(numberOfCourts / totalGroups);
-            let extraCourts = numberOfCourts % totalGroups;
+            const validGroupKeys = Object.keys(groups)
+                .filter(k => k !== 'unassigned' && groups[k].length > 0)
+                .sort();
 
-            let courtMap = {};
-            let courtIdx = 0;
+            const savedGroups = [];
+            const allTeamCombinations = []; // Store combinations for inter-group matches
+            let matchIndex = 0;
 
-            validGroupKeys.forEach((key, i) => {
-                let count = baseCourts;
-                if (extraCourts > 0) {
-                    count++;
-                    extraCourts--;
-                }
+            // --- STEP 1: Create Groups and Intra-group Matches ---
+            for (let idx = 0; idx < validGroupKeys.length; idx++) {
+                const groupKey = validGroupKeys[idx];
+                const members = groups[groupKey];
 
-                if (count === 0 && numberOfCourts > 0) {
-                    courtMap[i] = [courtsList[i % numberOfCourts]];
-                } else {
-                    courtMap[i] = courtsList.slice(courtIdx, courtIdx + count);
-                    courtIdx += count;
-                }
-            });
+                let groupName = groupKey.replace('group', 'Group ');
+                if (!groupName.includes('Group')) groupName = `Group ${String.fromCharCode(65 + idx)}`;
 
-            // Process each group
-            let groupCounter = 0;
-            for (const groupKey of validGroupKeys) {
-                const members = groups[groupKey]; // List of { _id, name, email, contact, ... }
-
-                let finalTeamsForGroup = [];
-                let precomputedMatches = [];
-
-                if (isDoubles) {
-                    // DOUBLES / MIXED DOUBLES
-                    // Generate match rounds: each round splits players into 2 teams of 2
-                    // 4 players → 3 rounds, 5 players → enough rounds for min 3 matches each
-                    const n = members.length;
-
-                    // Generate all possible match rounds (pick 4 players, split into 2 pairs)
-                    const allRounds = [];
-                    for (let i = 0; i < n; i++) {
-                        for (let j = i + 1; j < n; j++) {
-                            for (let k = j + 1; k < n; k++) {
-                                for (let l = k + 1; l < n; l++) {
-                                    // 3 ways to split 4 players into 2 pairs
-                                    allRounds.push({ team1: [i, j], team2: [k, l] });
-                                    allRounds.push({ team1: [i, k], team2: [j, l] });
-                                    allRounds.push({ team1: [i, l], team2: [j, k] });
-                                }
-                            }
-                        }
-                    }
-
-                    // Greedy selection: pick rounds until every player has >= 3 matches
-                    const matchCounts = new Array(n).fill(0);
-                    const minRequired = 3;
-                    const selectedRounds = [];
-                    const remaining = [...allRounds];
-
-                    while (!matchCounts.every(c => c >= minRequired) && remaining.length > 0) {
-                        let bestIdx = 0;
-                        let bestScore = -1;
-                        for (let m = 0; m < remaining.length; m++) {
-                            const players = [...remaining[m].team1, ...remaining[m].team2];
-                            const score = players.reduce((s, idx) => s + Math.max(0, minRequired - matchCounts[idx]), 0);
-                            if (score > bestScore) { bestScore = score; bestIdx = m; }
-                        }
-                        if (bestScore <= 0) break;
-                        const selected = remaining.splice(bestIdx, 1)[0];
-                        selectedRounds.push(selected);
-                        [...selected.team1, ...selected.team2].forEach(idx => matchCounts[idx]++);
-                    }
-
-                    // Clean old generated teams for this tournament
-                    await Team.deleteMany({ tournamentId });
-
-                    // Create Team docs for each selected round
-                    for (let r = 0; r < selectedRounds.length; r++) {
-                        const round = selectedRounds[r];
-                        const p1 = members[round.team1[0]], p2 = members[round.team1[1]];
-                        const p3 = members[round.team2[0]], p4 = members[round.team2[1]];
-
-                        const uid = `${Date.now()}_${groupCounter}_${r}`;
-
-                        const homeTeam = new Team({
-                            teamName: `${p1.name} & ${p2.name}`,
-                            playerOneName: p1.name,
-                            playerOneEmail: `rr_${uid}_h1@temp.com`,
-                            playerOneContact: `rr_${uid}_h1`,
-                            playerOneDOB: p1.dateOfBirth || "N/A",
-                            playerTwoName: p2.name,
-                            playerTwoEmail: `rr_${uid}_h2@temp.com`,
-                            playerTwoContact: `rr_${uid}_h2`,
-                            playerTwoDOB: p2.dateOfBirth || "N/A",
-                            tournamentId,
-                        });
-                        await homeTeam.save();
-
-                        const awayTeam = new Team({
-                            teamName: `${p3.name} & ${p4.name}`,
-                            playerOneName: p3.name,
-                            playerOneEmail: `rr_${uid}_a1@temp.com`,
-                            playerOneContact: `rr_${uid}_a1`,
-                            playerOneDOB: p3.dateOfBirth || "N/A",
-                            playerTwoName: p4.name,
-                            playerTwoEmail: `rr_${uid}_a2@temp.com`,
-                            playerTwoContact: `rr_${uid}_a2`,
-                            playerTwoDOB: p4.dateOfBirth || "N/A",
-                            tournamentId,
-                        });
-                        await awayTeam.save();
-
-                        finalTeamsForGroup.push(
-                            { teamId: homeTeam._id, name: homeTeam.teamName },
-                            { teamId: awayTeam._id, name: awayTeam.teamName }
-                        );
-
-                        precomputedMatches.push({
-                            homeTeamId: homeTeam._id,
-                            homeTeamName: homeTeam.teamName,
-                            awayTeamId: awayTeam._id,
-                            awayTeamName: awayTeam.teamName,
-                        });
-                    }
-                } else {
-                    // Singles: Use existing players directly
-                    finalTeamsForGroup = members.map(m => ({
-                        teamId: m._id || m.id,
-                        name: m.name
-                    }));
-                }
-
-                if (finalTeamsForGroup.length < 1) continue;
-
-                // Create Group Doc
-                let realGroupName = groupKey.replace('group', 'Group ');
-                if (!realGroupName.includes("Group")) realGroupName = `Group ${String.fromCharCode(65 + groupCounter)}`;
+                const groupTeams = members.map(m => ({ teamId: String(m._id || m.id), name: m.name }));
 
                 const newGroup = await Group.create({
                     tournamentId,
-                    groupName: realGroupName,
-                    teams: finalTeamsForGroup,
-                    standings: finalTeamsForGroup.map(t => ({
+                    groupName,
+                    teams: groupTeams,
+                    standings: groupTeams.map(t => ({
                         teamId: t.teamId,
-                        matchesPlayed: 0,
-                        wins: 0,
-                        losses: 0,
-                        pointsFor: 0,
-                        pointsAgainst: 0,
-                        pointsDiff: 0,
-                        totalPoints: 0,
-                    }))
+                        matchesPlayed: 0, wins: 0, losses: 0,
+                        pointsFor: 0, pointsAgainst: 0, pointsDiff: 0, totalPoints: 0,
+                    })),
                 });
 
-                newGroupsData.push({
-                    groupId: newGroup._id,
-                    groupName: realGroupName,
-                    teams: finalTeamsForGroup,
-                    precomputedMatches
-                });
-                savedGroupIds.push(newGroup._id);
-                groupCounter++;
-            }
+                savedGroups.push({ groupId: newGroup._id, groupName });
 
-            // Generate Matches
-            for (let idx = 0; idx < newGroupsData.length; idx++) {
-                const groupData = newGroupsData[idx];
-                const courtsForGroup = courtMap[idx] || [`Court 1`];
+                // --- Handle Different Match Types ---
+                if (matchType === "Doubles") {
+                    // DOUBLES CASE: Create team combinations (pairs) and matches between combinations
+                    const teamCombinations = [];
 
-                if (groupData.precomputedMatches && groupData.precomputedMatches.length > 0) {
-                    // Doubles: matches were determined during team creation
-                    const groupMatches = groupData.precomputedMatches.map((match, mIdx) => ({
-                        matchName: `${match.homeTeamName} vs ${match.awayTeamName}`,
-                        tournamentId,
-                        group: groupData.groupId,
-                        teamsHome: match.homeTeamId,
-                        teamsAway: match.awayTeamId,
-                        scheduledTime: null,
-                        court: courtsForGroup[mIdx % courtsForGroup.length],
-                        scores: [{ sets: [{ home: 0, away: 0 }, { home: 0, away: 0 }, { home: 0, away: 0 }] }],
-                        status: "scheduled"
-                    }));
-                    await GroupMatch.insertMany(groupMatches);
-                } else {
-                    // Singles: standard round-robin (each player vs every other)
-                    let matchIndex = 0;
-                    const groupMatches = groupData.teams.flatMap((homeTeam, i) =>
-                        groupData.teams.slice(i + 1).map((awayTeam) => {
-                            const court = courtsForGroup[matchIndex % courtsForGroup.length];
-                            matchIndex++;
-                            return {
-                                matchName: `${homeTeam.name} vs ${awayTeam.name}`,
-                                tournamentId,
-                                group: groupData.groupId,
-                                teamsHome: homeTeam.teamId,
-                                teamsAway: awayTeam.teamId,
-                                scheduledTime: null,
-                                court,
-                                scores: [{ sets: [{ home: 0, away: 0 }, { home: 0, away: 0 }, { home: 0, away: 0 }] }],
-                                status: "scheduled"
+                    // Generate all 2-player combinations from group members
+                    for (let i = 0; i < members.length; i++) {
+                        for (let j = i + 1; j < members.length; j++) {
+                            const combination = {
+                                groupId: newGroup._id,
+                                groupName: groupName,
+                                pair: [
+                                    { teamId: String(members[i]._id || members[i].id), name: members[i].name },
+                                    { teamId: String(members[j]._id || members[j].id), name: members[j].name }
+                                ],
+                                combinationName: `${members[i].name} & ${members[j].name}`
                             };
-                        })
-                    );
-                    await GroupMatch.insertMany(groupMatches);
+                            teamCombinations.push(combination);
+                        }
+                    }
+
+                    allTeamCombinations.push(...teamCombinations);
+
+                    // Create matches between all combinations in the same group
+                    for (let i = 0; i < teamCombinations.length; i++) {
+                        for (let j = i + 1; j < teamCombinations.length; j++) {
+                            await GroupMatch.create({
+                                matchName: `${teamCombinations[i].combinationName} vs ${teamCombinations[j].combinationName}`,
+                                tournamentId,
+                                group: newGroup._id,
+                                teamsHome: teamCombinations[i].pair[0].teamId,
+                                teamsAway: teamCombinations[j].pair[0].teamId,
+                                player1Home: teamCombinations[i].pair[1].teamId, // Second player from home team
+                                player1Away: teamCombinations[j].pair[1].teamId, // Second player from away team
+                                scheduledTime: null,
+                                court: courtsList[matchIndex % courtsList.length],
+                                scores: [{ sets: [{ home: 0, away: 0 }, { home: 0, away: 0 }, { home: 0, away: 0 }] }],
+                                status: 'scheduled',
+                            });
+                            matchIndex++;
+                        }
+                    }
+
+                } else {
+                    // SINGLES CASE: Keep original team-vs-team matches
+                    for (let i = 0; i < members.length; i++) {
+                        for (let j = i + 1; j < members.length; j++) {
+                            await GroupMatch.create({
+                                matchName: `${members[i].name} vs ${members[j].name}`,
+                                tournamentId,
+                                group: newGroup._id,
+                                teamsHome: members[i]._id || members[i].id,
+                                teamsAway: members[j]._id || members[j].id,
+                                scheduledTime: null,
+                                court: courtsList[matchIndex % courtsList.length],
+                                scores: [{ sets: [{ home: 0, away: 0 }, { home: 0, away: 0 }, { home: 0, away: 0 }] }],
+                                status: 'scheduled',
+                            });
+                            matchIndex++;
+                        }
+                    }
                 }
             }
 
-            // Update Tournament
+            // --- STEP 2: Create Inter-group Matches (if enabled) ---
+            if (crossGroupMatches && matchType === "Doubles" && allTeamCombinations.length > 0) {
+                // Create matches between pairs from different groups
+                const combinationsByGroup = {};
+
+                allTeamCombinations.forEach(combo => {
+                    const gName = combo.groupName;
+                    if (!combinationsByGroup[gName]) {
+                        combinationsByGroup[gName] = [];
+                    }
+                    combinationsByGroup[gName].push(combo);
+                });
+
+                const groupNames = Object.keys(combinationsByGroup).sort();
+
+                // Match each group with next group (Group A vs Group B, Group C vs Group D, etc.)
+                for (let g = 0; g < groupNames.length - 1; g += 2) {
+                    const group1Name = groupNames[g];
+                    const group2Name = groupNames[g + 1];
+
+                    const combosGroup1 = combinationsByGroup[group1Name];
+                    const combosGroup2 = combinationsByGroup[group2Name];
+
+                    // All combinations from group1 play all combinations from group2
+                    for (let i = 0; i < combosGroup1.length; i++) {
+                        for (let j = 0; j < combosGroup2.length; j++) {
+                            await GroupMatch.create({
+                                matchName: `${group1Name} (${combosGroup1[i].combinationName}) vs ${group2Name} (${combosGroup2[j].combinationName})`,
+                                tournamentId,
+                                teamsHome: combosGroup1[i].pair[0].teamId,
+                                teamsAway: combosGroup2[j].pair[0].teamId,
+                                player1Home: combosGroup1[i].pair[1].teamId,
+                                player1Away: combosGroup2[j].pair[1].teamId,
+                                scheduledTime: null,
+                                court: courtsList[matchIndex % courtsList.length],
+                                scores: [{ sets: [{ home: 0, away: 0 }, { home: 0, away: 0 }, { home: 0, away: 0 }] }],
+                                status: 'scheduled',
+                                isInterGroup: true,
+                            });
+                            matchIndex++;
+                        }
+                    }
+                }
+            }
+
             await Tournament.findByIdAndUpdate(tournamentId, {
-                groups: savedGroupIds,
+                groups: savedGroups.map(g => g.groupId),
                 'roundRobinConfig.generated': true,
-                status: "Scheduled"
+                status: 'Scheduled',
             });
 
-            res.status(200).json({ message: "Groups saved and schedule generated", groups: savedGroupIds });
+            res.status(200).json({ message: 'Groups saved and schedule generated', groups: savedGroups.map(g => g.groupId) });
 
         } catch (error) {
             console.error(error);
-            res.status(500).json({ message: "Internal Server Error" });
+            res.status(500).json({ message: 'Internal Server Error' });
         }
     },
 

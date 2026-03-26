@@ -823,7 +823,7 @@ const adminTeamController = {
     console.log("Call Admin Save");
 
     try {
-      const { scores, status, matchId, group } = req.body;
+      const { scores, status, matchId, group, teamsHome, teamsAway } = req.body;
 
       const scoreObject = scores[0];
 
@@ -847,81 +847,78 @@ const adminTeamController = {
         return res.status(404).json({ message: "Match not found" });
       }
 
-      // Recompute group standings
-      const groupDoc = await Group.findOne({ _id: group });
-      if (!groupDoc) {
+      // Recompute standings — handles both within-group (singles) and cross-group (doubles) matches
+      const homeTeamIdStr = teamsHome ? teamsHome.toString() : updatedMatch.teamsHome.toString();
+      const awayTeamIdStr = teamsAway ? teamsAway.toString() : updatedMatch.teamsAway.toString();
+
+      // Find the group doc for the home team
+      const homeGroupDoc = await Group.findOne({ _id: group });
+      if (!homeGroupDoc) {
         return res.status(404).json({ message: "Group not found" });
       }
 
-      // Reset standings
-      groupDoc.standings.forEach((s) => {
-        s.matchesPlayed = 0;
-        s.wins = 0;
-        s.losses = 0;
-        s.pointsFor = 0;
-        s.pointsAgainst = 0;
-        s.pointsDiff = 0;
-        s.totalPoints = 0;
-      });
+      // Find the group doc for the away team (may differ for cross-group doubles)
+      const awayGroupDoc = updatedMatch.awayGroup
+        ? await Group.findOne({ _id: updatedMatch.awayGroup })
+        : homeGroupDoc;
 
-      const matches = await GroupMatch.find({ group: group });
-      for (const match of matches) {
-        if (!match.scores || match.scores.length === 0) continue;
+      // Helper: recompute standings for a group doc based on all its matches
+      const recomputeStandings = async (groupDoc) => {
+        groupDoc.standings.forEach((s) => {
+          s.matchesPlayed = 0; s.wins = 0; s.losses = 0;
+          s.pointsFor = 0; s.pointsAgainst = 0; s.pointsDiff = 0; s.totalPoints = 0;
+        });
 
-        const matchScores = match.scores[0].sets;
+        // Get all matches where this group is home OR away group
+        const groupMatches = await GroupMatch.find({
+          $or: [{ group: groupDoc._id }, { awayGroup: groupDoc._id }]
+        });
 
-        const isMatchPlayed = matchScores.some(
-          (set) => set.home > 0 || set.away > 0
-        );
-        if (!isMatchPlayed) continue;
+        for (const m of groupMatches) {
+          if (!m.scores || m.scores.length === 0) continue;
+          const isPlayed = m.scores[0].sets.some(s => s.home > 0 || s.away > 0);
+          if (!isPlayed) continue;
 
-        // const matchWinner = determineWinner(matchScores);
-        let { winner, matchStatus } = determineWinner(matchScores);
-        const matchWinner = winner;
+          let { winner } = determineWinner(m.scores[0].sets);
+          const matchPoints = getTotalPoints(m.scores[0].sets);
+          const mHomeId = m.teamsHome.toString();
+          const mAwayId = m.teamsAway.toString();
 
-        const matchPoints = getTotalPoints(matchScores);
-        const homeTeamId = match.teamsHome.toString();
-        const awayTeamId = match.teamsAway.toString();
+          const homeStanding = groupDoc.standings.find(s => s.teamId === mHomeId);
+          const awayStanding = groupDoc.standings.find(s => s.teamId === mAwayId);
 
-        const homeStanding = groupDoc.standings.find(
-          (s) => s.teamId === homeTeamId
-        );
-        const awayStanding = groupDoc.standings.find(
-          (s) => s.teamId === awayTeamId
-        );
-
-        if (homeStanding && awayStanding) {
-          homeStanding.matchesPlayed += 1;
-          awayStanding.matchesPlayed += 1;
-          if (matchWinner === "home") {
-            homeStanding.wins += 1;
-            awayStanding.losses += 1;
-            homeStanding.totalPoints += 3;
-            groupDoc.status = "finished";
-          } else if (matchWinner === "away") {
-            awayStanding.wins += 1;
-            homeStanding.losses += 1;
-            awayStanding.totalPoints += 3;
-            groupDoc.status = "finished";
+          if (homeStanding) {
+            homeStanding.matchesPlayed += 1;
+            if (winner === "home") { homeStanding.wins += 1; homeStanding.totalPoints += 3; }
+            else if (winner === "away") { homeStanding.losses += 1; }
+            homeStanding.pointsFor += matchPoints.homeTotal;
+            homeStanding.pointsAgainst += matchPoints.awayTotal;
+            homeStanding.pointsDiff = homeStanding.pointsFor - homeStanding.pointsAgainst;
           }
-          homeStanding.pointsFor += matchPoints.homeTotal;
-          homeStanding.pointsAgainst += matchPoints.awayTotal;
-          homeStanding.pointsDiff =
-            homeStanding.pointsFor - homeStanding.pointsAgainst;
-
-          awayStanding.pointsFor += matchPoints.awayTotal;
-          awayStanding.pointsAgainst += matchPoints.homeTotal;
-          awayStanding.pointsDiff =
-            awayStanding.pointsFor - awayStanding.pointsAgainst;
+          if (awayStanding) {
+            awayStanding.matchesPlayed += 1;
+            if (winner === "away") { awayStanding.wins += 1; awayStanding.totalPoints += 3; }
+            else if (winner === "home") { awayStanding.losses += 1; }
+            awayStanding.pointsFor += matchPoints.awayTotal;
+            awayStanding.pointsAgainst += matchPoints.homeTotal;
+            awayStanding.pointsDiff = awayStanding.pointsFor - awayStanding.pointsAgainst;
+          }
         }
-      }
 
-      const savedGroup = await groupDoc.save();
+        return groupDoc.save();
+      };
+
+      const savedHomeGroup = await recomputeStandings(homeGroupDoc);
+      let savedAwayGroup = savedHomeGroup;
+      if (awayGroupDoc && awayGroupDoc._id.toString() !== homeGroupDoc._id.toString()) {
+        savedAwayGroup = await recomputeStandings(awayGroupDoc);
+      }
 
       res.status(200).json({
         message: "Match score and group standings updated successfully",
         match: updatedMatch,
-        group: savedGroup,
+        group: savedHomeGroup,
+        awayGroup: savedAwayGroup,
       });
     } catch (error) {
       console.log("Save match score error", error);
