@@ -24,13 +24,18 @@ export const useLogin = () => {
             console.log("res..........", res);
             let user = res.user;
 
+            dispatch(loginUser(res));
+
              if (user.accountType === "admin") {
               //  navigate("/tournament-list");
-                  navigate("/tournament-list", { replace: true });
+                  navigate("/dashboard", { replace: true });
 
+            } else if (user.accountType === "user") {
+              console.log("navigaTE ....FG");
+              
+              navigate("/user/dashboard", { replace: true });
             }
 
-            dispatch(loginUser(res));
             return "Login successful!";
           },
           error: (err) => {

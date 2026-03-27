@@ -1,5 +1,6 @@
 import { useState } from "react";
 import AdminRoutes from "./routes/AdminRoutes.jsx";
+import UserRoutes from "./routes/UserRoutes.jsx";
 import "./App.css";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import TeamSetup from "./pages/admin/TeamSetup.jsx";
@@ -13,6 +14,8 @@ import SaveTeamRegistration from "./pages/user/SaveTeamRegistration.jsx";
 import CheckoutPage from "./pages/admin/CheckoutPage.jsx";
 import Success from "./pages/common/Success.jsx";
 import ViewTournamentDetail from "./pages/user/ViewTournamentDetail.jsx";
+import Login from "./pages/admin/Login.jsx";
+import LoginSelector from "./pages/common/LoginSelector.jsx";
 
 function App() {
   const [count, setCount] = useState(0);
@@ -22,7 +25,7 @@ function App() {
       <div className="w-full h-full bg-slate-200 overflow-x-hidden">
         <Router>
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<LoginSelector />} />
             {/* <Route path="/" element={<Success />} /> */}
                         <Route path="/success" element={<Success />} />
 
@@ -41,8 +44,14 @@ function App() {
             {/* Stripe Checkout Page */}
             <Route path="/checkout" element={<CheckoutPage />} />
 
-            {/* Logins admin access */}
+            {/* Admin routes */}
             {AdminRoutes()}
+
+            {/* User routes */}
+            {UserRoutes()}
+
+            {/* User routes */}
+            {UserRoutes()}
           </Routes>
           <Footer />
         </Router>

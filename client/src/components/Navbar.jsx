@@ -22,10 +22,6 @@ const Navbar = () => {
     setIsOpen(!isOpen);
   };
 
-  const handleLogin = async () => {
-    navigate("/login");
-  };
-
   const userData = useSelector((state) => state.user.user);
 
   console.log("userData", userData);
@@ -48,26 +44,33 @@ const Navbar = () => {
           </div>
 
           <div className="hidden md:flex  items-center justify-center gap-6">
-            <div
-              className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors"
-              onClick={() => navigate("/")}
-            >
-              <Home
-                className={`${
-                  currentPage === "/" ? "text-blue-500" : "text-black"
-                } w-5 h-5`}
-              />
-              <span
-                className={`${
-                  currentPage === "/" ? "text-blue-500" : "text-black"
-                }`}
+            {userData && (
+              <div
+                className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors cursor-pointer"
+                onClick={() => {
+                  if (userData.accountType === "admin") {
+                    navigate("/dashboard");
+                  } else if (userData.accountType === "user") {
+                    navigate("/user/dashboard");
+                  }
+                }}
               >
-                Home
-              </span>
-            </div>
+                <Home
+                  className={`${
+                    (currentPage === "/dashboard" || currentPage === "/user/dashboard") ? "text-blue-500" : "text-black"
+                  } w-5 h-5`}
+                />
+                <span
+                  className={`${
+                    (currentPage === "/dashboard" || currentPage === "/user/dashboard") ? "text-blue-500" : "text-black"
+                  }`}
+                >
+                  Dashboard
+                </span>
+              </div>
+            )}
             <div
-              className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors"
-              onClick={() => navigate("/tournamentList")}
+              className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors cursor-pointer"
             >
               <Trophy
                 className={`${
@@ -89,25 +92,42 @@ const Navbar = () => {
           </div>
 
           <div className="hidden md:flex items-center justify-end">
-            {currentPage === "/" && (
-              <ButtonWithIcon
-                title={"Admin"}
-                icon={"Admin"}
-                buttonBGColor={"bg-blue-600"}
-                textColor={"text-white"}
-                onClick={handleLogin}
-              />
+            {!userData && currentPage === "/" && (
+              <div className="flex gap-2">
+                <ButtonWithIcon
+                  title={"Admin Login"}
+                  icon={"Admin"}
+                  buttonBGColor={"bg-blue-600"}
+                  textColor={"text-white"}
+                  onClick={() => navigate("/admin/login")}
+                />
+                <ButtonWithIcon
+                  title={"User Login"}
+                  icon={"User"}
+                  buttonBGColor={"bg-green-600"}
+                  textColor={"text-white"}
+                  onClick={() => navigate("/user/login")}
+                />
+              </div>
             )}
           </div>
 
           <div className="md:hidden flex items-center gap-3 ml-auto">
-            {currentPage === "/" && (
-              <button
-                onClick={handleLogin}
-                className="md:hidden ml-auto mr-3 flex w-10 h-10 bg-blue-600 text-white rounded-lg items-center justify-center"
-              >
-                <FaUserShield />
-              </button>
+            {!userData && currentPage === "/" && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => navigate("/admin/login")}
+                  className="flex w-10 h-10 bg-blue-600 text-white rounded-lg items-center justify-center"
+                >
+                  <FaUserShield />
+                </button>
+                <button
+                  onClick={() => navigate("/user/login")}
+                  className="flex w-10 h-10 bg-green-600 text-white rounded-lg items-center justify-center"
+                >
+                  <LogIn />
+                </button>
+              </div>
             )}
 
             <button
@@ -121,25 +141,33 @@ const Navbar = () => {
 
         {isOpen && (
           <div className="md:hidden flex flex-col items-start  space-y-2 shadow-md mt-2 bg-slate-50 p-3">
-            <div
-              className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors"
-              onClick={() => navigate("/")}
-            >
-              <Home
-                className={`${
-                  currentPage === "/" ? "text-blue-500" : "text-black"
-                } w-5 h-5`}
-              />
-              <span
-                className={`${
-                  currentPage === "/" ? "text-blue-500" : "text-black"
-                }`}
+            {userData && (
+              <div
+                className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors cursor-pointer"
+                onClick={() => {
+                  if (userData.accountType === "admin") {
+                    navigate("/dashboard");
+                  } else if (userData.accountType === "user") {
+                    navigate("/user/dashboard");
+                  }
+                }}
               >
-                Home
-              </span>
-            </div>
+                <Home
+                  className={`${
+                    (currentPage === "/dashboard" || currentPage === "/user/dashboard") ? "text-blue-500" : "text-black"
+                  } w-5 h-5`}
+                />
+                <span
+                  className={`${
+                    (currentPage === "/dashboard" || currentPage === "/user/dashboard") ? "text-blue-500" : "text-black"
+                  }`}
+                >
+                  Dashboard
+                </span>
+              </div>
+            )}
             <div
-              className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors"
+              className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors cursor-pointer"
               onClick={() => navigate("/tournamentList")}
             >
               <Trophy

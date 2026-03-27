@@ -10,12 +10,22 @@ import CreateTournament from "../pages/admin/CreateTournament";
 import AdminTournamentList from "../pages/admin/AdminTournamentList";
 import EditTournament from "../pages/admin/EditTournament";
 import EditTeam from "../pages/admin/EditTeam";
+import Dashboard from "../pages/admin/Dashboard";
+import AdminMembershipDashboard from "../features/membership/admin/pages/AdminMembershipDashboard";
 
 const AdminRoutes = () => {
   const user = useSelector((state) => state.user.user);
 
   return (
     <>
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute role="admin">
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/tournament-list"
         element={
@@ -79,23 +89,24 @@ const AdminRoutes = () => {
       />
 
       <Route
-        path="/login"
+        path="/admin-membership"
         element={
-          !user ? (
-            <Login />
-          ) : user.accountType === "admin" && !user.isVerified ? (
-            <Navigate to="/checkout" replace />
-          ) : (
-            <Navigate to="/tournament-list" replace />
-          )
+          <ProtectedRoute role="admin">
+            <AdminMembershipDashboard />
+          </ProtectedRoute>
         }
       />
 
       <Route
-        path="/login"
+        path="/admin/login"
         element={
-          !user ? <Login /> : <Navigate to="/tournament-list" replace />
-          // !user ? <Login /> : <Navigate to="/checkout" replace />
+          !user || user.accountType !== "admin" ? (
+            <Login />
+          ) : !user.isVerified ? (
+            <Navigate to="/checkout" replace />
+          ) : (
+            <Navigate to="/dashboard" replace />
+          )
         }
       />
 

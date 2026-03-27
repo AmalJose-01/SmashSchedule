@@ -41,14 +41,7 @@ const Login = () => {
       const decoded = jwtDecode(credentialResponse.credential);
       console.log("Decoded Google user:", decoded);
 
-      const accountType = "admin";
-      // isAdmin === true
-      //   ? "admin"
-      //   : selectedTab === "Trade"
-      //   ? "trade"
-      //   : selectedTab === "User"
-      //   ? "user"
-      //   : "";
+      const accountType = isAdmin ? "admin" : "user";
 
       const inputData = {
         email: decoded.email,
@@ -67,14 +60,7 @@ const Login = () => {
   };
 
   const onSubmit = (data) => {
-    const accountType = "admin";
-    // isAdmin === true
-    //   ? "admin"
-    //   : selectedTab === "Trade"
-    //   ? "trade"
-    //   : selectedTab === "User"
-    //   ? "user"
-    //   : "";
+    const accountType = isAdmin ? "admin" : "user";
     const loginData = { ...data, accountType };
     handleLogin(loginData);
   };
@@ -93,7 +79,11 @@ const Login = () => {
         <div className="card w-full max-w-md mx-auto shadow-lg rounded-lg bg-blue-600">
           <div className="card-body rounded-lg ">
             <div className="flex flex-col items-center justify-center text-center p-4">
-              <FaUserShield className="w-24 h-24 text-white" />
+              {isAdmin ? (
+                <FaUserShield className="w-24 h-24 text-white" />
+              ) : (
+                <User className="w-24 h-24 text-white" />
+              )}
               <h2 className="text-2xl font-bold text-white card-title-text">
                 Welcome back
               </h2>
