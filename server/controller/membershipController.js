@@ -327,6 +327,62 @@ const membershipController = {
     }
   },
 
+  // ========== ADMIN: DELETE MEMBER ==========
+  deleteMember: async (req, res) => {
+    try {
+      const { memberId } = req.params;
+      const club = await Club.findOne({ adminId: req.userId }).lean();
+      if (!club) return res.status(403).json({ message: "Club not found" });
+
+      const member = await Member.findOne({ _id: memberId, clubId: club._id });
+      if (!member) return res.status(404).json({ message: "Member not found or access denied" });
+
+      if (member.verificationDocumentId) {
+        await MemberDocument.deleteOne({ _id: member.verificationDocumentId });
+      }
+      await Membership.deleteMany({ memberId });
+      await Member.deleteOne({ _id: memberId });
+
+      return res.status(200).json({ message: "Member deleted successfully" });
+    } catch (error) {
+      console.error("Delete member error:", error);
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
+  },
+
+  // ========== ADMIN: UPDATE MEMBER ==========
+  updateMemberAdmin: async (req, res) => {
+    try {
+      const { memberId } = req.params;
+      const { firstName, lastName, email, phoneNumber, membershipType, membershipStatus, age, address } = req.body;
+
+      const club = await Club.findOne({ adminId: req.userId }).lean();
+      if (!club) return res.status(403).json({ message: "Club not found" });
+
+      const update = {};
+      if (firstName !== undefined) update.firstName = firstName;
+      if (lastName !== undefined) update.lastName = lastName;
+      if (email !== undefined) update.email = email;
+      if (phoneNumber !== undefined) update.phoneNumber = phoneNumber;
+      if (membershipType !== undefined) update.membershipType = membershipType;
+      if (membershipStatus !== undefined) update.membershipStatus = membershipStatus;
+      if (age !== undefined) update.age = age;
+      if (address !== undefined) update.address = address;
+
+      const member = await Member.findOneAndUpdate(
+        { _id: memberId, clubId: club._id },
+        update,
+        { new: true }
+      );
+
+      if (!member) return res.status(404).json({ message: "Member not found or access denied" });
+      return res.status(200).json({ message: "Member updated successfully", member });
+    } catch (error) {
+      console.error("Update member error:", error);
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
+  },
+
   // ========== ADMIN: VERIFY DOCUMENT ==========
   verifyDocument: async (req, res) => {
     try {

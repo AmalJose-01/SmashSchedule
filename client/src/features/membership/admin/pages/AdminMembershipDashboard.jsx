@@ -125,7 +125,11 @@ const AdminMembershipDashboard = () => {
   // ========== OVERVIEW TAB ==========
   const renderOverview = () => (
     <div className="dashboard-grid">
-      <div className="stat-card">
+      <div
+        className="stat-card stat-card--clickable"
+        style={{ cursor: "pointer" }}
+        onClick={() => navigate("/admin/members-list")}
+      >
         <div className="stat-icon total">📊</div>
         <div className="stat-details">
           <h3>Total Members</h3>
@@ -133,7 +137,11 @@ const AdminMembershipDashboard = () => {
         </div>
       </div>
 
-      <div className="stat-card">
+      <div
+        className="stat-card stat-card--clickable"
+        style={{ cursor: "pointer" }}
+        onClick={() => navigate("/admin/members-list?status=ACTIVE")}
+      >
         <div className="stat-icon active">✓</div>
         <div className="stat-details">
           <h3>Active Members</h3>
@@ -141,7 +149,11 @@ const AdminMembershipDashboard = () => {
         </div>
       </div>
 
-      <div className="stat-card">
+      <div
+        className="stat-card stat-card--clickable"
+        style={{ cursor: "pointer" }}
+        onClick={() => navigate("/admin/members-list?status=PENDING_VERIFICATION")}
+      >
         <div className="stat-icon pending">⏳</div>
         <div className="stat-details">
           <h3>Pending Verification</h3>
@@ -149,7 +161,11 @@ const AdminMembershipDashboard = () => {
         </div>
       </div>
 
-      <div className="stat-card">
+      <div
+        className="stat-card stat-card--clickable"
+        style={{ cursor: "pointer" }}
+        onClick={() => navigate("/admin/members-list?status=EXPIRED")}
+      >
         <div className="stat-icon expired">⚠️</div>
         <div className="stat-details">
           <h3>Expired Memberships</h3>

@@ -14,6 +14,7 @@ import Dashboard from "../pages/admin/Dashboard";
 import AdminMembershipDashboard from "../features/membership/admin/pages/AdminMembershipDashboard";
 import MembershipTypeManagement from "../features/membership-type/pages/MembershipTypeManagement";
 import ClubProfile from "../features/club-profile/admin/pages/ClubProfile";
+import AdminMembersList from "../features/admin-memberslist/pages/AdminMembersList";
 
 const AdminRoutes = () => {
   const user = useSelector((state) => state.user.user);
@@ -113,6 +114,15 @@ const AdminRoutes = () => {
         element={
           <ProtectedRoute role="admin">
             <ClubProfile />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/members-list"
+        element={
+          <ProtectedRoute role="admin">
+            <AdminMembersList />
           </ProtectedRoute>
         }
       />

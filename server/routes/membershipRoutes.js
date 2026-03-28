@@ -52,6 +52,8 @@ router.get("/:memberId/history", auth, membershipController.getMembershipHistory
 
 // Get all members (with search/filter)
 router.get("/admin/members", auth, membershipController.getAllMembers);
+router.delete("/admin/members/:memberId", auth, membershipController.deleteMember);
+router.put("/admin/members/:memberId", auth, membershipController.updateMemberAdmin);
 
 // Get pending document verifications
 router.get(
