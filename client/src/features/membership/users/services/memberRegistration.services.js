@@ -28,8 +28,9 @@ export const registerMember = async (memberData) => {
  * Fetch all available membership types
  * @returns {Promise<MembershipTypesResponse>}
  */
-export const getMembershipTypes = async () => {
-  const response = await axios.get(`${BASE_URL}/membership/types`);
+export const getMembershipTypes = async (adminId) => {
+  const params = adminId ? { adminId } : {};
+  const response = await axios.get(`${BASE_URL}/membership/types`, { params });
   return response.data;
 };
 

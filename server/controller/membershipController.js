@@ -29,10 +29,16 @@ const membershipController = {
         });
       }
 
-      // Check if member already exists
+      // Check if member already exists — return existing data so client can recover memberId
       const existingMember = await Member.findOne({ email });
       if (existingMember) {
-        return res.status(400).json({ message: "Member already exists with this email" });
+        const existingMembership = await Membership.findOne({ memberId: existingMember._id });
+        return res.status(200).json({
+          message: "Member already registered",
+          member: existingMember,
+          membership: existingMembership,
+          alreadyExists: true,
+        });
       }
 
       // Get membership type configuration
@@ -391,7 +397,10 @@ const membershipController = {
   // ========== GET MEMBERSHIP TYPES ==========
   getMembershipTypes: async (req, res) => {
     try {
-      const types = await MembershipType.find({ isActive: true }).lean();
+      const { adminId } = req.query;
+      const query = { isActive: true };
+      if (adminId) query.createdBy = adminId;
+      const types = await MembershipType.find(query).lean();
 
       return res.status(200).json({
         message: "Membership types retrieved",
@@ -463,6 +472,138 @@ const membershipController = {
       });
     } catch (error) {
       console.error("Auto expiry error:", error);
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
+  },
+
+  // ========== ADMIN: CREATE MEMBERSHIP TYPE ==========
+  createMembershipType: async (req, res) => {
+    try {
+      const {
+        name,
+        displayName,
+        description,
+        price,
+        discountPercentage,
+        validityMonths,
+        requiresDocumentVerification,
+        requiredDocumentType,
+        benefits,
+      } = req.body;
+
+      if (!name || !displayName || price === undefined) {
+        return res.status(400).json({ message: "name, displayName, and price are required" });
+      }
+
+      const adminId = req.userId;
+
+      const existing = await MembershipType.findOne({ name, createdBy: adminId });
+      if (existing) {
+        return res.status(400).json({ message: "You already have a membership type with this name" });
+      }
+
+      const membershipType = await MembershipType.create({
+        name,
+        displayName,
+        description,
+        price,
+        discountPercentage: discountPercentage || 0,
+        validityMonths: validityMonths || 12,
+        requiresDocumentVerification: requiresDocumentVerification || false,
+        requiredDocumentType: requiredDocumentType || [],
+        benefits: benefits || [],
+        createdBy: adminId,
+      });
+
+      return res.status(201).json({
+        message: "Membership type created successfully",
+        membershipType,
+      });
+    } catch (error) {
+      console.error("Error creating membership type:", error);
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
+  },
+
+  // ========== ADMIN: GET ALL MEMBERSHIP TYPES ==========
+  getAllMembershipTypes: async (req, res) => {
+    try {
+      const types = await MembershipType.find({ createdBy: req.userId }).sort({ createdAt: 1 }).lean();
+      return res.status(200).json({ message: "Membership types retrieved", types });
+    } catch (error) {
+      console.error("Error fetching membership types:", error);
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
+  },
+
+  // ========== ADMIN: UPDATE MEMBERSHIP TYPE ==========
+  updateMembershipType: async (req, res) => {
+    try {
+      const { typeId } = req.params;
+      const {
+        displayName,
+        description,
+        price,
+        discountPercentage,
+        validityMonths,
+        requiresDocumentVerification,
+        requiredDocumentType,
+        benefits,
+        isActive,
+      } = req.body;
+
+      const membershipType = await MembershipType.findOneAndUpdate(
+        { _id: typeId, createdBy: req.userId },
+        {
+          ...(displayName !== undefined && { displayName }),
+          ...(description !== undefined && { description }),
+          ...(price !== undefined && { price }),
+          ...(discountPercentage !== undefined && { discountPercentage }),
+          ...(validityMonths !== undefined && { validityMonths }),
+          ...(requiresDocumentVerification !== undefined && { requiresDocumentVerification }),
+          ...(requiredDocumentType !== undefined && { requiredDocumentType }),
+          ...(benefits !== undefined && { benefits }),
+          ...(isActive !== undefined && { isActive }),
+        },
+        { new: true }
+      );
+
+      if (!membershipType) {
+        return res.status(404).json({ message: "Membership type not found or access denied" });
+      }
+
+      return res.status(200).json({
+        message: "Membership type updated successfully",
+        membershipType,
+      });
+    } catch (error) {
+      console.error("Error updating membership type:", error);
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
+  },
+
+  // ========== ADMIN: DELETE MEMBERSHIP TYPE ==========
+  deleteMembershipType: async (req, res) => {
+    try {
+      const { typeId } = req.params;
+
+      const membershipType = await MembershipType.findOne({ _id: typeId, createdBy: req.userId });
+      if (!membershipType) {
+        return res.status(404).json({ message: "Membership type not found or access denied" });
+      }
+
+      const inUse = await Member.countDocuments({ membershipType: membershipType.name });
+      if (inUse > 0) {
+        return res.status(400).json({
+          message: `Cannot delete: ${inUse} member(s) currently use this type`,
+        });
+      }
+
+      await MembershipType.findByIdAndDelete(typeId);
+
+      return res.status(200).json({ message: "Membership type deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting membership type:", error);
       return res.status(500).json({ message: "Internal Server Error" });
     }
   },

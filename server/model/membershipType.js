@@ -5,7 +5,11 @@ const membershipTypeSchema = new mongoose.Schema(
     name: {
       type: String,
       enum: ["STANDARD", "STUDENT", "VETERAN"],
-      unique: true,
+      required: true,
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "AdminUser",
       required: true,
     },
     displayName: { type: String, required: true }, // "Standard", "Student", "Veteran"
@@ -29,6 +33,9 @@ const membershipTypeSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Each admin can only have one of each type name
+membershipTypeSchema.index({ name: 1, createdBy: 1 }, { unique: true });
 
 const MembershipType = mongoose.model("MembershipType", membershipTypeSchema);
 module.exports = MembershipType;

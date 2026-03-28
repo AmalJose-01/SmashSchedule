@@ -1,8 +1,10 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { useAdminMembership } from "../hooks/useAdminMembership";
 import "./AdminMembershipDashboard.css";
 
 const AdminMembershipDashboard = () => {
+  const navigate = useNavigate();
   const {
     activeTab,
     setActiveTab,
@@ -314,6 +316,12 @@ const AdminMembershipDashboard = () => {
       <div className="dashboard-header">
         <h1>Membership Management</h1>
         <p>Manage member registrations, verifications, and renewals</p>
+        <button
+          className="btn-membership-types"
+          onClick={() => navigate("/admin/membership-types")}
+        >
+          + Manage Membership Types
+        </button>
       </div>
 
       <div className="dashboard-tabs">

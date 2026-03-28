@@ -1,11 +1,22 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useGetMembershipTypes, useRegisterMember, useUploadVerificationDocument } from "../services/memberRegistration.queries.js";
 
 export const useMemberRegistration = () => {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
+  const getStoredUserId = () => {
+    try {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      return user._id || "";
+    } catch {
+      return "";
+    }
+  };
+
   const [formData, setFormData] = useState({
-    userId: localStorage.getItem("userId") || "",
+    userId: getStoredUserId(),
     firstName: "",
     lastName: "",
     email: "",
@@ -37,8 +48,14 @@ export const useMemberRegistration = () => {
   // Handle registration response and navigate
   const handleRegistrationSuccess = (data) => {
     localStorage.setItem("memberId", data.member._id);
+    if (data.alreadyExists) {
+      navigate("/user/profile");
+      return;
+    }
     if (selectedType?.requiresDocumentVerification) {
       setStep(3);
+    } else {
+      navigate("/user/profile");
     }
   };
 
@@ -89,11 +106,9 @@ export const useMemberRegistration = () => {
   };
 
 
-  // Upload document mutation using the new query hook
-  const memberId = localStorage.getItem("memberId");
-  const { mutate: uploadDocument, isPending: isUploading } = memberId 
-    ? useUploadVerificationDocument(memberId)
-    : { mutate: null, isPending: false };
+  // Upload document mutation — always call unconditionally (Rules of Hooks)
+  const memberId = localStorage.getItem("memberId") || "";
+  const { mutate: uploadDocument, isPending: isUploading } = useUploadVerificationDocument(memberId);
 
   const handleDocumentUpload = () => {
     if (!documentFile) {
@@ -101,7 +116,7 @@ export const useMemberRegistration = () => {
       return;
     }
 
-    if (!uploadDocument) {
+    if (!memberId) {
       toast.error("Member ID not found. Please register first.");
       return;
     }
@@ -126,7 +141,7 @@ export const useMemberRegistration = () => {
     }
 
     // Ensure userId is present
-    const userId = localStorage.getItem("userId");
+    const userId = getStoredUserId();
     if (!userId) {
       toast.error("User ID not found. Please log in again.");
       return;

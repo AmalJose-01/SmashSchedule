@@ -12,6 +12,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { getAccessToken } from "../../../../../utils/storageHandler.js";
 import {
   registerMember,
   getMembershipTypes,
@@ -38,9 +39,10 @@ export const membershipQueryKeys = {
  * Hook to fetch all membership types
  */
 export const useGetMembershipTypes = () => {
+  const adminId = localStorage.getItem("clubAdminId") || undefined;
   return useQuery({
-    queryKey: membershipQueryKeys.types(),
-    queryFn: getMembershipTypes,
+    queryKey: [...membershipQueryKeys.types(), adminId],
+    queryFn: () => getMembershipTypes(adminId),
     staleTime: 1000 * 60 * 60, // 1 hour
     gcTime: 1000 * 60 * 60 * 24, // 24 hours
   });
@@ -53,7 +55,7 @@ export const useGetMemberProfile = (memberId) => {
   return useQuery({
     queryKey: membershipQueryKeys.profile(memberId),
     queryFn: () => getMemberProfile(memberId),
-    enabled: !!memberId,
+    enabled: !!memberId && !!getAccessToken(),
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 30, // 30 minutes
   });
@@ -66,7 +68,7 @@ export const useGetMembershipHistory = (memberId) => {
   return useQuery({
     queryKey: membershipQueryKeys.memberHistory(memberId),
     queryFn: () => getMembershipHistory(memberId),
-    enabled: !!memberId,
+    enabled: !!memberId && !!getAccessToken(),
     staleTime: 1000 * 60 * 10, // 10 minutes
   });
 };
@@ -82,10 +84,12 @@ export const useRegisterMember = () => {
   return useMutation({
     mutationFn: registerMember,
     onSuccess: (data) => {
-      toast.success("Registration successful!");
-      // Store member ID for subsequent operations
       localStorage.setItem("memberId", data.member._id);
-      // Invalidate relevant queries
+      if (data.alreadyExists) {
+        toast.info("You're already registered. Loading your membership.");
+      } else {
+        toast.success("Registration successful!");
+      }
       queryClient.invalidateQueries({ queryKey: membershipQueryKeys.profiles() });
     },
     onError: (error) => {

@@ -12,6 +12,7 @@ import EditTournament from "../pages/admin/EditTournament";
 import EditTeam from "../pages/admin/EditTeam";
 import Dashboard from "../pages/admin/Dashboard";
 import AdminMembershipDashboard from "../features/membership/admin/pages/AdminMembershipDashboard";
+import MembershipTypeManagement from "../features/membership-type/pages/MembershipTypeManagement";
 
 const AdminRoutes = () => {
   const user = useSelector((state) => state.user.user);
@@ -93,6 +94,15 @@ const AdminRoutes = () => {
         element={
           <ProtectedRoute role="admin">
             <AdminMembershipDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/membership-types"
+        element={
+          <ProtectedRoute role="admin">
+            <MembershipTypeManagement />
           </ProtectedRoute>
         }
       />

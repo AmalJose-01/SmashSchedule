@@ -85,4 +85,10 @@ router.post(
   membershipController.autoExpireMembers
 );
 
+// ========== MEMBERSHIP TYPE MANAGEMENT ==========
+router.post("/admin/membership-types", auth, membershipController.createMembershipType);
+router.get("/admin/membership-types", auth, membershipController.getAllMembershipTypes);
+router.put("/admin/membership-types/:typeId", auth, membershipController.updateMembershipType);
+router.delete("/admin/membership-types/:typeId", auth, membershipController.deleteMembershipType);
+
 module.exports = router;
