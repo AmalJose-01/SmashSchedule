@@ -13,6 +13,7 @@ export const useAdminMembership = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedMember, setSelectedMember] = useState(null);
 
   // Use new query hooks
   const { data: statsData, isLoading: isStatsLoading } = useGetMembershipStats();
@@ -84,28 +85,30 @@ export const useAdminMembership = () => {
     searchTerm,
     statusFilter,
     currentPage,
-    
+    selectedMember,
+
     // Data
     stats,
     members,
     pagination,
     pendingDocuments,
     expiringMembers,
-    
+
     // Loading states
     isStatsLoading,
     isMembersLoading,
     isPendingLoading,
     isExpiringLoading,
     isVerifying,
-    
+
     // Handlers
     handleTabChange,
     handleSearch,
     handleFilterChange,
     handlePageChange,
     handleVerifyDocument,
-    
+    setSelectedMember,
+
     // Utilities
     getStatusColor,
     getStatusLabel,

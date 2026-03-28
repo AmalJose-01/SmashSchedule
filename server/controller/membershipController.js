@@ -3,6 +3,7 @@ const Membership = require("../model/membership");
 const MemberDocument = require("../model/memberDocument");
 const MembershipType = require("../model/membershipType");
 const AdminUser = require("../model/adminUser");
+const Club = require("../model/club");
 
 const membershipController = {
   // ========== MEMBER REGISTRATION ==========
@@ -18,6 +19,7 @@ const membershipController = {
         dateOfBirth,
         address,
         membershipType,
+        clubId,
       } = req.body;
 
       // Validate required fields
@@ -29,8 +31,9 @@ const membershipController = {
         });
       }
 
-      // Check if member already exists — return existing data so client can recover memberId
-      const existingMember = await Member.findOne({ email });
+      // Check if member already exists for this user+club combination
+      const existingQuery = clubId ? { userId, clubId } : { userId };
+      const existingMember = await Member.findOne(existingQuery);
       if (existingMember) {
         const existingMembership = await Membership.findOne({ memberId: existingMember._id });
         return res.status(200).json({
@@ -68,6 +71,7 @@ const membershipController = {
           ? "PENDING_VERIFICATION"
           : "ACTIVE",
         isVerified: !membershipConfig.requiresDocumentVerification,
+        ...(clubId && { clubId }),
       });
 
       // Create membership record
@@ -276,7 +280,12 @@ const membershipController = {
     try {
       const { page = 1, limit = 10, search = "", status = "" } = req.query;
 
-      const query = {};
+      const club = await Club.findOne({ adminId: req.userId }).lean();
+      if (!club) {
+        return res.status(200).json({ members: [], pagination: { total: 0, page: 1, limit: 10, pages: 0 } });
+      }
+
+      const query = { clubId: club._id };
 
       if (search) {
         query.$or = [
@@ -377,8 +386,14 @@ const membershipController = {
   // ========== ADMIN: GET PENDING VERIFICATIONS ==========
   getPendingVerifications: async (req, res) => {
     try {
+      const club = await Club.findOne({ adminId: req.userId }).lean();
+      const clubMemberIds = club
+        ? (await Member.find({ clubId: club._id }).select("_id").lean()).map((m) => m._id)
+        : [];
+
       const documents = await MemberDocument.find({
         verificationStatus: "PENDING",
+        memberId: { $in: clubMemberIds },
       })
         .populate("memberId", "firstName lastName email phoneNumber")
         .sort({ uploadedDate: 1 })
@@ -390,6 +405,36 @@ const membershipController = {
       });
     } catch (error) {
       console.error("Error fetching pending documents:", error);
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
+  },
+
+  // ========== GET MY MEMBERSHIPS (User — all clubs) ==========
+  getMyMemberships: async (req, res) => {
+    try {
+      console.log("getMyMemberships — req.userId:", req.userId);
+      const members = await Member.find({ userId: req.userId })
+        .populate("clubId", "name logo location")
+        .populate("verificationDocumentId")
+        .lean();
+
+      const memberIds = members.map((m) => m._id);
+      const memberships = await Membership.find({ memberId: { $in: memberIds } })
+        .sort({ createdAt: -1 })
+        .lean();
+
+      // Attach latest membership record to each member
+      const result = members.map((m) => ({
+        ...m,
+        latestMembership: memberships.find(
+          (ms) => ms.memberId.toString() === m._id.toString()
+        ) || null,
+      }));
+
+      console.log("getMyMemberships — found members:", members.length);
+      return res.status(200).json({ memberships: result });
+    } catch (error) {
+      console.error("getMyMemberships error:", error);
       return res.status(500).json({ message: "Internal Server Error" });
     }
   },
@@ -420,11 +465,12 @@ const membershipController = {
       const expiryThreshold = new Date(today);
       expiryThreshold.setDate(expiryThreshold.getDate() + daysBeforeExpiry);
 
+      const club = await Club.findOne({ adminId: req.userId }).lean();
+      const clubFilter = club ? { clubId: club._id } : { clubId: null };
+
       const expiringMembers = await Member.find({
-        membershipExpiryDate: {
-          $gte: today,
-          $lte: expiryThreshold,
-        },
+        ...clubFilter,
+        membershipExpiryDate: { $gte: today, $lte: expiryThreshold },
         membershipStatus: "ACTIVE",
       })
         .select("firstName lastName email phoneNumber membershipExpiryDate")
@@ -445,9 +491,12 @@ const membershipController = {
   autoExpireMembers: async (req, res) => {
     try {
       const today = new Date();
+      const club = await Club.findOne({ adminId: req.userId }).lean();
+      const clubFilter = club ? { clubId: club._id } : { clubId: null };
 
       const result = await Member.updateMany(
         {
+          ...clubFilter,
           membershipExpiryDate: { $lt: today },
           membershipStatus: "ACTIVE",
         },
@@ -456,14 +505,12 @@ const membershipController = {
         }
       );
 
+      const expiredMemberIds = club
+        ? (await Member.find({ clubId: club._id, membershipExpiryDate: { $lt: today } }).select("_id").lean()).map((m) => m._id)
+        : [];
       await Membership.updateMany(
-        {
-          expiryDate: { $lt: today },
-          status: "ACTIVE",
-        },
-        {
-          status: "EXPIRED",
-        }
+        { memberId: { $in: expiredMemberIds }, expiryDate: { $lt: today }, status: "ACTIVE" },
+        { status: "EXPIRED" }
       );
 
       return res.status(200).json({
@@ -611,16 +658,25 @@ const membershipController = {
   // ========== GET MEMBERSHIP STATISTICS (Admin Dashboard) ==========
   getMembershipStats: async (req, res) => {
     try {
+      const club = await Club.findOne({ adminId: req.userId }).lean();
+      const clubFilter = club ? { clubId: club._id } : { clubId: null };
+
+      const types = await MembershipType.find({ createdBy: req.userId }).lean();
+      const typeBreakdown = {};
+      for (const t of types) {
+        typeBreakdown[t.name] = await Member.countDocuments({ ...clubFilter, membershipType: t.name });
+      }
+
       const stats = {
-        totalMembers: await Member.countDocuments(),
-        activeMembers: await Member.countDocuments({ membershipStatus: "ACTIVE" }),
-        pendingVerification: await Member.countDocuments({
-          membershipStatus: "PENDING_VERIFICATION",
-        }),
-        expiredMembers: await Member.countDocuments({ membershipStatus: "EXPIRED" }),
-        standardMembers: await Member.countDocuments({ membershipType: "STANDARD" }),
-        studentMembers: await Member.countDocuments({ membershipType: "STUDENT" }),
-        veteranMembers: await Member.countDocuments({ membershipType: "VETERAN" }),
+        totalMembers: await Member.countDocuments(clubFilter),
+        activeMembers: await Member.countDocuments({ ...clubFilter, membershipStatus: "ACTIVE" }),
+        pendingVerification: await Member.countDocuments({ ...clubFilter, membershipStatus: "PENDING_VERIFICATION" }),
+        expiredMembers: await Member.countDocuments({ ...clubFilter, membershipStatus: "EXPIRED" }),
+        // legacy keys kept for dashboard compatibility
+        standardMembers: typeBreakdown["STANDARD"] || 0,
+        studentMembers: typeBreakdown["STUDENT"] || 0,
+        veteranMembers: typeBreakdown["VETERAN"] || 0,
+        typeBreakdown,
       };
 
       return res.status(200).json({

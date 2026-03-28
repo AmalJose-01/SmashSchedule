@@ -1,7 +1,100 @@
-import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminMembership } from "../hooks/useAdminMembership";
 import "./AdminMembershipDashboard.css";
+
+const MemberDetailModal = ({ member, onClose, getStatusColor, getStatusLabel }) => {
+  if (!member) return null;
+
+  const fmt = (d) => (d ? new Date(d).toLocaleDateString() : "—");
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>{member.firstName} {member.lastName}</h2>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+
+        <div className="modal-body">
+          <section className="modal-section">
+            <h3>Personal Info</h3>
+            <div className="modal-grid">
+              <div><label>Email</label><span>{member.email}</span></div>
+              <div><label>Phone</label><span>{member.phoneNumber || "—"}</span></div>
+              <div><label>Age</label><span>{member.age || "—"}</span></div>
+              <div><label>Date of Birth</label><span>{fmt(member.dateOfBirth)}</span></div>
+            </div>
+          </section>
+
+          {member.address && (
+            <section className="modal-section">
+              <h3>Address</h3>
+              <div className="modal-grid">
+                <div><label>Street</label><span>{member.address.street || "—"}</span></div>
+                <div><label>City</label><span>{member.address.city || "—"}</span></div>
+                <div><label>State</label><span>{member.address.state || "—"}</span></div>
+                <div><label>Zip</label><span>{member.address.zipCode || "—"}</span></div>
+                <div><label>Country</label><span>{member.address.country || "—"}</span></div>
+              </div>
+            </section>
+          )}
+
+          <section className="modal-section">
+            <h3>Membership</h3>
+            <div className="modal-grid">
+              <div><label>Type</label><span>{member.membershipType}</span></div>
+              <div>
+                <label>Status</label>
+                <span
+                  className="status-badge"
+                  style={{ backgroundColor: getStatusColor(member.membershipStatus) }}
+                >
+                  {getStatusLabel(member.membershipStatus)}
+                </span>
+              </div>
+              <div><label>Joined</label><span>{fmt(member.membershipStartDate)}</span></div>
+              <div><label>Expires</label><span>{fmt(member.membershipExpiryDate)}</span></div>
+              <div><label>Verified</label><span>{member.isVerified ? "Yes" : "No"}</span></div>
+            </div>
+          </section>
+
+          {member.verificationDocumentId && (
+            <section className="modal-section">
+              <h3>Verification Document</h3>
+              <div className="modal-grid">
+                <div>
+                  <label>Type</label>
+                  <span>{member.verificationDocumentId.documentType?.replace(/_/g, " ") || "—"}</span>
+                </div>
+                <div>
+                  <label>Status</label>
+                  <span>{member.verificationDocumentId.verificationStatus || "—"}</span>
+                </div>
+                <div>
+                  <label>Uploaded</label>
+                  <span>{fmt(member.verificationDocumentId.uploadedDate)}</span>
+                </div>
+                {member.verificationDocumentId.fileUrl && (
+                  <div>
+                    <label>File</label>
+                    <a
+                      href={member.verificationDocumentId.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="modal-doc-link"
+                    >
+                      View Document →
+                    </a>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const AdminMembershipDashboard = () => {
   const navigate = useNavigate();
@@ -25,6 +118,8 @@ const AdminMembershipDashboard = () => {
     isVerifying,
     getStatusColor,
     getStatusLabel,
+    selectedMember,
+    setSelectedMember,
   } = useAdminMembership();
 
   // ========== OVERVIEW TAB ==========
@@ -151,7 +246,7 @@ const AdminMembershipDashboard = () => {
                     </td>
                     <td>{new Date(member.membershipExpiryDate).toLocaleDateString()}</td>
                     <td>
-                      <button className="btn-view">View Details</button>
+                      <button className="btn-view" onClick={() => setSelectedMember(member)}>View Details</button>
                     </td>
                   </tr>
                 ))}
@@ -357,6 +452,13 @@ const AdminMembershipDashboard = () => {
         {activeTab === "verifications" && renderVerifications()}
         {activeTab === "expiring" && renderExpiring()}
       </div>
+
+      <MemberDetailModal
+        member={selectedMember}
+        onClose={() => setSelectedMember(null)}
+        getStatusColor={getStatusColor}
+        getStatusLabel={getStatusLabel}
+      />
     </div>
   );
 };

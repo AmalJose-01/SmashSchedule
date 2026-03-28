@@ -1,4 +1,3 @@
-import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useMemberRegistration } from "../hooks/useMemberRegistration";
 import "./MemberRegistration.css";
@@ -186,33 +185,33 @@ const MemberRegistration = () => {
             </div>
 
             <div className="form-section">
-              <h3>Membership Type</h3>
-              <div className="membership-options">
-                {membershipTypes.map((type) => (
-                  <div
-                    key={type._id}
-                    className={`membership-card ${
-                      formData.membershipType === type.name ? "selected" : ""
-                    }`}
-                    onClick={() =>
-                      setFormData({
-                        ...formData,
-                        membershipType: type.name,
-                      })
-                    }
-                  >
-                    <h4>{type.displayName}</h4>
-                    <p className="price">${type.price}/year</p>
-                    {type.discountPercentage > 0 && (
-                      <p className="discount">{type.discountPercentage}% Discount</p>
-                    )}
-                    <p className="description">{type.description}</p>
-                    {type.requiresDocumentVerification && (
-                      <p className="note">⚠️ Document verification required</p>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <h3>Membership Type *</h3>
+              {membershipTypes.length === 0 ? (
+                <div className="membership-no-types">
+                  <p>⚠️ No membership types available for this club.</p>
+                  <p>Please contact the club administrator.</p>
+                </div>
+              ) : (
+                <div className="membership-options">
+                  {membershipTypes.map((type) => (
+                    <div
+                      key={type._id}
+                      className={`membership-card ${formData.membershipType === type.name ? "selected" : ""}`}
+                      onClick={() => setFormData({ ...formData, membershipType: type.name })}
+                    >
+                      <h4>{type.displayName}</h4>
+                      <p className="price">${type.price}/year</p>
+                      {type.discountPercentage > 0 && (
+                        <p className="discount">{type.discountPercentage}% Discount</p>
+                      )}
+                      <p className="description">{type.description}</p>
+                      {type.requiresDocumentVerification && (
+                        <p className="note">⚠️ Document verification required</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="form-actions">
@@ -226,7 +225,7 @@ const MemberRegistration = () => {
               <button
                 type="submit"
                 className="btn-primary"
-                disabled={isRegistering}
+                disabled={isRegistering || !formData.membershipType || membershipTypes.length === 0}
               >
                 {isRegistering ? "Registering..." : "Complete Registration"}
               </button>
@@ -287,7 +286,7 @@ const MemberRegistration = () => {
               <button
                 type="button"
                 className="btn-secondary"
-                onClick={() => navigate("/member/profile")}
+                onClick={() => navigate("/user/memberships")}
               >
                 Skip for Now
               </button>

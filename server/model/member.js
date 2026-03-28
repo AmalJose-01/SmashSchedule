@@ -6,11 +6,10 @@ const memberSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "AdminUser",
       required: true,
-      unique: true,
     },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    email: { type: String, required: true },
     phoneNumber: { type: String, required: true },
     age: { type: Number, required: true },
     dateOfBirth: { type: Date, default: null },
@@ -24,7 +23,6 @@ const memberSchema = new mongoose.Schema(
     profilePhoto: { type: String, default: null }, // Cloud storage URL
     membershipType: {
       type: String,
-      enum: ["STANDARD", "STUDENT", "VETERAN"],
       default: "STANDARD",
     },
     membershipStatus: {
@@ -47,14 +45,19 @@ const memberSchema = new mongoose.Schema(
       notifyViaEmail: { type: Boolean, default: true },
       notifyViaSMS: { type: Boolean, default: false },
     },
+    clubId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Club",
+      default: null,
+    },
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
 
-// Indexes for quick lookups
+// One membership per user per club
+memberSchema.index({ userId: 1, clubId: 1 }, { unique: true });
 memberSchema.index({ email: 1 });
-memberSchema.index({ userId: 1 });
 memberSchema.index({ membershipStatus: 1 });
 memberSchema.index({ membershipExpiryDate: 1 });
 

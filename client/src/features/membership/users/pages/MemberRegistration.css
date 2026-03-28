@@ -73,6 +73,26 @@
   font-size: 18px;
 }
 
+.membership-no-types {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  color: #9a3412;
+}
+
+.membership-no-types p {
+  margin: 0 0 6px;
+  font-size: 0.9rem;
+}
+
+.membership-no-types p:last-child {
+  margin: 0;
+  font-size: 0.82rem;
+  opacity: 0.8;
+}
+
 .membership-options {
   display: grid;
   grid-template-columns: 1fr;

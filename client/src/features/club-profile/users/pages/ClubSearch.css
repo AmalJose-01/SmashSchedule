@@ -1,0 +1,254 @@
+.cs-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 40px 20px;
+}
+
+.cs-wrapper {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.cs-header {
+  text-align: center;
+  margin-bottom: 28px;
+  color: white;
+}
+
+.cs-header h1 { font-size: 28px; font-weight: 800; margin: 0 0 8px 0; }
+.cs-header p { font-size: 15px; opacity: 0.85; margin: 0; }
+
+/* ===== CURRENT CLUB BANNER ===== */
+.cs-current-club {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 14px;
+  padding: 14px 20px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  backdrop-filter: blur(4px);
+}
+
+.cs-current-club-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cs-current-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cs-current-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: white;
+}
+
+.cs-continue-btn {
+  background: white;
+  color: #667eea;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+
+.cs-continue-btn:hover { opacity: 0.9; }
+
+/* ===== SEARCH BAR ===== */
+.cs-search-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  padding: 24px 28px;
+  margin-bottom: 20px;
+}
+
+.cs-search-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.cs-search-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #1a1a2e;
+  transition: border-color 0.2s;
+}
+
+.cs-search-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+}
+
+.cs-locate-btn {
+  padding: 12px 16px;
+  background: #f0f4ff;
+  color: #667eea;
+  border: 1px solid #c7d2fe;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.cs-locate-btn:hover { background: #e0e7ff; }
+.cs-locate-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.cs-location-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #d1fae5;
+  color: #065f46;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cs-location-pill button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #065f46;
+  font-size: 14px;
+  padding: 0;
+  line-height: 1;
+}
+
+/* ===== RESULTS ===== */
+.cs-results-label {
+  color: rgba(255,255,255,0.8);
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cs-club-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cs-club-card {
+  background: white;
+  border-radius: 14px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.15s;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+}
+
+.cs-club-card:hover {
+  box-shadow: 0 8px 28px rgba(0,0,0,0.15);
+  transform: translateY(-2px);
+}
+
+.cs-club-logo {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid #e5e7eb;
+}
+
+.cs-club-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+}
+
+.cs-club-info {
+  flex: 1;
+}
+
+.cs-club-info h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.cs-club-info p {
+  margin: 0;
+  font-size: 13px;
+  color: #888;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cs-select-btn {
+  padding: 8px 18px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.2s;
+}
+
+.cs-select-btn:hover { opacity: 0.9; }
+
+/* ===== EMPTY / LOADING ===== */
+.cs-empty {
+  background: white;
+  border-radius: 14px;
+  padding: 48px 20px;
+  text-align: center;
+  color: #888;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+}
+
+.cs-empty p { font-size: 15px; margin: 0; }
+
+.cs-loading {
+  text-align: center;
+  color: rgba(255,255,255,0.8);
+  padding: 40px 20px;
+  font-size: 15px;
+}
+
+@media (max-width: 600px) {
+  .cs-container { padding: 20px 12px; }
+  .cs-search-row { flex-direction: column; }
+  .cs-club-card { flex-wrap: wrap; }
+}

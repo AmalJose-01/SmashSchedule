@@ -13,6 +13,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getAccessToken } from "../../../../../utils/storageHandler.js";
+import { userMembershipKeys } from "../../../user-membership/services/userMembership.queries.js";
 import {
   registerMember,
   getMembershipTypes,
@@ -55,7 +56,7 @@ export const useGetMemberProfile = (memberId) => {
   return useQuery({
     queryKey: membershipQueryKeys.profile(memberId),
     queryFn: () => getMemberProfile(memberId),
-    enabled: !!memberId && !!getAccessToken(),
+    enabled: !!memberId && !!getAccessToken() && getAccessToken() !== "null" && getAccessToken() !== "undefined",
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 30, // 30 minutes
   });
@@ -91,6 +92,7 @@ export const useRegisterMember = () => {
         toast.success("Registration successful!");
       }
       queryClient.invalidateQueries({ queryKey: membershipQueryKeys.profiles() });
+      queryClient.invalidateQueries({ queryKey: userMembershipKeys.mine() });
     },
     onError: (error) => {
       console.error("Registration error:", error);
@@ -110,7 +112,7 @@ export const useUpdateMemberProfile = (memberId) => {
 
   return useMutation({
     mutationFn: (profileData) => updateMemberProfile(memberId, profileData),
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast.success("Profile updated successfully!");
       // Invalidate profile query
       queryClient.invalidateQueries({
@@ -134,7 +136,7 @@ export const useUploadVerificationDocument = (memberId) => {
   return useMutation({
     mutationFn: ({ file, documentType }) =>
       uploadVerificationDocument(memberId, file, documentType),
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast.success("Document uploaded successfully!");
       // Invalidate profile to refresh verification status
       queryClient.invalidateQueries({
@@ -157,7 +159,7 @@ export const useRenewMembership = (memberId) => {
 
   return useMutation({
     mutationFn: () => renewMembership(memberId),
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast.success("Membership renewed successfully!");
       // Invalidate profile and history
       queryClient.invalidateQueries({

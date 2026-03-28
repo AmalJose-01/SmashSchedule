@@ -26,6 +26,9 @@ router.post("/register", membershipController.registerMember);
 // Get membership types
 router.get("/types", membershipController.getMembershipTypes);
 
+// Get all memberships for logged-in user (across clubs)
+router.get("/my-memberships", auth, membershipController.getMyMemberships);
+
 // Member Profile Routes (Authenticated)
 router.get("/:memberId/profile", auth, membershipController.getMemberProfile);
 

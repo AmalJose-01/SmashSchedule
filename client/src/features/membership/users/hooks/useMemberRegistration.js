@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useGetMembershipTypes, useRegisterMember, useUploadVerificationDocument } from "../services/memberRegistration.queries.js";
@@ -30,7 +30,7 @@ export const useMemberRegistration = () => {
       zipCode: "",
       country: "",
     },
-    membershipType: "STANDARD",
+    membershipType: "",
   });
   const [documentFile, setDocumentFile] = useState(null);
   const [documentType, setDocumentType] = useState("STUDENT_ID");
@@ -42,20 +42,30 @@ export const useMemberRegistration = () => {
   const membershipTypes = typesData?.types || [];
   const selectedType = membershipTypes.find((t) => t.name === formData.membershipType);
 
+  // Auto-select first type once types load
+  useEffect(() => {
+    if (membershipTypes.length > 0 && !formData.membershipType) {
+      setFormData((prev) => ({ ...prev, membershipType: membershipTypes[0].name }));
+    }
+  }, [membershipTypes]);
+
   // Register mutation using the new query hook
   const { mutate: registerMember, isPending: isRegistering } = useRegisterMember();
 
   // Handle registration response and navigate
   const handleRegistrationSuccess = (data) => {
     localStorage.setItem("memberId", data.member._id);
+    if (data.member.clubId) {
+      localStorage.setItem("selectedClubId", data.member.clubId.toString());
+    }
     if (data.alreadyExists) {
-      navigate("/user/profile");
+      navigate("/user/memberships");
       return;
     }
     if (selectedType?.requiresDocumentVerification) {
       setStep(3);
     } else {
-      navigate("/user/profile");
+      navigate("/user/memberships");
     }
   };
 
@@ -125,7 +135,7 @@ export const useMemberRegistration = () => {
       { file: documentFile, documentType },
       {
         onSuccess: () => {
-          // Component will navigate to profile
+          navigate("/user/memberships");
         },
       }
     );
@@ -137,6 +147,12 @@ export const useMemberRegistration = () => {
     // Validate required fields
     if (!formData.firstName || !formData.lastName || !formData.email || !formData.phoneNumber) {
       toast.error("Please fill in all required fields: First Name, Last Name, Email, and Phone Number");
+      return;
+    }
+
+    // Membership type is mandatory
+    if (!formData.membershipType) {
+      toast.error("Please select a membership type");
       return;
     }
 
@@ -152,6 +168,7 @@ export const useMemberRegistration = () => {
       ...formData,
       userId: userId,
       age: formData.age ? parseInt(formData.age) : undefined,
+      clubId: localStorage.getItem("selectedClubId") || undefined,
     };
 
     console.log("Submitting registration with data:", dataToSend);
