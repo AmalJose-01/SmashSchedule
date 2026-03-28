@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useMemberRegistration } from "../hooks/useMemberRegistration";
+import Dropdown from "../../../../components/Dropdown";
 import "./MemberRegistration.css";
 
 const MemberRegistration = () => {
@@ -187,32 +188,40 @@ const MemberRegistration = () => {
 
             <div className="form-section">
               <h3>Membership Type</h3>
-              <div className="membership-options">
-                {membershipTypes.map((type) => (
-                  <div
-                    key={type._id}
-                    className={`membership-card ${
-                      formData.membershipType === type.name ? "selected" : ""
-                    }`}
-                    onClick={() =>
-                      setFormData({
-                        ...formData,
-                        membershipType: type.name,
-                      })
-                    }
-                  >
-                    <h4>{type.displayName}</h4>
-                    <p className="price">${type.price}/year</p>
-                    {type.discountPercentage > 0 && (
-                      <p className="discount">{type.discountPercentage}% Discount</p>
-                    )}
-                    <p className="description">{type.description}</p>
-                    {type.requiresDocumentVerification && (
-                      <p className="note">⚠️ Document verification required</p>
+              <Dropdown
+                name="membershipType"
+                label="Select Membership Type"
+                value={formData.membershipType}
+                onChange={handleInputChange}
+                options={membershipTypes.map((type) => ({
+                  value: type.name,
+                  label: `${type.displayName} - A$${type.price}/year`,
+                }))}
+                placeholder="Choose a membership type"
+                required
+              />
+
+              {selectedType && (
+                <div className="membership-details mt-4 p-4 bg-gray-50 rounded-lg">
+                  <h4 className="font-semibold mb-2">{selectedType.displayName}</h4>
+                  {selectedType.description && (
+                    <p className="text-gray-600 mb-2">{selectedType.description}</p>
+                  )}
+                  <div className="text-sm text-gray-500 mb-2">
+                    <p>Price: <strong>A$${selectedType.price}/year</strong></p>
+                    {selectedType.discountPercentage > 0 && (
+                      <p className="text-green-600 font-semibold">
+                        {selectedType.discountPercentage}% Discount Applied
+                      </p>
                     )}
                   </div>
-                ))}
-              </div>
+                  {selectedType.requiresDocumentVerification && (
+                    <p className="text-orange-600 text-sm">
+                      ⚠️ Document verification required for this membership type
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="form-actions">
@@ -287,7 +296,7 @@ const MemberRegistration = () => {
               <button
                 type="button"
                 className="btn-secondary"
-                onClick={() => navigate("/member/profile")}
+                onClick={() => navigate("/user/profile")}
               >
                 Skip for Now
               </button>

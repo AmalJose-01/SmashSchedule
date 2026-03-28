@@ -3,6 +3,7 @@ const Membership = require("../model/membership");
 const MemberDocument = require("../model/memberDocument");
 const MembershipType = require("../model/membershipType");
 const AdminUser = require("../model/adminUser");
+const { uploadToCloudinary, deleteFromCloudinary } = require("../utils/cloudinaryHelper");
 
 const membershipController = {
   // ========== MEMBER REGISTRATION ==========
@@ -91,7 +92,7 @@ const membershipController = {
   // ========== UPLOAD VERIFICATION DOCUMENT ==========
   uploadVerificationDocument: async (req, res) => {
     try {
-      const { memberId, documentType, fileUrl } = req.body;
+      const { memberId, documentType } = req.body;
 
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -116,17 +117,29 @@ const membershipController = {
         return res.status(404).json({ message: "Member not found" });
       }
 
-      // Delete old document if exists
+      // Delete old document from Cloudinary and database if exists
       if (member.verificationDocumentId) {
+        const oldDoc = await MemberDocument.findById(member.verificationDocumentId);
+        if (oldDoc && oldDoc.cloudinaryPublicId) {
+          await deleteFromCloudinary(oldDoc.cloudinaryPublicId);
+        }
         await MemberDocument.deleteOne({ _id: member.verificationDocumentId });
       }
 
-      // Create document record
+      // Upload file to Cloudinary
+      const cloudinaryResult = await uploadToCloudinary(
+        req.file.buffer,
+        req.file.originalname,
+        'membership-verification-documents'
+      );
+
+      // Create document record with Cloudinary URL
       const document = await MemberDocument.create({
         memberId,
         documentType,
-        fileName: req.file.filename,
-        fileUrl: fileUrl || req.file.path, // Use provided URL or default path
+        fileName: req.file.originalname,
+        fileUrl: cloudinaryResult.url,
+        cloudinaryPublicId: cloudinaryResult.cloudinaryId,
         verificationStatus: "PENDING",
       });
 
@@ -488,6 +501,156 @@ const membershipController = {
       });
     } catch (error) {
       console.error("Error fetching stats:", error);
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
+  },
+
+  // ========== ADMIN: CREATE MEMBERSHIP TYPE ==========
+  createMembershipType: async (req, res) => {
+    try {
+      const {
+        name,
+        displayName,
+        description,
+        price,
+        discountPercentage,
+        validityMonths,
+        requiresDocumentVerification,
+        requiredDocumentType,
+        benefits,
+      } = req.body;
+
+      // Validate required fields
+      if (!name || !displayName || price === undefined) {
+        return res.status(400).json({
+          message: "Missing required fields: name, displayName, price",
+        });
+      }
+
+      // Normalize name to uppercase for consistency with schema enum
+      const normalizedName = name.toUpperCase();
+
+      // Check if membership type already exists
+      const existingType = await MembershipType.findOne({ name: normalizedName });
+      if (existingType) {
+        return res.status(400).json({
+          message: `Membership type '${normalizedName}' already exists`,
+        });
+      }
+
+      // Create new membership type
+      const newType = await MembershipType.create({
+        name: normalizedName,
+        displayName,
+        description,
+        price,
+        discountPercentage: discountPercentage || 0,
+        validityMonths: validityMonths || 12,
+        requiresDocumentVerification: requiresDocumentVerification || false,
+        requiredDocumentType: requiredDocumentType || [],
+        benefits: benefits || [],
+        isActive: true,
+      });
+
+      return res.status(201).json({
+        message: "Membership type created successfully",
+        type: newType,
+      });
+    } catch (error) {
+      console.error("Create membership type error:", error);
+      return res.status(500).json({ message: "Internal Server Error", error: error.message });
+    }
+  },
+
+  // ========== ADMIN: GET ALL MEMBERSHIP TYPES ==========
+  getAllMembershipTypes: async (req, res) => {
+    try {
+      const types = await MembershipType.find().sort({ createdAt: -1 });
+      return res.status(200).json({
+        message: "Membership types retrieved successfully",
+        types,
+      });
+    } catch (error) {
+      console.error("Get all membership types error:", error);
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
+  },
+
+  // ========== ADMIN: UPDATE MEMBERSHIP TYPE ==========
+  updateMembershipType: async (req, res) => {
+    try {
+      const { typeId } = req.params;
+      const {
+        displayName,
+        description,
+        price,
+        discountPercentage,
+        validityMonths,
+        requiresDocumentVerification,
+        requiredDocumentType,
+        benefits,
+        isActive,
+      } = req.body;
+
+      const updatedType = await MembershipType.findByIdAndUpdate(
+        typeId,
+        {
+          displayName,
+          description,
+          price,
+          discountPercentage,
+          validityMonths,
+          requiresDocumentVerification,
+          requiredDocumentType,
+          benefits,
+          isActive,
+        },
+        { new: true }
+      );
+
+      if (!updatedType) {
+        return res.status(404).json({ message: "Membership type not found" });
+      }
+
+      return res.status(200).json({
+        message: "Membership type updated successfully",
+        type: updatedType,
+      });
+    } catch (error) {
+      console.error("Update membership type error:", error);
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
+  },
+
+  // ========== ADMIN: DELETE MEMBERSHIP TYPE ==========
+  deleteMembershipType: async (req, res) => {
+    try {
+      const { typeId } = req.params;
+
+      // Check if any members are using this membership type
+      const membershipTypeName = await MembershipType.findById(typeId).select("name");
+      if (!membershipTypeName) {
+        return res.status(404).json({ message: "Membership type not found" });
+      }
+
+      const membersWithType = await Member.findOne({
+        membershipType: membershipTypeName.name,
+      });
+
+      if (membersWithType) {
+        return res.status(400).json({
+          message: "Cannot delete membership type. Members are using this type.",
+        });
+      }
+
+      const deletedType = await MembershipType.findByIdAndDelete(typeId);
+
+      return res.status(200).json({
+        message: "Membership type deleted successfully",
+        type: deletedType,
+      });
+    } catch (error) {
+      console.error("Delete membership type error:", error);
       return res.status(500).json({ message: "Internal Server Error" });
     }
   },

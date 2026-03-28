@@ -26,26 +26,7 @@ router.post("/register", membershipController.registerMember);
 // Get membership types
 router.get("/types", membershipController.getMembershipTypes);
 
-// Member Profile Routes (Authenticated)
-router.get("/:memberId/profile", auth, membershipController.getMemberProfile);
-
-router.put("/:memberId/profile", auth, membershipController.updateMemberProfile);
-
-// Upload verification document
-router.post(
-  "/:memberId/upload-document",
-  auth,
-  upload.single("document"),
-  membershipController.uploadVerificationDocument
-);
-
-// Renew membership
-router.post("/:memberId/renew", auth, membershipController.renewMembership);
-
-// Get membership history
-router.get("/:memberId/history", auth, membershipController.getMembershipHistory);
-
-// ========== ADMIN ROUTES ==========
+// ========== ADMIN ROUTES (Must come before wildcard routes) ==========
 
 // Get all members (with search/filter)
 router.get("/admin/members", auth, membershipController.getAllMembers);
@@ -84,5 +65,57 @@ router.post(
   auth,
   membershipController.autoExpireMembers
 );
+
+// ========== ADMIN: MEMBERSHIP TYPE MANAGEMENT ==========
+
+// Create membership type
+router.post(
+  "/admin/membership-types",
+  auth,
+  membershipController.createMembershipType
+);
+
+// Get all membership types (admin view)
+router.get(
+  "/admin/membership-types",
+  auth,
+  membershipController.getAllMembershipTypes
+);
+
+// Update membership type
+router.put(
+  "/admin/membership-types/:typeId",
+  auth,
+  membershipController.updateMembershipType
+);
+
+// Delete membership type
+router.delete(
+  "/admin/membership-types/:typeId",
+  auth,
+  membershipController.deleteMembershipType
+);
+
+// ========== MEMBER PROFILE ROUTES (Authenticated) - Must come after admin routes ==========
+
+// Get member profile
+router.get("/:memberId/profile", auth, membershipController.getMemberProfile);
+
+// Update member profile
+router.put("/:memberId/profile", auth, membershipController.updateMemberProfile);
+
+// Upload verification document
+router.post(
+  "/:memberId/upload-document",
+  auth,
+  upload.single("document"),
+  membershipController.uploadVerificationDocument
+);
+
+// Renew membership
+router.post("/:memberId/renew", auth, membershipController.renewMembership);
+
+// Get membership history
+router.get("/:memberId/history", auth, membershipController.getMembershipHistory);
 
 module.exports = router;

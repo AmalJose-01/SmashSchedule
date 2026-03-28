@@ -4,8 +4,19 @@ import { useGetMembershipTypes, useRegisterMember, useUploadVerificationDocument
 
 export const useMemberRegistration = () => {
   const [step, setStep] = useState(1);
+
+  // Get userId from stored user object
+  const getStoredUserId = () => {
+    try {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      return user._id || "";
+    } catch {
+      return "";
+    }
+  };
+
   const [formData, setFormData] = useState({
-    userId: localStorage.getItem("userId") || "",
+    userId: getStoredUserId(),
     firstName: "",
     lastName: "",
     email: "",
@@ -89,11 +100,10 @@ export const useMemberRegistration = () => {
   };
 
 
-  // Upload document mutation using the new query hook
-  const memberId = localStorage.getItem("memberId");
-  const { mutate: uploadDocument, isPending: isUploading } = memberId 
-    ? useUploadVerificationDocument(memberId)
-    : { mutate: null, isPending: false };
+  // Upload document mutation using the new query hook - MUST call conditionally outside of conditional logic
+  // Always call the hook unconditionally to avoid Rules of Hooks violation
+  const memberId = localStorage.getItem("memberId") || "";
+  const { mutate: uploadDocument, isPending: isUploading } = useUploadVerificationDocument(memberId);
 
   const handleDocumentUpload = () => {
     if (!documentFile) {
@@ -101,7 +111,7 @@ export const useMemberRegistration = () => {
       return;
     }
 
-    if (!uploadDocument) {
+    if (!memberId) {
       toast.error("Member ID not found. Please register first.");
       return;
     }
@@ -126,7 +136,7 @@ export const useMemberRegistration = () => {
     }
 
     // Ensure userId is present
-    const userId = localStorage.getItem("userId");
+    const userId = getStoredUserId();
     if (!userId) {
       toast.error("User ID not found. Please log in again.");
       return;
@@ -140,7 +150,7 @@ export const useMemberRegistration = () => {
     };
 
     console.log("Submitting registration with data:", dataToSend);
-    
+
     registerMember(dataToSend, {
       onSuccess: (data) => {
         handleRegistrationSuccess(data);

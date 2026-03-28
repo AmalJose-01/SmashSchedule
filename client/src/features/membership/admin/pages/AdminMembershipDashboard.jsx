@@ -1,17 +1,18 @@
 import React from "react";
 import { useAdminMembership } from "../hooks/useAdminMembership";
+import MembershipTypeManagement from "./MembershipTypeManagement";
 import "./AdminMembershipDashboard.css";
 
 const AdminMembershipDashboard = () => {
   const {
     activeTab,
-    setActiveTab,
+    handleTabChange,
     searchTerm,
-    setSearchTerm,
+    handleSearch,
     statusFilter,
-    setStatusFilter,
+    handleFilterChange,
     currentPage,
-    setCurrentPage,
+    handlePageChange,
     stats,
     members,
     pagination,
@@ -19,7 +20,7 @@ const AdminMembershipDashboard = () => {
     pendingDocuments,
     isPendingLoading,
     expiringMembers,
-    verifyDocument,
+    handleVerifyDocument,
     isVerifying,
     getStatusColor,
     getStatusLabel,
@@ -89,16 +90,14 @@ const AdminMembershipDashboard = () => {
           placeholder="Search members (name, email, phone)"
           value={searchTerm}
           onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setCurrentPage(1);
+            handleSearch(e.target.value);
           }}
           className="search-input"
         />
         <select
           value={statusFilter}
           onChange={(e) => {
-            setStatusFilter(e.target.value);
-            setCurrentPage(1);
+            handleFilterChange(e.target.value);
           }}
           className="filter-select"
         >
@@ -161,7 +160,7 @@ const AdminMembershipDashboard = () => {
             <div className="pagination">
               <button
                 disabled={currentPage === 1}
-                onClick={() => setCurrentPage(currentPage - 1)}
+                onClick={() => handlePageChange(currentPage - 1)}
               >
                 Previous
               </button>
@@ -170,7 +169,7 @@ const AdminMembershipDashboard = () => {
               </span>
               <button
                 disabled={currentPage === pagination.pages}
-                onClick={() => setCurrentPage(currentPage + 1)}
+                onClick={() => handlePageChange(currentPage + 1)}
               >
                 Next
               </button>
@@ -227,10 +226,7 @@ const AdminMembershipDashboard = () => {
                 <button
                   className="btn-approve"
                   onClick={() =>
-                    verifyDocument({
-                      documentId: doc._id,
-                      status: "APPROVED",
-                    })
+                    handleVerifyDocument(doc._id, "APPROVED")
                   }
                   disabled={isVerifying}
                 >
@@ -241,11 +237,7 @@ const AdminMembershipDashboard = () => {
                   onClick={() => {
                     const reason = prompt("Reason for rejection:");
                     if (reason) {
-                      verifyDocument({
-                        documentId: doc._id,
-                        status: "REJECTED",
-                        reason,
-                      });
+                      handleVerifyDocument(doc._id, "REJECTED", reason);
                     }
                   }}
                   disabled={isVerifying}
@@ -319,27 +311,33 @@ const AdminMembershipDashboard = () => {
       <div className="dashboard-tabs">
         <button
           className={`tab-button ${activeTab === "overview" ? "active" : ""}`}
-          onClick={() => setActiveTab("overview")}
+          onClick={() => handleTabChange("overview")}
         >
           📊 Overview
         </button>
         <button
           className={`tab-button ${activeTab === "members" ? "active" : ""}`}
-          onClick={() => setActiveTab("members")}
+          onClick={() => handleTabChange("members")}
         >
           👥 Members
         </button>
         <button
           className={`tab-button ${activeTab === "verifications" ? "active" : ""}`}
-          onClick={() => setActiveTab("verifications")}
+          onClick={() => handleTabChange("verifications")}
         >
           📄 Verifications {pendingDocuments.length > 0 && `(${pendingDocuments.length})`}
         </button>
         <button
           className={`tab-button ${activeTab === "expiring" ? "active" : ""}`}
-          onClick={() => setActiveTab("expiring")}
+          onClick={() => handleTabChange("expiring")}
         >
           ⚠️ Expiring {expiringMembers.length > 0 && `(${expiringMembers.length})`}
+        </button>
+        <button
+          className={`tab-button ${activeTab === "types" ? "active" : ""}`}
+          onClick={() => handleTabChange("types")}
+        >
+          ⚙️ Membership Types
         </button>
       </div>
 
@@ -348,6 +346,7 @@ const AdminMembershipDashboard = () => {
         {activeTab === "members" && renderMembers()}
         {activeTab === "verifications" && renderVerifications()}
         {activeTab === "expiring" && renderExpiring()}
+        {activeTab === "types" && <MembershipTypeManagement />}
       </div>
     </div>
   );

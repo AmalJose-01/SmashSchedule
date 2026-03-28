@@ -10,6 +10,7 @@ import SaveTeamRegistration from "../pages/user/SaveTeamRegistration";
 import { useSelector } from "react-redux";
 import Login from "../pages/admin/Login";
 import MemberRegistration from "../features/membership/users/pages/MemberRegistration";
+import MemberProfile from "../features/my-profile/pages/MemberProfile";
 
 const UserRoutes = () => {
   const user = useSelector((state) => state.user.user);
@@ -55,8 +56,12 @@ const UserRoutes = () => {
         element={<SaveTeamRegistration />}
       />
       <Route
-        path="/membership"
+        path="/user/membership"
         element={<MemberRegistration />}
+      />
+      <Route
+        path="/user/profile"
+        element={<MemberProfile />}
       />
     </>
   );

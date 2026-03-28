@@ -14,6 +14,7 @@ const memberDocumentSchema = new mongoose.Schema(
     },
     fileName: { type: String, required: true },
     fileUrl: { type: String, required: true }, // Cloud storage URL
+    cloudinaryPublicId: { type: String, default: null }, // For deleting from Cloudinary
     uploadedDate: { type: Date, default: Date.now },
     verificationStatus: {
       type: String,

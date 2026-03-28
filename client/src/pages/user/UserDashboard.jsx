@@ -20,7 +20,7 @@ const UserDashboard = () => {
       title: "My Profile",
       description: "Manage your account and membership details",
       icon: User,
-      path: "/profile", // We'll need to create this
+      path: "/user/profile",
       color: "text-green-600",
       bgColor: "bg-green-50",
     },
@@ -36,7 +36,7 @@ const UserDashboard = () => {
       title: "Membership",
       description: "Check your membership status and renewals",
       icon: Settings,
-      path: "/membership", // We'll need to create this
+      path: "/user/membership",
       color: "text-orange-600",
       bgColor: "bg-orange-50",
     },
