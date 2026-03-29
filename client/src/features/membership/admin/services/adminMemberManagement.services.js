@@ -10,10 +10,9 @@
  * Functions here are reusable from any context.
  */
 
-import axios from "axios";
 import { BASE_URL } from "../../../../../utils/config.js";
 import { headerData } from "../../../../../utils/storageHandler.js";
-
+import apiClient from "../../../../services/api/axiosInstance.js";
 /**
  * Fetch all members with pagination, search, and filtering
  * @param {number} page - Page number (1-indexed)
@@ -23,7 +22,7 @@ import { headerData } from "../../../../../utils/storageHandler.js";
  * @returns {Promise<MembersPaginatedResponse>}
  */
 export const getAllMembers = async (page = 1, limit = 10, search = "", status = "") => {
-  const response = await axios.get(`${BASE_URL}/membership/admin/members`, {
+  const response = await apiClient.get(`${BASE_URL}/membership/admin/members`, {
     params: { page, limit, search, status },
     ...headerData(),
   });
@@ -35,9 +34,9 @@ export const getAllMembers = async (page = 1, limit = 10, search = "", status = 
  * @returns {Promise<PendingVerificationsResponse>}
  */
 export const getPendingVerifications = async () => {
-  const response = await axios.get(
+  const response = await apiClient.get(
     `${BASE_URL}/membership/admin/pending-verifications`,
-    headerData()
+    { ...headerData() }
   );
   return response.data;
 };
@@ -50,10 +49,10 @@ export const getPendingVerifications = async () => {
  * @returns {Promise<VerifyDocumentResponse>}
  */
 export const verifyDocument = async (documentId, status, rejectionReason = "") => {
-  const response = await axios.post(
+  const response = await apiClient.post(
     `${BASE_URL}/membership/admin/verify-document/${documentId}`,
     { status, rejectionReason },
-    headerData()
+    { ...headerData() }
   );
   return response.data;
 };
@@ -63,9 +62,9 @@ export const verifyDocument = async (documentId, status, rejectionReason = "") =
  * @returns {Promise<ExpiringMembershipsResponse>}
  */
 export const getExpiringMemberships = async () => {
-  const response = await axios.get(
+  const response = await apiClient.get(
     `${BASE_URL}/membership/admin/expiring-memberships`,
-    headerData()
+    { ...headerData() }
   );
   return response.data;
 };
@@ -75,9 +74,9 @@ export const getExpiringMemberships = async () => {
  * @returns {Promise<MembershipStatsResponse>}
  */
 export const getMembershipStats = async () => {
-  const response = await axios.get(
+  const response = await apiClient.get(
     `${BASE_URL}/membership/admin/statistics`,
-    headerData()
+    { ...headerData() }
   );
   return response.data;
 };
@@ -87,10 +86,10 @@ export const getMembershipStats = async () => {
  * @returns {Promise<AutoExpireResponse>}
  */
 export const autoExpireMembers = async () => {
-  const response = await axios.post(
+  const response = await apiClient.post(
     `${BASE_URL}/membership/admin/auto-expire`,
     {},
-    headerData()
+    { ...headerData() }
   );
   return response.data;
 };

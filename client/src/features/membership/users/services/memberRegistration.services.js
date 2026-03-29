@@ -10,7 +10,7 @@
  * Functions here are reusable from any context.
  */
 
-import axios from "axios";
+import apiClient from "../../../../services/api/axiosInstance.js";
 import { BASE_URL } from "../../../../../utils/config.js";
 import { headerData } from "../../../../../utils/storageHandler.js";
 
@@ -20,7 +20,7 @@ import { headerData } from "../../../../../utils/storageHandler.js";
  * @returns {Promise<RegisterMemberResponse>}
  */
 export const registerMember = async (memberData) => {
-  const response = await axios.post(`${BASE_URL}/membership/register`, memberData);
+  const response = await apiClient.post(`/membership/register`, memberData);
   return response.data;
 };
 
@@ -30,7 +30,7 @@ export const registerMember = async (memberData) => {
  */
 export const getMembershipTypes = async (adminId) => {
   const params = adminId ? { adminId } : {};
-  const response = await axios.get(`${BASE_URL}/membership/types`, { params });
+  const response = await apiClient.get(`/membership/types`, { params });
   return response.data;
 };
 
@@ -40,9 +40,8 @@ export const getMembershipTypes = async (adminId) => {
  * @returns {Promise<MemberProfileResponse>}
  */
 export const getMemberProfile = async (memberId) => {
-  const response = await axios.get(
-    `${BASE_URL}/membership/${memberId}/profile`,
-    headerData()
+  const response = await apiClient.get(
+    `/membership/${memberId}/profile`
   );
   return response.data;
 };
@@ -54,10 +53,9 @@ export const getMemberProfile = async (memberId) => {
  * @returns {Promise<UpdateMemberProfileResponse>}
  */
 export const updateMemberProfile = async (memberId, profileData) => {
-  const response = await axios.put(
-    `${BASE_URL}/membership/${memberId}/profile`,
-    profileData,
-    headerData()
+  const response = await apiClient.put(
+    `/membership/${memberId}/profile`,
+    profileData
   );
   return response.data;
 };
@@ -75,13 +73,11 @@ export const uploadVerificationDocument = async (memberId, file, documentType) =
   formData.append("documentType", documentType);
   formData.append("memberId", memberId);
 
-  const response = await axios.post(
-    `${BASE_URL}/membership/${memberId}/upload-document`,
+  const response = await apiClient.post(
+    `/membership/${memberId}/upload-document`,
     formData,
     {
-      ...headerData(),
       headers: {
-        ...headerData().headers,
         "Content-Type": "multipart/form-data",
       },
     }
@@ -95,10 +91,9 @@ export const uploadVerificationDocument = async (memberId, file, documentType) =
  * @returns {Promise<RenewMembershipResponse>}
  */
 export const renewMembership = async (memberId) => {
-  const response = await axios.post(
-    `${BASE_URL}/membership/${memberId}/renew`,
-    {},
-    headerData()
+  const response = await apiClient.post(
+    `/membership/${memberId}/renew`,
+    {}
   );
   return response.data;
 };
@@ -110,8 +105,7 @@ export const renewMembership = async (memberId) => {
  */
 export const getMembershipHistory = async (memberId) => {
   const response = await axios.get(
-    `${BASE_URL}/membership/${memberId}/history`,
-    headerData()
+    `/membership/${memberId}/history`
   );
   return response.data;
 };

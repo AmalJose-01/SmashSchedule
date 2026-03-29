@@ -1,10 +1,10 @@
-import axios from "axios";
+import apiClient from "./api/axiosInstance.js";
 import { BASE_URL } from "../../utils/config.js";
 import { headerData } from "../../utils/storageHandler.js";
 
 export const saveTeamAPI = async (teamData) => {
   try {
-    const response = await axios.post(`${BASE_URL}/tournament/teams`, teamData);
+    const response = await apiClient.post(`/tournament/teams`, teamData);
     return response.data;
   } catch (error) {
       throw error;
@@ -14,7 +14,7 @@ export const saveTeamAPI = async (teamData) => {
 
 export const updateTeamAPI = async (teamData) => {
   try {
-    const response = await axios.put(`${BASE_URL}/admin/update-teams`, teamData, headerData());
+    const response = await apiClient.put(`/admin/update-teams`, teamData);
     return response.data;
   } catch (error) {
       throw error;
@@ -26,7 +26,7 @@ export const updateTeamAPI = async (teamData) => {
 export const getTournamentListAPI = async () => {
   console.log("getTournamentListAPI called"); // <--- should log when triggered
 
-  const response = await axios.get(`${BASE_URL}/tournament/get-tournaments`);
+  const response = await apiClient.get(`/tournament/get-tournaments`);
   console.log("getTournamentListAPI response:====", response.data); // <--- log the full response
   return response.data;
 };
@@ -35,8 +35,8 @@ export const getTournamentDetailsAPI = async (tournamentId) => {
   console.log("getTournamentDetailsAPI called with ID:", tournamentId); // <--- should log when triggered
 
   try {
-    const response = await axios.get(
-      `${BASE_URL}/tournament/get-tournamentDetails/${tournamentId}`
+    const response = await apiClient.get(
+      `/tournament/get-tournamentDetails/${tournamentId}`
     );
     console.log("getTournamentDetailsAPI response:====", response.data); // <--- log the full response
     return response.data;
@@ -60,8 +60,8 @@ export const getKnockoutScheduleAPI = async (tournamentId) => {
   console.log("getTournamentDetailsAPI called with ID:", tournamentId); // <--- should log when triggered
 
   try {
-    const response = await axios.get(
-      `${BASE_URL}/knockout/get-knockout-matches/${tournamentId}`
+    const response = await apiClient.get(
+      `/knockout/get-knockout-matches/${tournamentId}`
     );
     console.log("getKnockoutScheduleAPI response:====", response.data); // <--- log the full response
     return response.data;
@@ -76,10 +76,10 @@ export const getKnockoutScheduleAPI = async (tournamentId) => {
 export const getTournamentInformationAPI = async (tournamentId) => {
 
   try {
-    console.log(`${BASE_URL}/tournament/get-tournament-information/${tournamentId}`);
+    console.log(`/tournament/get-tournament-information/${tournamentId}`);
     
-    const response = await axios.get(
-      `${BASE_URL}/tournament/get-tournament-information/${tournamentId}`
+    const response = await apiClient.get(
+      `/tournament/get-tournament-information/${tournamentId}`
     );
     console.log("getTournamentInformationAPI response:====", response.data); // <--- log the full response
     return response.data;

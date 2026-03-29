@@ -1,4 +1,4 @@
-import axios from "axios";
+import apiClient from "../../../../services/api/axiosInstance.js";
 import { BASE_URL } from "../../../../../utils/config.js";
 
 export const searchClubs = async ({ q, lat, lng, radius } = {}) => {
@@ -7,11 +7,11 @@ export const searchClubs = async ({ q, lat, lng, radius } = {}) => {
   if (lat) params.lat = lat;
   if (lng) params.lng = lng;
   if (radius) params.radius = radius;
-  const response = await axios.get(`${BASE_URL}/club/search`, { params });
+  const response = await apiClient.get(`/club/search`, { params });
   return response.data;
 };
 
 export const getClubById = async (clubId) => {
-  const response = await axios.get(`${BASE_URL}/club/${clubId}`);
+  const response = await apiClient.get(`/club/${clubId}`);
   return response.data;
 };
