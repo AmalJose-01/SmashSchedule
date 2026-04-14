@@ -10,12 +10,25 @@ import CreateTournament from "../pages/admin/CreateTournament";
 import AdminTournamentList from "../pages/admin/AdminTournamentList";
 import EditTournament from "../pages/admin/EditTournament";
 import EditTeam from "../pages/admin/EditTeam";
+import Dashboard from "../pages/admin/Dashboard";
+import AdminMembershipDashboard from "../features/membership/admin/pages/AdminMembershipDashboard";
+import MembershipTypeManagement from "../features/membership-type/pages/MembershipTypeManagement";
+import ClubProfile from "../features/club-profile/admin/pages/ClubProfile";
+import AdminMembersList from "../features/admin-memberslist/pages/AdminMembersList";
 
 const AdminRoutes = () => {
   const user = useSelector((state) => state.user.user);
 
   return (
     <>
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute role="admin">
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/tournament-list"
         element={
@@ -79,23 +92,51 @@ const AdminRoutes = () => {
       />
 
       <Route
-        path="/login"
+        path="/admin-membership"
         element={
-          !user ? (
-            <Login />
-          ) : user.accountType === "admin" && !user.isVerified ? (
-            <Navigate to="/checkout" replace />
-          ) : (
-            <Navigate to="/tournament-list" replace />
-          )
+          <ProtectedRoute role="admin">
+            <AdminMembershipDashboard />
+          </ProtectedRoute>
         }
       />
 
       <Route
-        path="/login"
+        path="/admin/membership-types"
         element={
-          !user ? <Login /> : <Navigate to="/tournament-list" replace />
-          // !user ? <Login /> : <Navigate to="/checkout" replace />
+          <ProtectedRoute role="admin">
+            <MembershipTypeManagement />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/club-profile"
+        element={
+          <ProtectedRoute role="admin">
+            <ClubProfile />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/members-list"
+        element={
+          <ProtectedRoute role="admin">
+            <AdminMembersList />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/login"
+        element={
+          !user || user.accountType !== "admin" ? (
+            <Login />
+          ) : !user.isVerified ? (
+            <Navigate to="/checkout" replace />
+          ) : (
+            <Navigate to="/dashboard" replace />
+          )
         }
       />
 

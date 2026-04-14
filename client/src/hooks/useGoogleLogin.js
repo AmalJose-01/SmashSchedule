@@ -37,6 +37,13 @@ export const useGoogleLogin = () => {
 
             dispatch(loginUser(res));
 
+            // Navigate based on account type
+            if (user.accountType === "admin") {
+              navigate("/dashboard", { replace: true });
+            } else if (user.accountType === "user") {
+              navigate("/user/dashboard", { replace: true });
+            }
+
             return "Login successful!";
           },
           error: (err) => {

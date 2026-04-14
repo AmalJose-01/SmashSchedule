@@ -1,0 +1,484 @@
+.mt-container {
+  min-height: 100vh;
+  background: #f4f6fb;
+  padding: 32px 24px;
+}
+
+.mt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.mt-header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+.mt-header p {
+  color: #666;
+  font-size: 14px;
+  margin: 4px 0 0 0;
+}
+
+/* ===== TYPE CARDS GRID ===== */
+.mt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.mt-card {
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+  padding: 24px;
+  border: 2px solid transparent;
+  transition: box-shadow 0.2s, border-color 0.2s;
+  position: relative;
+}
+
+.mt-card:hover {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+}
+
+.mt-card.inactive {
+  opacity: 0.6;
+  border-color: #e5e7eb;
+}
+
+.mt-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 10px;
+}
+
+.mt-card-title h3 {
+  margin: 0 0 6px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.mt-type-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #ede9fe;
+  color: #6d28d9;
+  letter-spacing: 0.5px;
+}
+
+.mt-status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.mt-status-badge.active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.mt-status-badge.inactive {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.mt-card-price {
+  font-size: 28px;
+  font-weight: 800;
+  color: #667eea;
+  margin: 0 0 4px 0;
+}
+
+.mt-card-price span {
+  font-size: 14px;
+  font-weight: 500;
+  color: #888;
+}
+
+.mt-card-description {
+  color: #555;
+  font-size: 13px;
+  margin: 10px 0;
+  min-height: 36px;
+}
+
+.mt-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0;
+}
+
+.mt-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #555;
+}
+
+.mt-meta-row .label {
+  color: #888;
+  font-size: 12px;
+  min-width: 120px;
+}
+
+.mt-verification-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mt-verification-badge.required {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.mt-verification-badge.not-required {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.mt-doc-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.mt-doc-chip {
+  background: #ede9fe;
+  color: #6d28d9;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.mt-card-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f5;
+}
+
+/* ===== EMPTY STATE ===== */
+.mt-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+  color: #aaa;
+}
+
+.mt-empty p {
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+
+/* ===== MODAL OVERLAY ===== */
+.mt-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.mt-modal {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+  padding: 36px 40px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.mt-modal h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 24px 0;
+  padding-bottom: 14px;
+  border-bottom: 2px solid #f0f0f5;
+}
+
+/* ===== FORM ===== */
+.mt-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.mt-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.mt-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.mt-form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.mt-form-group input,
+.mt-form-group select,
+.mt-form-group textarea {
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1a1a2e;
+  transition: border-color 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.mt-form-group input:focus,
+.mt-form-group select:focus,
+.mt-form-group textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.mt-form-group textarea {
+  resize: vertical;
+  min-height: 70px;
+}
+
+.mt-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #374151;
+  font-weight: 500;
+}
+
+.mt-checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.mt-doc-type-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.mt-doc-type-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mt-doc-type-options .mt-checkbox-label {
+  padding: 8px 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.mt-form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f5;
+}
+
+/* ===== BUTTONS ===== */
+.btn-create {
+  padding: 10px 22px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.2s;
+  white-space: nowrap;
+}
+
+.btn-create:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn-edit {
+  flex: 1;
+  padding: 8px 16px;
+  background: #f0f4ff;
+  color: #667eea;
+  border: 1px solid #c7d2fe;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-edit:hover {
+  background: #e0e7ff;
+}
+
+.btn-toggle {
+  flex: 1;
+  padding: 8px 16px;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-toggle:hover {
+  background: #e5e7eb;
+}
+
+.btn-toggle.deactivate {
+  color: #d97706;
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.btn-toggle.deactivate:hover {
+  background: #fef3c7;
+}
+
+.btn-delete {
+  padding: 8px 14px;
+  background: #fff5f5;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-delete:hover {
+  background: #fee2e2;
+}
+
+.btn-delete:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-save {
+  flex: 1;
+  padding: 11px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-save:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btn-save:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-cancel {
+  flex: 1;
+  padding: 11px 24px;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-cancel:hover {
+  background: #e5e7eb;
+}
+
+/* ===== LOADING ===== */
+.mt-loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: #888;
+  font-size: 15px;
+}
+
+/* ===== DISCOUNT BADGE ===== */
+.mt-discount {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #d1fae5;
+  color: #065f46;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-left: 8px;
+}
+
+@media (max-width: 600px) {
+  .mt-container {
+    padding: 20px 12px;
+  }
+
+  .mt-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .mt-modal {
+    padding: 24px 20px;
+  }
+
+  .mt-form-actions {
+    flex-direction: column;
+  }
+}

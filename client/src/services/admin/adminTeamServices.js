@@ -1,4 +1,4 @@
-import axios from "axios";
+import apiClient from "../api/axiosInstance.js";
 import { BASE_URL } from "../../../utils/config.js";
 import { headerData } from "../../../utils/storageHandler.js";
 
@@ -6,7 +6,7 @@ import { headerData } from "../../../utils/storageHandler.js";
 
 export const importTeamAPI = async (teamData) => {
   try {
-    const response = await axios.post(`${BASE_URL}/admin/teams`, teamData,headerData());
+    const response = await apiClient.post(`/admin/teams`, teamData);
     return response.data;
   } catch (error) {
     throw error;
@@ -18,8 +18,8 @@ export const getTeamListAPI = async (tournamentId) => {
   console.log("getTeamListAPI called"); // <--- should log when triggered
 try {
 
- const response = await axios.get(
-      `${BASE_URL}/admin/get-teams/${tournamentId}`,headerData()
+ const response = await apiClient.get(
+      `/admin/get-teams/${tournamentId}`
     );
   console.log("getTeamListAPI response:====", response.data); // <--- log the full response
   return response.data;
@@ -34,9 +34,9 @@ export const saveTournamentAPI = async (tournamentData) => {
   console.log("headerData", headerData());
 
   try {
-    const response = await axios.post(
-      `${BASE_URL}/admin/create-tournament`,
-      tournamentData, headerData()           
+    const response = await apiClient.post(
+      `/admin/create-tournament`,
+      tournamentData            
                     
     );
     return response.data;
@@ -52,9 +52,9 @@ export const updateTournamentAPI = async (tournamentData) => {
   console.log("headerData", headerData());
 
   try {
-    const response = await axios.put(
-      `${BASE_URL}/admin/update-tournament`,
-      tournamentData, headerData()           
+    const response = await apiClient.put(
+      `/admin/update-tournament`,
+      tournamentData            
                     
     );
     return response.data;
@@ -70,9 +70,9 @@ export const saveMatchesAPI = async (tournamentData) => {
   console.log("headerData", headerData());
 
   try {
-    const response = await axios.post(
-      `${BASE_URL}/admin/create-matches`,
-      tournamentData, { headers: headerData().headers }            
+    const response = await apiClient.post(
+      `/admin/create-matches`,
+      tournamentData            
                     
     );
     return response.data;
@@ -93,7 +93,7 @@ export const getAdminTournamentListAPI = async () => {
   try {
       console.log("getAdminTournamentListAPI called"); // <--- should log when triggered
 
-  const response = await axios.get(`${BASE_URL}/admin/get-tournaments`,headerData());
+  const response = await apiClient.get(`/admin/get-tournaments`);
   console.log("getTournamentListAPI response:====", response); // <--- log the full response
   return response.data;
   }catch (error) {
@@ -110,8 +110,8 @@ export const getAdminTournamentListAPI = async () => {
 export const getAdminTournamentInformationAPI = async (tournamentId) => {
 
   try {
-    const response = await axios.get(
-      `${BASE_URL}/admin/get-tournament-information/${tournamentId}`,headerData() 
+    const response = await apiClient.get(
+      `/admin/get-tournament-information/${tournamentId}`
     );
     console.log("getTournamentInformationAPI response:====", response.data); // <--- log the full response
     return response.data;
@@ -127,8 +127,8 @@ export const getAdminTournamentDetailsAPI = async (tournamentId) => {
   console.log("getAdminTournamentDetailsAPI called with ID:", tournamentId); // <--- should log when triggered
 
   try {
-    const response = await axios.get(
-      `${BASE_URL}/admin/get-tournamentDetails/${tournamentId}`,headerData() 
+    const response = await apiClient.get(
+      `/admin/get-tournamentDetails/${tournamentId}`
     );
     console.log("getTournamentDetailsAPI response:====", response.data); // <--- log the full response
     return response.data;
@@ -144,9 +144,9 @@ export const getAdminTournamentDetailsAPI = async (tournamentId) => {
 export const saveScoreAPI = async (scoreData) => {
   console.log("saveScoreAPI called",scoreData);
   try {
-    const response = await axios.post(
-      `${BASE_URL}/admin/save-score`,
-      scoreData,headerData()
+    const response = await apiClient.post(
+      `/admin/save-score`,
+      scoreData
     );
     return response.data;
   } catch (error) {
@@ -160,9 +160,9 @@ export const saveScoreAPI = async (scoreData) => {
 export const saveMultipleScoreAPI = async (scoreData) => {
   console.log("saveMultipleScoreAPI called",scoreData);
   try {
-    const response = await axios.post(
-      `${BASE_URL}/admin/save-multiple-score`,
-      scoreData,headerData()
+    const response = await apiClient.post(
+      `/admin/save-multiple-score`,
+      scoreData
     );
     return response.data;
   } catch (error) {
@@ -173,8 +173,8 @@ export const saveMultipleScoreAPI = async (scoreData) => {
 };
 export const deleteTournamentAPI = async (tournamentId) => {
   try {
-    const response = await axios.delete(
-      `${BASE_URL}/admin/delete-tournament/${tournamentId}`,headerData()
+    const response = await apiClient.delete(
+      `/admin/delete-tournament/${tournamentId}`
     );
     return response.data;
   } catch (error) {
@@ -186,8 +186,8 @@ export const deleteTournamentAPI = async (tournamentId) => {
 
 export const deleteTeamAPI = async (teamId) => {
   try {
-    const response = await axios.delete(
-      `${BASE_URL}/admin/delete-team/${teamId}`,headerData()
+    const response = await apiClient.delete(
+      `/admin/delete-team/${teamId}`
     );
     return response.data;
   } catch (error) {
@@ -199,8 +199,8 @@ export const createKnockoutScheduleAPI = async (tournament) => {
   console.log("createKnockoutScheduleAPI called with ID:", tournament); // <--- should log when triggered
 
   try {
-    const response = await axios.post(
-      `${BASE_URL}/admin/create-knockout-matches`,tournament,headerData()
+    const response = await apiClient.post(
+      `/admin/create-knockout-matches`,tournament
     );
     console.log("createKnockoutScheduleAPI response:====", response.data); // <--- log the full response
     return response.data;
@@ -213,9 +213,9 @@ export const saveKnockoutScoreAPI = async (scoreData) => {
   console.log("saveKnockoutScoreAPI called",scoreData);
   
   try {
-    const response = await axios.post(
-      `${BASE_URL}/admin/saveKnockoutScore/${scoreData.matchId}`,
-      scoreData,headerData()
+    const response = await apiClient.post(
+      `/admin/saveKnockoutScore/${scoreData.matchId}`,
+      scoreData
     );
     return response.data;
   } catch (error) {
@@ -229,8 +229,8 @@ export const getAdminKnockoutScheduleAPI = async (tournamentId) => {
   console.log("getTournamentDetailsAPI called with ID:", tournamentId); // <--- should log when triggered
 
   try {
-    const response = await axios.get(
-      `${BASE_URL}/admin/get-knockout-matches/${tournamentId}`,headerData()
+    const response = await apiClient.get(
+      `/admin/get-knockout-matches/${tournamentId}`
     );
     console.log("getKnockoutScheduleAPI response:====", response.data); // <--- log the full response
     return response.data;
@@ -241,10 +241,9 @@ export const getAdminKnockoutScheduleAPI = async (tournamentId) => {
 
 export const verifyUserAPI = async (data) => {
   try {
-    const response = await axios.post(
-      `${BASE_URL}/user/verify`,
-      {},            // body optional
-      headerData()
+    const response = await apiClient.post(
+      `/user/verify`,
+      {}            // body optional
     );
     return response.data;
   } catch (error) {

@@ -4,6 +4,7 @@ const auth = require('../../middleware/auth');
 
 const adminLoginRouter = express.Router()
 
+adminLoginRouter.post("/login", adminLoginController.login);
 adminLoginRouter.post("/loginGoogle",adminLoginController.createUserWithGoogle);
 adminLoginRouter.get("/getUserDetail",auth,adminLoginController.getUserDetail);
 
