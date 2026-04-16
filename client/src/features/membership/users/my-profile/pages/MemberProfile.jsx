@@ -123,16 +123,16 @@ const MemberProfile = () => {
               <label>Email</label>
               <span>{member.email}</span>
             </div>
-            {member.age && (
-              <div className="mp-field">
-                <label>Age</label>
-                <span>{member.age}</span>
-              </div>
-            )}
             {member.dateOfBirth && (
               <div className="mp-field">
                 <label>Date of Birth</label>
                 <span>{new Date(member.dateOfBirth).toLocaleDateString()}</span>
+              </div>
+            )}
+            {member.age != null && (
+              <div className="mp-field">
+                <label>Age</label>
+                <span>{member.age}</span>
               </div>
             )}
           </div>
@@ -153,6 +153,16 @@ const MemberProfile = () => {
                   <input
                     name="phoneNumber"
                     value={editData.phoneNumber}
+                    onChange={handleEditChange}
+                    className="mp-input"
+                  />
+                </div>
+                <div className="mp-field">
+                  <label>Date of Birth</label>
+                  <input
+                    type="date"
+                    name="dateOfBirth"
+                    value={editData.dateOfBirth || ""}
                     onChange={handleEditChange}
                     className="mp-input"
                   />

@@ -21,7 +21,6 @@ export const useMemberRegistration = () => {
     lastName: "",
     email: "",
     phoneNumber: "",
-    age: "",
     dateOfBirth: "",
     address: {
       street: "",
@@ -141,12 +140,61 @@ export const useMemberRegistration = () => {
     );
   };
 
+  const handleStep1Next = (e) => {
+    e.preventDefault();
+
+    if (!formData.firstName || !formData.lastName) {
+      toast.error("Please enter your first and last name");
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email) {
+      toast.error("Please enter your email address");
+      return false;
+    }
+    if (!emailRegex.test(formData.email)) {
+      toast.error("Please enter a valid email address");
+      return false;
+    }
+
+    const phoneRegex = /^\+?[\d\s\-()]{7,15}$/;
+    if (!formData.phoneNumber) {
+      toast.error("Please enter your phone number");
+      return false;
+    }
+    if (!phoneRegex.test(formData.phoneNumber)) {
+      toast.error("Please enter a valid phone number (7–15 digits)");
+      return false;
+    }
+
+    if (!formData.dateOfBirth) {
+      toast.error("Please enter your date of birth");
+      return false;
+    }
+
+    setStep(2);
+    return true;
+  };
+
   const handleRegister = (e) => {
     e.preventDefault();
 
     // Validate required fields
     if (!formData.firstName || !formData.lastName || !formData.email || !formData.phoneNumber) {
       toast.error("Please fill in all required fields: First Name, Last Name, Email, and Phone Number");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    const phoneRegex = /^\+?[\d\s\-()]{7,15}$/;
+    if (!phoneRegex.test(formData.phoneNumber)) {
+      toast.error("Please enter a valid phone number (7–15 digits)");
       return;
     }
 
@@ -163,11 +211,16 @@ export const useMemberRegistration = () => {
       return;
     }
 
+    // Validate dateOfBirth
+    if (!formData.dateOfBirth) {
+      toast.error("Please enter your date of birth");
+      return;
+    }
+
     // Prepare data with proper types
     const dataToSend = {
       ...formData,
       userId: userId,
-      age: formData.age ? parseInt(formData.age) : undefined,
       clubId: localStorage.getItem("selectedClubId") || undefined,
     };
 
@@ -199,6 +252,7 @@ export const useMemberRegistration = () => {
     handleInputChange,
     handleFileSelect,
     handleDocumentUpload,
+    handleStep1Next,
     handleRegister,
   };
 };

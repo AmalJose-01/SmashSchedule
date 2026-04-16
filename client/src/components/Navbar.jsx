@@ -37,7 +37,7 @@ const Navbar = () => {
             />
             <div>
               <span className="text-xl font-semibold">
-               Badminton Tournament Scheduler
+               Club Hero
               </span>
               <p className="text-sm text-gray-600">Tournament Management</p>
             </div>

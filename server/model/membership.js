@@ -42,7 +42,6 @@ const membershipSchema = new mongoose.Schema(
 );
 
 // Index for quick lookups
-membershipSchema.index({ memberId: 1 });
 membershipSchema.index({ expiryDate: 1 });
 membershipSchema.index({ status: 1 });
 
