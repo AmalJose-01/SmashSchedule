@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Trophy, User, Calendar, Settings } from "lucide-react";
+import { Trophy, User, Settings } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import Logout from "../../components/Logout";
 
@@ -23,14 +23,6 @@ const UserDashboard = () => {
       path: "/user/profile",
       color: "text-green-600",
       bgColor: "bg-green-50",
-    },
-    {
-      title: "My Teams",
-      description: "View and manage your registered teams",
-      icon: Calendar,
-      path: "/my-teams", // We'll need to create this
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
     },
     {
       title: "Membership",
@@ -79,24 +71,6 @@ const UserDashboard = () => {
             ))}
           </div>
 
-          {/* Quick Actions */}
-          <div className="mt-8 bg-white rounded-3xl shadow-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h2>
-            <div className="flex flex-wrap gap-4">
-              <button
-                onClick={() => navigate("/tournamentList")}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Browse Tournaments
-              </button>
-              <button
-                onClick={() => navigate("/teams")}
-                className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
-              >
-                Register Team
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>

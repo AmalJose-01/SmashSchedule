@@ -5,6 +5,18 @@ const MembershipType = require("../model/membershipType");
 const AdminUser = require("../model/adminUser");
 const Club = require("../model/club");
 
+// Helper: calculate age from date of birth
+const calculateAge = (dateOfBirth) => {
+  const today = new Date();
+  const dob = new Date(dateOfBirth);
+  let age = today.getFullYear() - dob.getFullYear();
+  const m = today.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+  return age;
+};
+
 const membershipController = {
   // ========== MEMBER REGISTRATION ==========
   registerMember: async (req, res) => {
@@ -15,7 +27,6 @@ const membershipController = {
         lastName,
         email,
         phoneNumber,
-        age,
         dateOfBirth,
         address,
         membershipType,
@@ -25,11 +36,17 @@ const membershipController = {
       // Validate required fields
       if (!userId || !firstName || !lastName || !email || !phoneNumber) {
         console.log("Missing required fields:", { userId, firstName, lastName, email, phoneNumber });
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: "Missing required fields: userId, firstName, lastName, email, phoneNumber are required",
           received: { userId, firstName, lastName, email, phoneNumber }
         });
       }
+
+      if (!dateOfBirth) {
+        return res.status(400).json({ message: "Date of birth is required" });
+      }
+
+      const age = calculateAge(dateOfBirth);
 
       // Check if member already exists for this user+club combination
       const existingQuery = clubId ? { userId, clubId } : { userId };
@@ -184,11 +201,17 @@ const membershipController = {
   updateMemberProfile: async (req, res) => {
     try {
       const { memberId } = req.params;
-      const { phoneNumber, address, profilePhoto } = req.body;
+      const { phoneNumber, address, profilePhoto, dateOfBirth } = req.body;
+
+      const update = { phoneNumber, address, profilePhoto };
+      if (dateOfBirth) {
+        update.dateOfBirth = dateOfBirth;
+        update.age = calculateAge(dateOfBirth);
+      }
 
       const member = await Member.findByIdAndUpdate(
         memberId,
-        { phoneNumber, address, profilePhoto },
+        update,
         { new: true }
       );
 

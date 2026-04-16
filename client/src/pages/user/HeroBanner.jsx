@@ -27,7 +27,7 @@ const HeroBanner = () => {
               <Trophy className="w-8 h-8 text-yellow-400" />
             </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl text-white">
-              Badminton Tournament Scheduler
+              Club Hero
             </h1>
           </div>
 

@@ -19,6 +19,7 @@ const MemberRegistration = () => {
     handleInputChange,
     handleFileSelect,
     handleDocumentUpload,
+    handleStep1Next,
     handleRegister,
   } = useMemberRegistration();
 
@@ -30,7 +31,7 @@ const MemberRegistration = () => {
           <h2>Member Registration - Step 1</h2>
           <p>Personal Information</p>
 
-          <form onSubmit={(e) => { e.preventDefault(); setStep(2); }}>
+          <form onSubmit={handleStep1Next}>
             <div className="form-row">
               <div className="form-group">
                 <label>First Name *</label>
@@ -83,23 +84,13 @@ const MemberRegistration = () => {
 
             <div className="form-row">
               <div className="form-group">
-                <label>Age *</label>
-                <input
-                  type="number"
-                  name="age"
-                  value={formData.age}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Enter age"
-                />
-              </div>
-              <div className="form-group">
-                <label>Date of Birth</label>
+                <label>Date of Birth *</label>
                 <input
                   type="date"
                   name="dateOfBirth"
                   value={formData.dateOfBirth}
                   onChange={handleInputChange}
+                  required
                 />
               </div>
             </div>

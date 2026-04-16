@@ -33,6 +33,9 @@ export const useMemberProfile = () => {
   const handleEditStart = () => {
     setEditData({
       phoneNumber: member?.phoneNumber || "",
+      dateOfBirth: member?.dateOfBirth
+        ? new Date(member.dateOfBirth).toISOString().split("T")[0]
+        : "",
       address: { ...(member?.address || {}) },
     });
     setIsEditing(true);
