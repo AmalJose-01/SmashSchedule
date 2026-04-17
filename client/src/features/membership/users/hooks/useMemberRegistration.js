@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { toast } from "sonner";
 import { useGetMembershipTypes, useRegisterMember, useUploadVerificationDocument } from "../services/memberRegistration.queries.js";
 
 export const useMemberRegistration = () => {
   const navigate = useNavigate();
+  const userData = useSelector((state) => state.user.user);
   const [step, setStep] = useState(1);
   const getStoredUserId = () => {
     try {
@@ -19,9 +21,11 @@ export const useMemberRegistration = () => {
     userId: getStoredUserId(),
     firstName: "",
     lastName: "",
-    email: "",
+    email: userData?.emailID || "",
     phoneNumber: "",
     dateOfBirth: "",
+    registeringFor: "myself",
+    relationship: "",
     address: {
       street: "",
       city: "",
@@ -198,6 +202,12 @@ export const useMemberRegistration = () => {
       return;
     }
 
+    // Validate relationship if registering for other
+    if (formData.registeringFor === "other" && !formData.relationship) {
+      toast.error("Please select a relationship");
+      return;
+    }
+
     // Membership type is mandatory
     if (!formData.membershipType) {
       toast.error("Please select a membership type");
@@ -225,7 +235,7 @@ export const useMemberRegistration = () => {
     };
 
     console.log("Submitting registration with data:", dataToSend);
-    
+
     registerMember(dataToSend, {
       onSuccess: (data) => {
         handleRegistrationSuccess(data);

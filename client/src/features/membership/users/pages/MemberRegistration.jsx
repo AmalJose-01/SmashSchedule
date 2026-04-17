@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useMemberRegistration } from "../hooks/useMemberRegistration";
+import DatePicker from "../components/DatePicker";
 import "./MemberRegistration.css";
 
 const MemberRegistration = () => {
@@ -25,6 +26,16 @@ const MemberRegistration = () => {
 
   // Step 1: Personal Information
   if (step === 1) {
+    const relationshipOptions = [
+      { value: "father", label: "Father" },
+      { value: "mother", label: "Mother" },
+      { value: "brother", label: "Brother" },
+      { value: "sister", label: "Sister" },
+      { value: "spouse", label: "Spouse" },
+      { value: "friend", label: "Friend" },
+      { value: "other", label: "Other" },
+    ];
+
     return (
       <div className="registration-container">
         <div className="registration-card">
@@ -32,6 +43,34 @@ const MemberRegistration = () => {
           <p>Personal Information</p>
 
           <form onSubmit={handleStep1Next}>
+            <div className="form-section">
+              <h3>Who are you registering for? *</h3>
+              <div className="radio-group">
+                <label className={`radio-label ${formData.registeringFor === "myself" ? "selected" : ""}`}>
+                  <input
+                    type="radio"
+                    name="registeringFor"
+                    value="myself"
+                    checked={formData.registeringFor === "myself"}
+                    onChange={handleInputChange}
+                  />
+                  <span className="radio-icon">👤</span>
+                  <span className="radio-text">Myself</span>
+                </label>
+                <label className={`radio-label ${formData.registeringFor === "other" ? "selected" : ""}`}>
+                  <input
+                    type="radio"
+                    name="registeringFor"
+                    value="other"
+                    checked={formData.registeringFor === "other"}
+                    onChange={handleInputChange}
+                  />
+                  <span className="radio-icon">👥</span>
+                  <span className="radio-text">Other</span>
+                </label>
+              </div>
+            </div>
+
             <div className="form-row">
               <div className="form-group">
                 <label>First Name *</label>
@@ -84,18 +123,44 @@ const MemberRegistration = () => {
 
             <div className="form-row">
               <div className="form-group">
-                <label>Date of Birth *</label>
-                <input
-                  type="date"
-                  name="dateOfBirth"
+                <DatePicker
+                  label="Date of Birth"
                   value={formData.dateOfBirth}
-                  onChange={handleInputChange}
+                  onChange={(date) =>
+                    setFormData({ ...formData, dateOfBirth: date })
+                  }
                   required
                 />
               </div>
+              {formData.registeringFor === "other" && (
+                <div className="form-group">
+                  <label>Relationship *</label>
+                  <select
+                    name="relationship"
+                    value={formData.relationship}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="">Select relationship</option>
+                    {relationshipOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             <div className="form-actions">
+              <button
+                type="button"
+                className="btn-close"
+                onClick={() => navigate(-1)}
+                title="Close registration"
+              >
+                ✕ Close
+              </button>
               <button type="submit" className="btn-primary">
                 Next: Address
               </button>
@@ -206,6 +271,14 @@ const MemberRegistration = () => {
             </div>
 
             <div className="form-actions">
+              <button
+                type="button"
+                className="btn-close"
+                onClick={() => navigate(-1)}
+                title="Close registration"
+              >
+                ✕ Close
+              </button>
               <button
                 type="button"
                 className="btn-secondary"

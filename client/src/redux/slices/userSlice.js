@@ -48,6 +48,8 @@ const userSlice = createSlice({
       localStorage.removeItem("tournamentDetail");
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
+      localStorage.removeItem("memberId");
+      localStorage.removeItem("selectedClubId");
     },
     clearUser: (state) => {
       state.user = null;

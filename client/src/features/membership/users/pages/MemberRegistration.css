@@ -220,7 +220,8 @@
 }
 
 .btn-primary,
-.btn-secondary {
+.btn-secondary,
+.btn-close {
   flex: 1;
   padding: 12px 24px;
   border: none;
@@ -257,6 +258,83 @@
   background: #e5e7eb;
 }
 
+.btn-close {
+  background: #ff6b6b;
+  color: white;
+  border: none;
+}
+
+.btn-close:hover {
+  background: #ee5a52;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(255, 107, 107, 0.3);
+}
+
+.btn-close:active {
+  transform: translateY(0);
+}
+
+.radio-group {
+  display: flex;
+  gap: 30px;
+  margin-bottom: 20px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  flex: 1;
+  padding: 16px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  background: white;
+  user-select: none;
+}
+
+.radio-label:hover {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.radio-label input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #667eea;
+  margin: 0;
+}
+
+.radio-label input[type="radio"]:checked + span {
+  color: #667eea;
+  font-weight: 600;
+}
+
+.radio-label input[type="radio"]:checked ~ .radio-text {
+  color: #667eea;
+  font-weight: 600;
+}
+
+.radio-label.selected {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.radio-icon {
+  font-size: 24px;
+  display: inline-block;
+}
+
+.radio-text {
+  color: #333;
+  font-weight: 500;
+  font-size: 16px;
+  transition: color 0.3s;
+}
+
 @media (max-width: 600px) {
   .registration-card {
     padding: 20px;
@@ -268,5 +346,14 @@
 
   .registration-card h2 {
     font-size: 22px;
+  }
+
+  .radio-group {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .radio-label {
+    padding: 12px;
   }
 }

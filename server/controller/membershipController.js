@@ -28,6 +28,8 @@ const membershipController = {
         email,
         phoneNumber,
         dateOfBirth,
+        registeringFor,
+        relationship,
         address,
         membershipType,
         clubId,
@@ -44,6 +46,17 @@ const membershipController = {
 
       if (!dateOfBirth) {
         return res.status(400).json({ message: "Date of birth is required" });
+      }
+
+      // Validate registeringFor and relationship
+      if (!registeringFor || !["myself", "other"].includes(registeringFor)) {
+        return res.status(400).json({ message: "registeringFor must be 'myself' or 'other'" });
+      }
+
+      if (registeringFor === "other") {
+        if (!relationship || !["father", "mother", "brother", "sister", "spouse", "friend", "other"].includes(relationship)) {
+          return res.status(400).json({ message: "relationship is required when registering for other" });
+        }
       }
 
       const age = calculateAge(dateOfBirth);
@@ -81,6 +94,8 @@ const membershipController = {
         phoneNumber,
         age,
         dateOfBirth: dateOfBirth || null,
+        registeringFor,
+        relationship: registeringFor === "other" ? relationship : null,
         address,
         membershipType,
         membershipExpiryDate: expiryDate,

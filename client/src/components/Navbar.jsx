@@ -1,11 +1,10 @@
-import React, { use, useState } from "react";
-import { MdHome } from "react-icons/md";
+import React, { useState } from "react";
 import { FaBars, FaTimes, FaUserShield } from "react-icons/fa";
 import { useLocation, useNavigate } from "react-router-dom";
 import ButtonWithIcon from "./ButtonWithIcon";
-import { Home, Trophy, LogIn, Space } from "lucide-react";
+import { Home, Trophy, LogIn } from "lucide-react";
 import { useSelector } from "react-redux";
-import { div } from "framer-motion/client";
+import Logout from "./Logout";
 
 // import { useDispatch, useSelector } from "react-redux";
 // import { logOut } from "../redux/slices/userSlice";
@@ -92,42 +91,50 @@ const Navbar = () => {
           </div>
 
           <div className="hidden md:flex items-center justify-end">
-            {!userData && currentPage === "/" && (
-              <div className="flex gap-2">
-                <ButtonWithIcon
-                  title={"Admin Login"}
-                  icon={"Admin"}
-                  buttonBGColor={"bg-blue-600"}
-                  textColor={"text-white"}
-                  onClick={() => navigate("/admin/login")}
-                />
-                <ButtonWithIcon
-                  title={"User Login"}
-                  icon={"User"}
-                  buttonBGColor={"bg-green-600"}
-                  textColor={"text-white"}
-                  onClick={() => navigate("/user/login")}
-                />
-              </div>
+            {userData ? (
+              <Logout />
+            ) : (
+              currentPage === "/" && (
+                <div className="flex gap-2">
+                  <ButtonWithIcon
+                    title={"Admin Login"}
+                    icon={"Admin"}
+                    buttonBGColor={"bg-blue-600"}
+                    textColor={"text-white"}
+                    onClick={() => navigate("/admin/login")}
+                  />
+                  <ButtonWithIcon
+                    title={"User Login"}
+                    icon={"User"}
+                    buttonBGColor={"bg-green-600"}
+                    textColor={"text-white"}
+                    onClick={() => navigate("/user/login")}
+                  />
+                </div>
+              )
             )}
           </div>
 
           <div className="md:hidden flex items-center gap-3 ml-auto">
-            {!userData && currentPage === "/" && (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => navigate("/admin/login")}
-                  className="flex w-10 h-10 bg-blue-600 text-white rounded-lg items-center justify-center"
-                >
-                  <FaUserShield />
-                </button>
-                <button
-                  onClick={() => navigate("/user/login")}
-                  className="flex w-10 h-10 bg-green-600 text-white rounded-lg items-center justify-center"
-                >
-                  <LogIn />
-                </button>
-              </div>
+            {userData ? (
+              <Logout />
+            ) : (
+              currentPage === "/" && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => navigate("/admin/login")}
+                    className="flex w-10 h-10 bg-blue-600 text-white rounded-lg items-center justify-center"
+                  >
+                    <FaUserShield />
+                  </button>
+                  <button
+                    onClick={() => navigate("/user/login")}
+                    className="flex w-10 h-10 bg-green-600 text-white rounded-lg items-center justify-center"
+                  >
+                    <LogIn />
+                  </button>
+                </div>
+              )
             )}
 
             <button

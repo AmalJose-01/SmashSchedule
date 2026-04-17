@@ -170,7 +170,7 @@ const Login = () => {
                 <p className="text-sm text-muted-foreground">
                   Don't have an account?{" "}
                   <Link
-                    to="/signup" // Use 'to' prop instead of 'href'
+                    to="/user/signup"
                     className="text-primary hover:underline"
                   >
                     Sign up
