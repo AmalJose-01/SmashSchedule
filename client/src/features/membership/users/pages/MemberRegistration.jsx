@@ -171,75 +171,15 @@ const MemberRegistration = () => {
     );
   }
 
-  // Step 2: Address & Membership Type
+  // Step 2: Membership Type
   if (step === 2) {
     return (
       <div className="registration-container">
         <div className="registration-card">
           <h2>Member Registration - Step 2</h2>
-          <p>Address & Membership Type</p>
+          <p>Select Membership Type</p>
 
           <form onSubmit={handleRegister}>
-            <div className="form-section">
-              <h3>Address Information</h3>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Street</label>
-                  <input
-                    type="text"
-                    name="address_street"
-                    value={formData.address.street}
-                    onChange={handleInputChange}
-                    placeholder="Street address"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>City</label>
-                  <input
-                    type="text"
-                    name="address_city"
-                    value={formData.address.city}
-                    onChange={handleInputChange}
-                    placeholder="City"
-                  />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>State</label>
-                  <input
-                    type="text"
-                    name="address_state"
-                    value={formData.address.state}
-                    onChange={handleInputChange}
-                    placeholder="State"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>ZIP Code</label>
-                  <input
-                    type="text"
-                    name="address_zipCode"
-                    value={formData.address.zipCode}
-                    onChange={handleInputChange}
-                    placeholder="ZIP Code"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Country</label>
-                <input
-                  type="text"
-                  name="address_country"
-                  value={formData.address.country}
-                  onChange={handleInputChange}
-                  placeholder="Country"
-                />
-              </div>
-            </div>
-
             <div className="form-section">
               <h3>Membership Type *</h3>
               {membershipTypes.length === 0 ? (

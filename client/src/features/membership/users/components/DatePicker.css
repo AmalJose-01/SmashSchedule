@@ -61,7 +61,7 @@
 
 .date-picker-calendar {
   position: absolute;
-  top: 100%;
+  bottom: 100%;
   left: 0;
   z-index: 1000;
   background: white;
@@ -69,15 +69,15 @@
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
   padding: 20px;
-  margin-top: 8px;
+  margin-bottom: 8px;
   min-width: 350px;
-  animation: slideDown 0.2s ease;
+  animation: slideUp 0.2s ease;
 }
 
-@keyframes slideDown {
+@keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -234,12 +234,15 @@
   .date-picker-calendar {
     min-width: 100%;
     position: fixed;
-    bottom: 0;
-    left: 0;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     right: 0;
-    border-radius: 16px 16px 0 0;
+    border-radius: 16px;
     max-height: 80vh;
     overflow-y: auto;
+    bottom: auto;
+    margin-bottom: 0;
   }
 
   .calendar-days {
