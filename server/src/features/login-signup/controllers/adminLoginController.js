@@ -14,15 +14,18 @@ const adminLoginController = {
       let checkUserISExist = await AdminUser.findOne({ emailID: email });
 
       if (checkUserISExist && accountType !== checkUserISExist.accountType) {
-        // Update account type instead of error
+        // Update account type without triggering password validation
+        await AdminUser.updateOne(
+          { _id: checkUserISExist._id },
+          { accountType }
+        );
         checkUserISExist.accountType = accountType;
-        await checkUserISExist.save();
       }
 
       console.log("checkUserISExist", checkUserISExist);
 
       if (!checkUserISExist) {
-        console.log("123445");
+        console.log("Creating new user");
 
         checkUserISExist = await AdminUser.create({
           firstName,
@@ -31,13 +34,7 @@ const adminLoginController = {
           googleId,
           accountType,
         });
-        console.log("checkUserISExist", checkUserISExist);
-      }
-      console.log("checkUserISExist", checkUserISExist);
-
-      // send  response failure login with google
-      if (!checkUserISExist) {
-        res.status(500).json({ message: "Failed to create user/login" });
+        console.log("User created:", checkUserISExist);
       }
 
       // create payload without password
@@ -55,9 +52,6 @@ const adminLoginController = {
         expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || "7d",
       });
 
-      // Remove password before sending response
-      // const { password: _, ...userWithoutPassword } = checkUserISExist.toObject();
-
       // Success response
       res.status(201).json({
         message: "User created successfully",
@@ -66,9 +60,8 @@ const adminLoginController = {
         user: checkUserISExist,
       });
     } catch (error) {
-      console.log("createUserWithGoogle", error);
-
-      console.log(error);
+      console.log("createUserWithGoogle error:", error);
+      console.error(error);
       res.status(500).json({ message: "Internal server error" });
     }
   },
@@ -77,6 +70,8 @@ const adminLoginController = {
     try {
       const { email, password, accountType } = req.body;
 
+      console.log("Login attempt:", { email, accountType });
+
       if (!email || !password) {
         return res.status(400).json({ message: "Email and password are required" });
       }
@@ -84,20 +79,31 @@ const adminLoginController = {
       // Find user by email
       const user = await AdminUser.findOne({ emailID: email }).select('+password');
 
-      if (!user) {
-        return res.status(401).json({ message: "Invalid credentials" });
+      if (!user || !user.password) {
+        return res.status(400).json({ message: "Invalid username or password" });
       }
 
-      // Check account type match - if not, update it
+      // Check account type match - if not, update it without triggering password validation
       if (accountType !== user.accountType) {
+        await AdminUser.updateOne(
+          { _id: user._id },
+          { accountType }
+        );
         user.accountType = accountType;
-        await user.save();
       }
 
       // Check password
-      const isPasswordValid = await user.comparePassword(password);
+      let isPasswordValid = false;
+      try {
+        isPasswordValid = await user.comparePassword(password);
+        console.log("Password valid:", isPasswordValid);
+      } catch (passwordError) {
+        console.error("Password comparison error:", passwordError);
+        return res.status(400).json({ message: "Invalid username or password" });
+      }
+
       if (!isPasswordValid) {
-        return res.status(401).json({ message: "Invalid credentials" });
+        return res.status(400).json({ message: "Invalid username or password" });
       }
 
       // Create payload without password
@@ -124,7 +130,7 @@ const adminLoginController = {
         user: user,
       });
     } catch (error) {
-      console.log("login", error);
+      console.error("Login error details:", error.message, error.stack);
       res.status(500).json({ message: "Internal server error" });
     }
   },
@@ -141,15 +147,18 @@ const adminLoginController = {
       let checkUserISExist = await AdminUser.findOne({ emailID: email });
 
       if (checkUserISExist && accountType !== checkUserISExist.accountType) {
-        // Update account type instead of error
+        // Update account type without triggering password validation
+        await AdminUser.updateOne(
+          { _id: checkUserISExist._id },
+          { accountType }
+        );
         checkUserISExist.accountType = accountType;
-        await checkUserISExist.save();
       }
 
       console.log("checkUserISExist", checkUserISExist);
 
       if (!checkUserISExist) {
-        console.log("123445");
+        console.log("Creating new user");
 
         checkUserISExist = await AdminUser.create({
           firstName,
@@ -158,13 +167,7 @@ const adminLoginController = {
           googleId,
           accountType,
         });
-        console.log("checkUserISExist", checkUserISExist);
-      }
-      console.log("checkUserISExist", checkUserISExist);
-
-      // send  response failure login with google
-      if (!checkUserISExist) {
-        res.status(500).json({ message: "Failed to create user/login" });
+        console.log("User created:", checkUserISExist);
       }
 
       // create payload without password
@@ -182,9 +185,6 @@ const adminLoginController = {
         expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || "7d",
       });
 
-      // Remove password before sending response
-      // const { password: _, ...userWithoutPassword } = checkUserISExist.toObject();
-
       // Success response
       res.status(201).json({
         message: "User created successfully",
@@ -193,9 +193,8 @@ const adminLoginController = {
         user: checkUserISExist,
       });
     } catch (error) {
-      console.log("createUserWithGoogle", error);
-
-      console.log(error);
+      console.log("createUserWithGoogle error:", error);
+      console.error(error);
       res.status(500).json({ message: "Internal server error" });
     }
   },

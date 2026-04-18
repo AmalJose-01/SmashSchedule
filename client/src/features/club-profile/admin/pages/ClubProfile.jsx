@@ -1,6 +1,7 @@
 import React, { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useClubProfile } from "../hooks/useClubProfile";
+import AddressSearch from "../../../../components/AddressSearch";
 import "./ClubProfile.css";
 
 const ClubProfile = () => {
@@ -16,6 +17,7 @@ const ClubProfile = () => {
     isProfileComplete,
     logoPreview,
     handleInputChange,
+    handleAddressSelect,
     handleLogoSelect,
     handleSave,
     handleEditStart,
@@ -170,6 +172,14 @@ const ClubProfile = () => {
 
           {isEditing ? (
             <div className="cp-form">
+              <div className="cp-form-group">
+                <label>🔍 Search Address</label>
+                <AddressSearch
+                  onAddressSelect={handleAddressSelect}
+                  placeholder="Type your address to search..."
+                />
+              </div>
+
               <div className="cp-form-group">
                 <label>Street Address</label>
                 <input

@@ -74,15 +74,23 @@ export const useUserSignup = () => {
       { email: formData.email, password: formData.password, confirmPassword: formData.confirmPassword },
       {
         onSuccess: (data) => {
+          const accountType = data.user?.accountType || "user";
+
           dispatch(
             loginUser({
-              user: { ...data.user, accountType: "user" },
+              user: { ...data.user, accountType },
               accessToken: data.accessToken,
               refreshToken: data.refreshToken,
             })
           );
           toast.success("Account created successfully!");
-          navigate("/user/dashboard");
+
+          // Redirect based on actual account type from server
+          if (accountType === "admin") {
+            navigate("/dashboard");
+          } else {
+            navigate("/user/dashboard");
+          }
         },
       }
     );
