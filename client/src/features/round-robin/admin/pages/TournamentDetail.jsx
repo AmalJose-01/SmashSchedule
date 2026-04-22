@@ -2,8 +2,13 @@ import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft, Users, Layers, Swords, RefreshCw, CheckCircle,
-  ChevronDown, ChevronUp, Trophy, Loader2
+  ChevronDown, ChevronUp, Trophy, Loader2, GripVertical, AlertTriangle
 } from "lucide-react";
+import {
+  DndContext, DragOverlay, PointerSensor, useSensor, useSensors, closestCenter, useDroppable,
+} from "@dnd-kit/core";
+import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import Logout from "../../../../components/Logout.jsx";
 import {
   useGetRoundRobinTournament,
@@ -12,6 +17,7 @@ import {
   useGetMatches,
   useGetStandings,
   useGenerateGroups,
+  useSaveGroups,
   useFinalizeRoundRobinTournament,
   useRemovePlayerFromTournament,
 } from "../services/roundRobin.queries.js";
@@ -38,11 +44,57 @@ const GRADE_COLORS = {
 };
 
 const TABS = [
-  { key: "players", label: "Players",  icon: Users },
-  { key: "groups",  label: "Groups",   icon: Layers },
-  { key: "matches", label: "Matches",  icon: Swords },
+  { key: "players",   label: "Players",   icon: Users },
+  { key: "groups",    label: "Groups",    icon: Layers },
+  { key: "matches",   label: "Matches",   icon: Swords },
   { key: "standings", label: "Standings", icon: Trophy },
 ];
+
+// ── DnD helpers ───────────────────────────────────────────────────────────────
+
+const getPlayerId = (p) => String(p.playerId?._id ?? p.playerId);
+
+const makeDndId = (groupId, player) => `${groupId}::${getPlayerId(player)}`;
+
+// Draggable player card used inside SortableContext
+const SortablePlayerCard = ({ id, name, grade }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.3 : 1,
+  };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-3 px-5 py-2.5 bg-white border-b border-gray-50 last:border-b-0"
+    >
+      <GripVertical
+        className="w-4 h-4 text-gray-300 cursor-grab active:cursor-grabbing flex-shrink-0"
+        {...attributes}
+        {...listeners}
+      />
+      <span className="text-sm font-medium text-gray-700 flex-1">{name}</span>
+      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${GRADE_COLORS[grade] ?? GRADE_COLORS.Unrated}`}>
+        {grade ?? "—"}
+      </span>
+    </div>
+  );
+};
+
+// Droppable group container — highlights when a dragged item hovers over it
+const DroppableGroup = ({ id, children, className }) => {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`${className} transition-shadow ${isOver ? "ring-2 ring-teal-400 ring-inset" : ""}`}
+    >
+      {children}
+    </div>
+  );
+};
 
 // ── Sub-sections ──────────────────────────────────────────────────────────────
 
@@ -71,86 +123,250 @@ const PlayersTab = ({ tournamentId }) => {
   return (
     <div className="space-y-3">
       <p className="text-sm text-gray-500 font-medium">{players.length} player{players.length !== 1 ? "s" : ""} registered</p>
-    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-      <table className="w-full text-sm">
-        <thead className="bg-teal-50 text-teal-700 text-left">
-          <tr>
-            <th className="px-5 py-3 font-semibold">Name</th>
-            <th className="px-5 py-3 font-semibold">Grade</th>
-            <th className="px-5 py-3 font-semibold">Email</th>
-            <th className="px-5 py-3 font-semibold">Contact</th>
-            <th className="px-5 py-3 font-semibold text-right">Remove</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100">
-          {players.map((p) => (
-            <tr key={p._id} className="hover:bg-gray-50">
-              <td className="px-5 py-3 font-medium text-gray-800">{p.name}</td>
-              <td className="px-5 py-3">
-                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${GRADE_COLORS[p.grade] ?? GRADE_COLORS.Unrated}`}>
-                  {p.grade}
-                </span>
-              </td>
-              <td className="px-5 py-3 text-gray-500">{p.email}</td>
-              <td className="px-5 py-3 text-gray-500">{p.contact}</td>
-              <td className="px-5 py-3 text-right">
-                <button
-                  onClick={() => removePlayer({ tournamentId, playerId: p._id })}
-                  disabled={isPending}
-                  className="text-xs text-red-400 hover:text-red-600 font-medium disabled:opacity-50"
-                >
-                  Remove
-                </button>
-              </td>
+      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-teal-50 text-teal-700 text-left">
+            <tr>
+              <th className="px-5 py-3 font-semibold">Name</th>
+              <th className="px-5 py-3 font-semibold">Grade</th>
+              <th className="px-5 py-3 font-semibold">Email</th>
+              <th className="px-5 py-3 font-semibold">Contact</th>
+              <th className="px-5 py-3 font-semibold text-right">Remove</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {players.map((p) => (
+              <tr key={p._id} className="hover:bg-gray-50">
+                <td className="px-5 py-3 font-medium text-gray-800">{p.name}</td>
+                <td className="px-5 py-3">
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${GRADE_COLORS[p.grade] ?? GRADE_COLORS.Unrated}`}>
+                    {p.grade}
+                  </span>
+                </td>
+                <td className="px-5 py-3 text-gray-500">{p.email}</td>
+                <td className="px-5 py-3 text-gray-500">{p.contact}</td>
+                <td className="px-5 py-3 text-right">
+                  <button
+                    onClick={() => removePlayer({ tournamentId, playerId: p._id })}
+                    disabled={isPending}
+                    className="text-xs text-red-400 hover:text-red-600 font-medium disabled:opacity-50"
+                  >
+                    Remove
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
 
 const GroupsTab = ({ tournamentId }) => {
   const { data, isLoading } = useGetGroups(tournamentId);
+  const { mutate: saveGroups, isPending: isSaving } = useSaveGroups();
   const [expanded, setExpanded] = useState({});
-  const groups = data?.data ?? [];
+  const [isEditing, setIsEditing] = useState(false);
+  const [localGroups, setLocalGroups] = useState(null);
+  const [activePlayer, setActivePlayer] = useState(null);
+
+  const serverGroups = data?.data ?? [];
+  const groups = isEditing ? (localGroups ?? serverGroups) : serverGroups;
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  const handleEdit = () => {
+    setLocalGroups(serverGroups.map((g) => ({ ...g, players: [...g.players] })));
+    setIsEditing(true);
+  };
+
+  const handleCancel = () => {
+    setLocalGroups(null);
+    setIsEditing(false);
+    setActivePlayer(null);
+  };
+
+  const handleDragStart = ({ active }) => {
+    const [groupId, playerId] = active.id.split("::");
+    const group = (localGroups ?? serverGroups).find((g) => g._id === groupId);
+    const player = group?.players.find((p) => getPlayerId(p) === playerId);
+    setActivePlayer(player ?? null);
+  };
+
+  const handleDragEnd = ({ active, over }) => {
+    setActivePlayer(null);
+    if (!over || active.id === over.id) return;
+
+    const [sourceGroupId, activePlayerId] = active.id.split("::");
+    const targetGroupId = over.id.includes("::") ? over.id.split("::")[0] : over.id;
+
+    if (sourceGroupId === targetGroupId) return;
+
+    setLocalGroups((prev) =>
+      prev.map((g) => {
+        if (g._id === sourceGroupId) {
+          return { ...g, players: g.players.filter((p) => getPlayerId(p) !== activePlayerId) };
+        }
+        if (g._id === targetGroupId) {
+          const srcGroup = prev.find((x) => x._id === sourceGroupId);
+          const movedPlayer = srcGroup?.players.find((p) => getPlayerId(p) === activePlayerId);
+          return movedPlayer ? { ...g, players: [...g.players, movedPlayer] } : g;
+        }
+        return g;
+      })
+    );
+  };
+
+  const handleSave = () => {
+    saveGroups(
+      {
+        tournamentId,
+        groups: (localGroups ?? serverGroups).map((g) => ({
+          groupName: g.groupName,
+          players: g.players.map((p) => ({
+            playerId: p.playerId?._id ?? p.playerId,
+            name: p.name,
+          })),
+        })),
+      },
+      {
+        onSuccess: () => {
+          setIsEditing(false);
+          setLocalGroups(null);
+        },
+      }
+    );
+  };
 
   if (isLoading) return <Spinner />;
-  if (groups.length === 0)
+  if (serverGroups.length === 0)
     return <Empty text="No groups yet. Use 'Generate Groups' above." />;
 
+  // ── Read-only view ──────────────────────────────────────────────────────────
+  if (!isEditing) {
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-end">
+          <button
+            onClick={handleEdit}
+            className="flex items-center gap-2 text-sm font-semibold text-teal-700 border border-teal-300 px-4 py-2 rounded-xl hover:bg-teal-50 transition-colors"
+          >
+            <GripVertical className="w-4 h-4" />
+            Rearrange Players
+          </button>
+        </div>
+        {serverGroups.map((g) => {
+          const open = expanded[g._id] !== false;
+          return (
+            <div key={g._id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+              <button
+                className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
+                onClick={() => setExpanded((prev) => ({ ...prev, [g._id]: !open }))}
+              >
+                <span className="font-semibold text-gray-800">{g.groupName}</span>
+                <div className="flex items-center gap-2 text-gray-400 text-sm">
+                  <span>{g.players?.length ?? 0} players</span>
+                  {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </div>
+              </button>
+              {open && (
+                <div className="border-t border-gray-100 divide-y divide-gray-50">
+                  {(g.players ?? []).map((p) => (
+                    <div key={getPlayerId(p)} className="flex items-center gap-3 px-5 py-2.5">
+                      <span className="text-sm font-medium text-gray-700 flex-1">{p.name}</span>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${GRADE_COLORS[p.playerId?.grade] ?? GRADE_COLORS.Unrated}`}>
+                        {p.playerId?.grade ?? "—"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // ── Edit / drag mode ────────────────────────────────────────────────────────
   return (
     <div className="space-y-4">
-      {groups.map((g) => {
-        const open = expanded[g._id] !== false; // open by default
-        return (
-          <div key={g._id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-            <button
-              className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
-              onClick={() => setExpanded((prev) => ({ ...prev, [g._id]: !open }))}
-            >
-              <span className="font-semibold text-gray-800">{g.groupName}</span>
-              <div className="flex items-center gap-2 text-gray-400 text-sm">
-                <span>{g.players?.length ?? 0} players</span>
-                {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              </div>
-            </button>
-            {open && (
-              <div className="border-t border-gray-100 divide-y divide-gray-50">
-                {(g.players ?? []).map((p) => (
-                  <div key={p.playerId?._id ?? p.playerId} className="flex items-center gap-3 px-5 py-2.5">
-                    <span className="text-sm font-medium text-gray-700 flex-1">{p.name}</span>
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${GRADE_COLORS[p.playerId?.grade] ?? GRADE_COLORS.Unrated}`}>
-                      {p.playerId?.grade ?? "—"}
-                    </span>
+      <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+        <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+        Saving will delete all existing matches and regenerate them with the new arrangement.
+      </div>
+
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {groups.map((g) => {
+            const playerIds = g.players.map((p) => makeDndId(g._id, p));
+            return (
+              <DroppableGroup
+                key={g._id}
+                id={g._id}
+                className="bg-white rounded-2xl border border-gray-100 overflow-hidden"
+              >
+                <div className="px-5 py-3 bg-teal-50 border-b border-teal-100 flex items-center gap-2">
+                  <span className="font-semibold text-teal-800 text-sm">{g.groupName}</span>
+                  <span className="text-xs text-teal-500">{g.players.length} players</span>
+                </div>
+                <SortableContext items={playerIds} strategy={verticalListSortingStrategy}>
+                  <div className="min-h-[60px]">
+                    {g.players.map((p) => (
+                      <SortablePlayerCard
+                        key={getPlayerId(p)}
+                        id={makeDndId(g._id, p)}
+                        name={p.name}
+                        grade={p.playerId?.grade}
+                      />
+                    ))}
+                    {g.players.length === 0 && (
+                      <p className="text-xs text-gray-400 px-5 py-5 text-center">Drop players here</p>
+                    )}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
+                </SortableContext>
+              </DroppableGroup>
+            );
+          })}
+        </div>
+
+        <DragOverlay>
+          {activePlayer && (
+            <div className="flex items-center gap-3 px-5 py-2.5 bg-white border border-teal-300 rounded-xl shadow-lg opacity-95">
+              <GripVertical className="w-4 h-4 text-gray-300 flex-shrink-0" />
+              <span className="text-sm font-medium text-gray-700 flex-1">{activePlayer.name}</span>
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${GRADE_COLORS[activePlayer.playerId?.grade] ?? GRADE_COLORS.Unrated}`}>
+                {activePlayer.playerId?.grade ?? "—"}
+              </span>
+            </div>
+          )}
+        </DragOverlay>
+      </DndContext>
+
+      <div className="flex justify-end gap-3 pt-2">
+        <button
+          onClick={handleCancel}
+          className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-teal-600 text-white text-sm font-semibold hover:bg-teal-700 disabled:opacity-60 transition-colors"
+        >
+          {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+          {isSaving ? "Saving..." : "Save & Regenerate"}
+        </button>
+      </div>
     </div>
   );
 };
@@ -368,9 +584,9 @@ const TournamentDetail = () => {
         </div>
 
         {/* Tab content */}
-        {tab === "players"   && <PlayersTab tournamentId={tournamentId} />}
-        {tab === "groups"    && <GroupsTab  tournamentId={tournamentId} />}
-        {tab === "matches"   && <MatchesTab tournamentId={tournamentId} />}
+        {tab === "players"   && <PlayersTab   tournamentId={tournamentId} />}
+        {tab === "groups"    && <GroupsTab    tournamentId={tournamentId} />}
+        {tab === "matches"   && <MatchesTab   tournamentId={tournamentId} />}
         {tab === "standings" && <StandingsTab tournamentId={tournamentId} />}
       </div>
     </div>
