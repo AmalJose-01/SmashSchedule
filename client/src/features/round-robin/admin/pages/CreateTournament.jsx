@@ -76,7 +76,7 @@ const Step1 = ({ form, setForm, errors }) => (
         className={inputCls(errors.matchType) + " bg-white"}
       >
         <option value="Singles">Singles</option>
-        <option value="Doubles">Doubles</option>
+        <option value="Doubles" disabled>Doubles (coming soon)</option>
       </select>
     </Field>
     <div className="grid grid-cols-2 gap-4">
