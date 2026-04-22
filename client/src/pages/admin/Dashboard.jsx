@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Trophy, Users, Building2 } from "lucide-react";
 import { useGetMyClubProfile } from "../../features/club-profile/admin/services/clubProfile.queries.js";
 import Logout from "../../components/Logout";
+import RoundRobinCard from "../../features/round-robin/admin/components/RoundRobinCard.jsx";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -41,7 +42,7 @@ const Dashboard = () => {
         <h1 className="text-2xl font-bold text-center mb-8 text-blue-800">
           Welcome to SmashSchedule Admin
         </h1>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
 
           {/* Club Profile Module */}
           <div
@@ -85,6 +86,9 @@ const Dashboard = () => {
               )}
             </div>
           </div>
+
+          {/* Round Robin Module */}
+          <RoundRobinCard isClubComplete={isClubComplete} />
 
           {/* Membership Module */}
           <div

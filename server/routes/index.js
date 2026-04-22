@@ -10,6 +10,7 @@ const stripeWebhook = require("./stripeWebhook")
 const mailTest = require("./admin/mailTest")
 const membershipRouter = require("./membershipRoutes")
 const clubRouter = require("./clubRoutes")
+const adminRoundRobinRouter = require("./admin/adminRoundRobinRouter")
 
 const router = express();
 
@@ -24,6 +25,7 @@ router.use("/admin", adminKnockoutRouter);
 router.use("/payment", paymentRouter);
 router.use("/membership", membershipRouter);
 router.use("/club", clubRouter);
+router.use("/admin/round-robin", adminRoundRobinRouter);
 
 router.use("/mail", mailTest);
 
