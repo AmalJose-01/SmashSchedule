@@ -48,6 +48,9 @@ router.post("/:memberId/renew", auth, membershipController.renewMembership);
 // Get membership history
 router.get("/:memberId/history", auth, membershipController.getMembershipHistory);
 
+// Cancel membership (user-initiated)
+router.put("/:memberId/cancel", auth, membershipController.cancelMembership);
+
 // ========== ADMIN ROUTES ==========
 
 // Get all members (with search/filter)

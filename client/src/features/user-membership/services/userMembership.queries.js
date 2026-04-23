@@ -1,5 +1,5 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getMyMemberships } from "./userMembership.services.js";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getMyMemberships, cancelMembership } from "./userMembership.services.js";
 
 export const userMembershipKeys = {
   all: ["user-memberships"],
@@ -18,4 +18,14 @@ export const useGetMyMemberships = () => {
 export const useInvalidateMyMemberships = () => {
   const queryClient = useQueryClient();
   return () => queryClient.invalidateQueries({ queryKey: userMembershipKeys.mine() });
+};
+
+export const useCancelMembership = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (memberId) => cancelMembership(memberId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userMembershipKeys.mine() });
+    },
+  });
 };
