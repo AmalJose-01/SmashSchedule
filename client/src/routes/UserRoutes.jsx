@@ -13,6 +13,7 @@ import MemberRegistration from "../features/membership/users/pages/MemberRegistr
 import MemberProfile from "../features/membership/users/my-profile/pages/MemberProfile";
 import ClubSearch from "../features/club-profile/users/pages/ClubSearch";
 import UserMembershipHome from "../features/user-membership/pages/UserMembershipHome";
+import UserSignup from "../features/user-signup/pages/UserSignup";
 
 const UserRoutes = () => {
   const user = useSelector((state) => state.user.user);
@@ -24,6 +25,16 @@ const UserRoutes = () => {
         element={
           !user || user.accountType !== "user" ? (
             <Login />
+          ) : (
+            <Navigate to="/user/dashboard" replace />
+          )
+        }
+      />
+      <Route
+        path="/user/signup"
+        element={
+          !user || user.accountType !== "user" ? (
+            <UserSignup />
           ) : (
             <Navigate to="/user/dashboard" replace />
           )

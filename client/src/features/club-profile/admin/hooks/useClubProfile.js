@@ -67,6 +67,22 @@ export const useClubProfile = () => {
     }
   };
 
+  const handleAddressSelect = (addressData) => {
+    // Auto-fill form fields from Google Places address data
+    setFormData((prev) => ({
+      ...prev,
+      location: {
+        ...prev.location,
+        address: addressData.fullStreet || addressData.address || "",
+        city: addressData.city || "",
+        state: addressData.state || "",
+        zipCode: addressData.zipCode || "",
+        country: addressData.country || "Australia",
+      },
+    }));
+    toast.success("Address selected! Complete other fields and save.");
+  };
+
   const handleLogoSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -141,6 +157,7 @@ export const useClubProfile = () => {
     logoPreview,
     logoFile,
     handleInputChange,
+    handleAddressSelect,
     handleLogoSelect,
     handleSave,
     handleEditStart,

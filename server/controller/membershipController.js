@@ -28,6 +28,8 @@ const membershipController = {
         email,
         phoneNumber,
         dateOfBirth,
+        registeringFor,
+        relationship,
         address,
         membershipType,
         clubId,
@@ -44,6 +46,17 @@ const membershipController = {
 
       if (!dateOfBirth) {
         return res.status(400).json({ message: "Date of birth is required" });
+      }
+
+      // Validate registeringFor and relationship
+      if (!registeringFor || !["myself", "other"].includes(registeringFor)) {
+        return res.status(400).json({ message: "registeringFor must be 'myself' or 'other'" });
+      }
+
+      if (registeringFor === "other") {
+        if (!relationship || !["father", "mother", "brother", "sister", "spouse", "friend", "other"].includes(relationship)) {
+          return res.status(400).json({ message: "relationship is required when registering for other" });
+        }
       }
 
       const age = calculateAge(dateOfBirth);
@@ -81,6 +94,8 @@ const membershipController = {
         phoneNumber,
         age,
         dateOfBirth: dateOfBirth || null,
+        registeringFor,
+        relationship: registeringFor === "other" ? relationship : null,
         address,
         membershipType,
         membershipExpiryDate: expiryDate,
@@ -346,6 +361,28 @@ const membershipController = {
       });
     } catch (error) {
       console.error("Error fetching members:", error);
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
+  },
+
+  // ========== USER: CANCEL MEMBERSHIP ==========
+  cancelMembership: async (req, res) => {
+    try {
+      const { memberId } = req.params;
+      const member = await Member.findOne({ _id: memberId, userId: req.userId });
+      if (!member) return res.status(404).json({ message: "Membership not found" });
+
+      member.membershipStatus = "CANCELLED";
+      await member.save();
+
+      await Membership.updateMany(
+        { memberId: member._id, status: { $in: ["ACTIVE", "PENDING_VERIFICATION"] } },
+        { $set: { status: "CANCELLED" } }
+      );
+
+      return res.status(200).json({ message: "Membership cancelled successfully" });
+    } catch (error) {
+      console.error("cancelMembership error:", error);
       return res.status(500).json({ message: "Internal Server Error" });
     }
   },

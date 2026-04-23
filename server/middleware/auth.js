@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const AdminUser = require("../model/adminUser");
+const AdminUser = require("../src/features/login-signup/model/adminUser");
 
 require("dotenv").config();
 

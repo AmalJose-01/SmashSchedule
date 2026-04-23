@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import TextField from "../../components/TextField";
 import validationSchema from "../../../utils/validationSchemas";
 import { set, useForm } from "react-hook-form";
@@ -21,6 +21,7 @@ const Login = () => {
     useGoogleLogin();
 
   const location = useLocation();
+  const navigate = useNavigate();
   const isAdmin = location.pathname === "/admin/login";
 
   // 2. Initialize react-hook-form with Yup resolver
@@ -137,11 +138,11 @@ const Login = () => {
                 </div>
 
                 <ButtonWithIcon
+                  type="submit"
                   title="Sign In"
                   icon="login"
                   buttonBGColor="bg-blue-600"
                   textColor="text-white"
-                  onClick={() => navigate("/teams")}
                 />
               </form>
               <div className="relative my-6">
@@ -170,7 +171,7 @@ const Login = () => {
                 <p className="text-sm text-muted-foreground">
                   Don't have an account?{" "}
                   <Link
-                    to="/signup" // Use 'to' prop instead of 'href'
+                    to="/user/signup"
                     className="text-primary hover:underline"
                   >
                     Sign up

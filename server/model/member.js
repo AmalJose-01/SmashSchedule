@@ -13,6 +13,16 @@ const memberSchema = new mongoose.Schema(
     phoneNumber: { type: String, required: true },
     age: { type: Number, required: true },
     dateOfBirth: { type: Date, default: null },
+    registeringFor: {
+      type: String,
+      enum: ["myself", "other"],
+      default: "myself",
+    },
+    relationship: {
+      type: String,
+      enum: ["father", "mother", "brother", "sister", "spouse", "friend", "other"],
+      default: null,
+    },
     address: {
       street: String,
       city: String,
