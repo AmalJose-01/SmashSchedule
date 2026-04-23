@@ -98,7 +98,7 @@ const Login = () => {
               >
                 <div className="flex items-center gap-2 text-gray-700 mb-2 ">
                   <User className="w-4 h-4" />
-                  <div>Password</div>
+                  <div>Username/Email</div>
                 </div>
 
                 <TextField
@@ -111,7 +111,7 @@ const Login = () => {
 
                 <div className="flex items-center gap-2 text-gray-700 mb-2 ">
                   <Lock className="w-4 h-4" />
-                  <div>Username</div>
+                  <div>Password</div>
                 </div>
 
                 <TextField
