@@ -365,6 +365,28 @@ const membershipController = {
     }
   },
 
+  // ========== USER: CANCEL MEMBERSHIP ==========
+  cancelMembership: async (req, res) => {
+    try {
+      const { memberId } = req.params;
+      const member = await Member.findOne({ _id: memberId, userId: req.userId });
+      if (!member) return res.status(404).json({ message: "Membership not found" });
+
+      member.membershipStatus = "CANCELLED";
+      await member.save();
+
+      await Membership.updateMany(
+        { memberId: member._id, status: { $in: ["ACTIVE", "PENDING_VERIFICATION"] } },
+        { $set: { status: "CANCELLED" } }
+      );
+
+      return res.status(200).json({ message: "Membership cancelled successfully" });
+    } catch (error) {
+      console.error("cancelMembership error:", error);
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
+  },
+
   // ========== ADMIN: DELETE MEMBER ==========
   deleteMember: async (req, res) => {
     try {
