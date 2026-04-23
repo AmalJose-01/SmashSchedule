@@ -15,6 +15,13 @@ import AdminMembershipDashboard from "../features/membership/admin/pages/AdminMe
 import MembershipTypeManagement from "../features/membership-type/pages/MembershipTypeManagement";
 import ClubProfile from "../features/club-profile/admin/pages/ClubProfile";
 import AdminMembersList from "../features/admin-memberslist/pages/AdminMembersList";
+import RoundRobinDashboard from "../features/round-robin/admin/pages/RoundRobinDashboard.jsx";
+import MemberManagement from "../features/round-robin/admin/pages/MemberManagement.jsx";
+import TournamentList from "../features/round-robin/admin/pages/TournamentList.jsx";
+import CreateTournamentRR from "../features/round-robin/admin/pages/CreateTournament.jsx";
+import TournamentDetail from "../features/round-robin/admin/pages/TournamentDetail.jsx";
+import MatchManagement from "../features/round-robin/admin/pages/MatchManagement.jsx";
+import ErrorBoundary from "../components/ErrorBoundary.jsx";
 
 const AdminRoutes = () => {
   const user = useSelector((state) => state.user.user);
@@ -137,6 +144,71 @@ const AdminRoutes = () => {
           ) : (
             <Navigate to="/dashboard" replace />
           )
+        }
+      />
+
+      {/* Round Robin Routes */}
+      <Route
+        path="/round-robin/dashboard"
+        element={
+          <ProtectedRoute role="admin">
+            <ErrorBoundary>
+              <RoundRobinDashboard />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/round-robin/members"
+        element={
+          <ProtectedRoute role="admin">
+            <ErrorBoundary>
+              <MemberManagement />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/round-robin/tournaments"
+        element={
+          <ProtectedRoute role="admin">
+            <ErrorBoundary>
+              <TournamentList />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/round-robin/create-tournament"
+        element={
+          <ProtectedRoute role="admin">
+            <ErrorBoundary>
+              <CreateTournamentRR />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/round-robin/tournament/:id"
+        element={
+          <ProtectedRoute role="admin">
+            <ErrorBoundary>
+              <TournamentDetail />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/round-robin/match/:matchId"
+        element={
+          <ProtectedRoute role="admin">
+            <ErrorBoundary>
+              <MatchManagement />
+            </ErrorBoundary>
+          </ProtectedRoute>
         }
       />
 
