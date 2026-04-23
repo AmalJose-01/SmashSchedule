@@ -11,7 +11,7 @@ const RoundRobinMemberController = {
         return res.status(400).json({ message: "name, grade, and email are required" });
       }
 
-      const existing = await RoundRobinMember.findOne({ email: email.toLowerCase().trim() });
+      const existing = await RoundRobinMember.findOne({ email: email.toLowerCase().trim(), adminId: req.userId });
       if (existing) {
         return res.status(409).json({ message: "A member with this email already exists" });
       }
@@ -131,7 +131,7 @@ const RoundRobinMemberController = {
         }
 
         try {
-          const existing = await RoundRobinMember.findOne({ email: email.toLowerCase().trim() });
+          const existing = await RoundRobinMember.findOne({ email: email.toLowerCase().trim(), adminId: req.userId });
           if (existing) {
             results.failed++;
             results.errors.push({ email, reason: "Email already exists" });

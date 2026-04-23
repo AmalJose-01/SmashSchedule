@@ -29,7 +29,7 @@ const TournamentList = () => {
   };
 
   const formatDate = (d) =>
-    d ? new Date(d).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" }) : "—";
+    d ? new Date(d).toLocaleString("en-AU", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">

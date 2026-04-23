@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft, Users, Layers, Swords, RefreshCw, CheckCircle,
-  ChevronDown, ChevronUp, Trophy, Loader2, GripVertical, AlertTriangle
+  ChevronDown, ChevronUp, Trophy, Loader2, GripVertical, AlertTriangle, CalendarDays
 } from "lucide-react";
 import {
   DndContext, DragOverlay, PointerSensor, useSensor, useSensors, closestCenter, useDroppable,
@@ -530,6 +530,13 @@ const TournamentDetail = () => {
           <div>
             <h2 className="text-lg font-semibold text-teal-800 leading-tight">{tournament.tournamentName}</h2>
             <p className="text-xs text-gray-400">{tournament.matchType} · {tournament.numberOfGroups} groups · {tournament.numberOfCourts} courts</p>
+            {(tournament.startDate || tournament.endDate) && (
+              <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                <CalendarDays className="w-3 h-3" />
+                {tournament.startDate ? new Date(tournament.startDate).toLocaleString("en-AU", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
+                {tournament.endDate && <> → {new Date(tournament.endDate).toLocaleString("en-AU", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</>}
+              </p>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2">

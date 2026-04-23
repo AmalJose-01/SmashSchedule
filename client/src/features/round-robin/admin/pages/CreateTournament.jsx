@@ -80,17 +80,17 @@ const Step1 = ({ form, setForm, errors }) => (
       </select>
     </Field>
     <div className="grid grid-cols-2 gap-4">
-      <Field label="Start Date">
+      <Field label="Start Date & Time">
         <input
-          type="date"
+          type="datetime-local"
           value={form.startDate}
           onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
           className={inputCls()}
         />
       </Field>
-      <Field label="End Date">
+      <Field label="End Date & Time">
         <input
-          type="date"
+          type="datetime-local"
           value={form.endDate}
           onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
           className={inputCls()}

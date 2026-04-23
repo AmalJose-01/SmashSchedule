@@ -10,7 +10,7 @@ const RoundRobinMemberSchema = new Schema(
       enum: ["A", "B", "C", "D", "E", "Unrated"],
       required: true,
     },
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    email: { type: String, required: true, lowercase: true, trim: true },
     contact: { type: String, default: "" },
     nationalMemberId: { type: String, trim: true },
     dateOfBirth: { type: Date },
@@ -20,5 +20,7 @@ const RoundRobinMemberSchema = new Schema(
   },
   { timestamps: true }
 );
+
+RoundRobinMemberSchema.index({ email: 1, adminId: 1 }, { unique: true });
 
 module.exports = mongoose.model("RoundRobinMember", RoundRobinMemberSchema);
