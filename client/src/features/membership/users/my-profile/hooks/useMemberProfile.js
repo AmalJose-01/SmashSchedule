@@ -7,28 +7,45 @@ import {
   useUploadVerificationDocument,
   useRenewMembership,
 } from "../../services/memberRegistration.queries.js";
+import { useGetMyMemberships, useCancelMembership } from "../../../../user-membership/services/userMembership.queries.js";
 
 export const useMemberProfile = () => {
   const navigate = useNavigate();
-  const memberId = localStorage.getItem("memberId") || "";
 
+  const [selectedMemberId, setSelectedMemberId] = useState(
+    () => localStorage.getItem("memberId") || ""
+  );
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({ phoneNumber: "", address: {} });
   const [documentFile, setDocumentFile] = useState(null);
   const [documentType, setDocumentType] = useState("STUDENT_ID");
   const [previewImage, setPreviewImage] = useState(null);
   const [showUploadSection, setShowUploadSection] = useState(false);
+  const [confirmCancelId, setConfirmCancelId] = useState(null);
 
-  const { data: profileData, isLoading: isLoadingProfile } = useGetMemberProfile(memberId);
-  const { data: historyData, isLoading: isLoadingHistory } = useGetMembershipHistory(memberId);
+  // All memberships list
+  const { data: membershipsData, isLoading: isLoadingMemberships } = useGetMyMemberships();
+  const memberships = membershipsData?.memberships || [];
 
-  const { mutate: updateProfile, isPending: isUpdating } = useUpdateMemberProfile(memberId);
-  const { mutate: uploadDocument, isPending: isUploading } = useUploadVerificationDocument(memberId);
-  const { mutate: renewMembership, isPending: isRenewing } = useRenewMembership(memberId);
+  // Selected membership detail
+  const { data: profileData, isLoading: isLoadingProfile } = useGetMemberProfile(selectedMemberId);
+  const { data: historyData } = useGetMembershipHistory(selectedMemberId);
+
+  const { mutate: updateProfile, isPending: isUpdating } = useUpdateMemberProfile(selectedMemberId);
+  const { mutate: uploadDocument, isPending: isUploading } = useUploadVerificationDocument(selectedMemberId);
+  const { mutate: renewMembership, isPending: isRenewing } = useRenewMembership(selectedMemberId);
+  const { mutate: cancelMembership, isPending: isCancelling } = useCancelMembership();
 
   const member = profileData?.member;
   const membership = profileData?.membership;
   const history = historyData?.history || [];
+
+  const handleSelectMembership = (memberId) => {
+    localStorage.setItem("memberId", memberId);
+    setSelectedMemberId(memberId);
+    setIsEditing(false);
+    setShowUploadSection(false);
+  };
 
   const handleEditStart = () => {
     setEditData({
@@ -41,44 +58,34 @@ export const useMemberProfile = () => {
     setIsEditing(true);
   };
 
-  const handleEditCancel = () => {
-    setIsEditing(false);
-  };
+  const handleEditCancel = () => setIsEditing(false);
 
   const handleEditChange = (e) => {
     const { name, value } = e.target;
     if (name.startsWith("address_")) {
       const field = name.replace("address_", "");
-      setEditData((prev) => ({
-        ...prev,
-        address: { ...prev.address, [field]: value },
-      }));
+      setEditData((prev) => ({ ...prev, address: { ...prev.address, [field]: value } }));
     } else {
       setEditData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
   const handleEditSave = () => {
-    updateProfile(editData, {
-      onSuccess: () => setIsEditing(false),
-    });
+    updateProfile(editData, { onSuccess: () => setIsEditing(false) });
   };
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     if (file.size > 5 * 1024 * 1024) {
       import("sonner").then(({ toast }) => toast.error("File size must be less than 5MB"));
       return;
     }
-
     const validTypes = ["application/pdf", "image/jpeg", "image/png"];
     if (!validTypes.includes(file.type)) {
       import("sonner").then(({ toast }) => toast.error("Only PDF, JPG, PNG files are allowed"));
       return;
     }
-
     setDocumentFile(file);
     if (file.type.startsWith("image/")) {
       const reader = new FileReader();
@@ -104,9 +111,31 @@ export const useMemberProfile = () => {
     );
   };
 
-  const handleRenew = () => {
-    renewMembership();
+  const handleRenew = () => renewMembership();
+
+  const handleRemoveRequest = (memberId) => setConfirmCancelId(memberId);
+
+  const handleRemoveConfirm = () => {
+    if (!confirmCancelId) return;
+    cancelMembership(confirmCancelId, {
+      onSuccess: () => {
+        if (confirmCancelId === selectedMemberId) {
+          const remaining = memberships.find(
+            (m) => m._id !== confirmCancelId && m.membershipStatus !== "CANCELLED"
+          );
+          if (remaining) {
+            handleSelectMembership(remaining._id);
+          } else {
+            setSelectedMemberId("");
+            localStorage.removeItem("memberId");
+          }
+        }
+      },
+      onSettled: () => setConfirmCancelId(null),
+    });
   };
+
+  const handleRemoveCancel = () => setConfirmCancelId(null);
 
   const isExpiringSoon = () => {
     if (!member?.membershipExpiryDate) return false;
@@ -122,12 +151,13 @@ export const useMemberProfile = () => {
   };
 
   return {
-    memberId,
+    memberships,
+    isLoadingMemberships,
+    selectedMemberId,
     member,
     membership,
     history,
     isLoadingProfile,
-    isLoadingHistory,
     isEditing,
     editData,
     documentFile,
@@ -139,6 +169,9 @@ export const useMemberProfile = () => {
     isUpdating,
     isUploading,
     isRenewing,
+    isCancelling,
+    confirmCancelId,
+    handleSelectMembership,
     handleEditStart,
     handleEditCancel,
     handleEditChange,
@@ -146,6 +179,9 @@ export const useMemberProfile = () => {
     handleFileSelect,
     handleDocumentUpload,
     handleRenew,
+    handleRemoveRequest,
+    handleRemoveConfirm,
+    handleRemoveCancel,
     isExpiringSoon,
     isExpired,
     navigate,

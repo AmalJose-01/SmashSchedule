@@ -9,6 +9,7 @@ const StatusBadge = ({ status }) => {
     PENDING_VERIFICATION: { label: "Pending Verification", cls: "badge-pending" },
     EXPIRED: { label: "Expired", cls: "badge-expired" },
     SUSPENDED: { label: "Suspended", cls: "badge-suspended" },
+    CANCELLED: { label: "Cancelled", cls: "badge-cancelled" },
   };
   const { label, cls } = map[status] || { label: status, cls: "badge-default" };
   return <span className={`status-badge ${cls}`}>{label}</span>;
@@ -16,6 +17,9 @@ const StatusBadge = ({ status }) => {
 
 const MemberProfile = () => {
   const {
+    memberships,
+    isLoadingMemberships,
+    selectedMemberId,
     member,
     membership,
     history,
@@ -31,6 +35,9 @@ const MemberProfile = () => {
     isUpdating,
     isUploading,
     isRenewing,
+    isCancelling,
+    confirmCancelId,
+    handleSelectMembership,
     handleEditStart,
     handleEditCancel,
     handleEditChange,
@@ -38,21 +45,24 @@ const MemberProfile = () => {
     handleFileSelect,
     handleDocumentUpload,
     handleRenew,
+    handleRemoveRequest,
+    handleRemoveConfirm,
+    handleRemoveCancel,
     isExpiringSoon,
     isExpired,
     navigate,
   } = useMemberProfile();
 
-  if (isLoadingProfile) {
+  if (isLoadingMemberships) {
     return (
       <div className="mp-loading">
         <Navbar />
-        <div className="mp-loading-inner">Loading your profile...</div>
+        <div className="mp-loading-inner">Loading your memberships...</div>
       </div>
     );
   }
 
-  if (!member) {
+  if (memberships.length === 0) {
     return (
       <div className="mp-loading">
         <Navbar />
@@ -66,9 +76,16 @@ const MemberProfile = () => {
     );
   }
 
-  const expiryDate = member.membershipExpiryDate
+  const expiryDate = member?.membershipExpiryDate
     ? new Date(member.membershipExpiryDate).toLocaleDateString()
     : "—";
+
+  const isExpiredList = (date) => date && new Date(date) < new Date();
+  const isExpiringSoonList = (date) => {
+    if (!date) return false;
+    const days = Math.ceil((new Date(date) - new Date()) / (1000 * 60 * 60 * 24));
+    return days <= 30 && days > 0;
+  };
 
   return (
     <div className="mp-container">
@@ -77,291 +94,332 @@ const MemberProfile = () => {
       </div>
 
       <div className="mp-content">
-        {/* Header card */}
-        <div className="mp-header-card">
-          <div className="mp-avatar">
-            {member.firstName?.[0]}{member.lastName?.[0]}
-          </div>
-          <div className="mp-header-info">
-            <h1>{member.firstName} {member.lastName}</h1>
-            <p>{member.email}</p>
-            <StatusBadge status={member.membershipStatus} />
-          </div>
-        </div>
 
-        {/* Expiry warning */}
-        {isExpired() && (
-          <div className="mp-banner mp-banner-error">
-            Your membership has expired.
-            <button className="btn-renew" onClick={handleRenew} disabled={isRenewing}>
-              {isRenewing ? "Renewing..." : "Renew Now"}
-            </button>
-          </div>
-        )}
-        {!isExpired() && isExpiringSoon() && (
-          <div className="mp-banner mp-banner-warn">
-            Your membership expires on {expiryDate}.
-            <button className="btn-renew" onClick={handleRenew} disabled={isRenewing}>
-              {isRenewing ? "Renewing..." : "Renew Early"}
-            </button>
-          </div>
-        )}
-
-        <div className="mp-grid">
-          {/* Personal Info */}
-          <div className="mp-card">
-            <h2 className="mp-card-title">Personal Information</h2>
-            <div className="mp-field">
-              <label>First Name</label>
-              <span>{member.firstName}</span>
-            </div>
-            <div className="mp-field">
-              <label>Last Name</label>
-              <span>{member.lastName}</span>
-            </div>
-            <div className="mp-field">
-              <label>Email</label>
-              <span>{member.email}</span>
-            </div>
-            {member.dateOfBirth && (
-              <div className="mp-field">
-                <label>Date of Birth</label>
-                <span>{new Date(member.dateOfBirth).toLocaleDateString()}</span>
-              </div>
-            )}
-            {member.age != null && (
-              <div className="mp-field">
-                <label>Age</label>
-                <span>{member.age}</span>
-              </div>
-            )}
+        {/* ── Memberships list ── */}
+        <div className="mp-card mp-memberships-card">
+          <div className="mp-card-header">
+            <h2 className="mp-card-title">My Memberships</h2>
+            <button className="btn-add-sm" onClick={() => navigate("/membership")}>+ Add</button>
           </div>
 
-          {/* Contact & Address (editable) */}
-          <div className="mp-card">
-            <div className="mp-card-header">
-              <h2 className="mp-card-title">Contact & Address</h2>
-              {!isEditing && (
-                <button className="btn-edit" onClick={handleEditStart}>Edit</button>
-              )}
-            </div>
+          <div className="mp-membership-list">
+            {memberships.map((m) => {
+              const clubName = m.clubId?.name || "Unknown Club";
+              const clubInitial = clubName[0].toUpperCase();
+              const expired = isExpiredList(m.membershipExpiryDate);
+              const expiringSoon = isExpiringSoonList(m.membershipExpiryDate);
+              const isSelected = m._id === selectedMemberId;
+              const isCancelled = m.membershipStatus === "CANCELLED";
 
-            {isEditing ? (
-              <div className="mp-edit-form">
-                <div className="mp-field">
-                  <label>Phone Number</label>
-                  <input
-                    name="phoneNumber"
-                    value={editData.phoneNumber}
-                    onChange={handleEditChange}
-                    className="mp-input"
-                  />
-                </div>
-                <div className="mp-field">
-                  <label>Date of Birth</label>
-                  <input
-                    type="date"
-                    name="dateOfBirth"
-                    value={editData.dateOfBirth || ""}
-                    onChange={handleEditChange}
-                    className="mp-input"
-                  />
-                </div>
-                <div className="mp-field">
-                  <label>Street</label>
-                  <input
-                    name="address_street"
-                    value={editData.address?.street || ""}
-                    onChange={handleEditChange}
-                    className="mp-input"
-                  />
-                </div>
-                <div className="mp-field-row">
-                  <div className="mp-field">
-                    <label>City</label>
-                    <input
-                      name="address_city"
-                      value={editData.address?.city || ""}
-                      onChange={handleEditChange}
-                      className="mp-input"
-                    />
-                  </div>
-                  <div className="mp-field">
-                    <label>State</label>
-                    <input
-                      name="address_state"
-                      value={editData.address?.state || ""}
-                      onChange={handleEditChange}
-                      className="mp-input"
-                    />
-                  </div>
-                </div>
-                <div className="mp-field-row">
-                  <div className="mp-field">
-                    <label>Zip Code</label>
-                    <input
-                      name="address_zipCode"
-                      value={editData.address?.zipCode || ""}
-                      onChange={handleEditChange}
-                      className="mp-input"
-                    />
-                  </div>
-                  <div className="mp-field">
-                    <label>Country</label>
-                    <input
-                      name="address_country"
-                      value={editData.address?.country || ""}
-                      onChange={handleEditChange}
-                      className="mp-input"
-                    />
-                  </div>
-                </div>
-                <div className="mp-edit-actions">
-                  <button className="btn-save" onClick={handleEditSave} disabled={isUpdating}>
-                    {isUpdating ? "Saving..." : "Save"}
-                  </button>
-                  <button className="btn-cancel" onClick={handleEditCancel}>Cancel</button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="mp-field">
-                  <label>Phone</label>
-                  <span>{member.phoneNumber || "—"}</span>
-                </div>
-                <div className="mp-field">
-                  <label>Address</label>
-                  <span>
-                    {[
-                      member.address?.street,
-                      member.address?.city,
-                      member.address?.state,
-                      member.address?.zipCode,
-                      member.address?.country,
-                    ]
-                      .filter(Boolean)
-                      .join(", ") || "—"}
-                  </span>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Membership Details */}
-          <div className="mp-card">
-            <h2 className="mp-card-title">Membership Details</h2>
-            <div className="mp-field">
-              <label>Type</label>
-              <span>{member.membershipType}</span>
-            </div>
-            <div className="mp-field">
-              <label>Status</label>
-              <StatusBadge status={member.membershipStatus} />
-            </div>
-            <div className="mp-field">
-              <label>Expiry Date</label>
-              <span className={isExpired() ? "text-red-600" : isExpiringSoon() ? "text-amber-600" : ""}>
-                {expiryDate}
-              </span>
-            </div>
-            {membership?.startDate && (
-              <div className="mp-field">
-                <label>Start Date</label>
-                <span>{new Date(membership.startDate).toLocaleDateString()}</span>
-              </div>
-            )}
-            {membership?.membershipPrice !== undefined && (
-              <div className="mp-field">
-                <label>Price Paid</label>
-                <span>${membership.membershipPrice}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Document Verification */}
-          <div className="mp-card">
-            <div className="mp-card-header">
-              <h2 className="mp-card-title">Document Verification</h2>
-              {member.membershipStatus === "PENDING_VERIFICATION" && (
-                <button className="btn-edit" onClick={() => setShowUploadSection((v) => !v)}>
-                  {showUploadSection ? "Cancel" : "Upload"}
-                </button>
-              )}
-            </div>
-
-            {member.verificationDocumentId ? (
-              <div className="mp-field">
-                <label>Status</label>
-                <StatusBadge status={member.verificationDocumentId.verificationStatus || "PENDING"} />
-              </div>
-            ) : (
-              <p className="mp-hint">No document uploaded yet.</p>
-            )}
-
-            {showUploadSection && (
-              <div className="mp-upload-section">
-                <div className="mp-field">
-                  <label>Document Type</label>
-                  <select
-                    value={documentType}
-                    onChange={(e) => setDocumentType(e.target.value)}
-                    className="mp-input"
-                  >
-                    <option value="STUDENT_ID">Student ID</option>
-                    <option value="AGE_PROOF">Age Proof</option>
-                    <option value="ADDRESS_PROOF">Address Proof</option>
-                    <option value="OTHER">Other</option>
-                  </select>
-                </div>
-                <div className="mp-field">
-                  <label>File</label>
-                  <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileSelect} />
-                </div>
-                {previewImage && (
-                  <img src={previewImage} alt="Preview" className="mp-preview-img" />
-                )}
-                <button
-                  className="btn-primary"
-                  onClick={handleDocumentUpload}
-                  disabled={isUploading || !documentFile}
+              return (
+                <div
+                  key={m._id}
+                  className={`mp-membership-item${isSelected ? " mp-membership-item--selected" : ""}${isCancelled ? " mp-membership-item--cancelled" : ""}`}
                 >
-                  {isUploading ? "Uploading..." : "Submit Document"}
-                </button>
-              </div>
-            )}
+                  <div className="mp-membership-item-left">
+                    {m.clubId?.logo ? (
+                      <img src={m.clubId.logo} alt={clubName} className="mp-club-logo" />
+                    ) : (
+                      <div className="mp-club-avatar">{clubInitial}</div>
+                    )}
+                    <div className="mp-membership-info">
+                      <span className="mp-membership-club">{clubName}</span>
+                      <span className="mp-membership-type">{m.membershipType}</span>
+                      {m.membershipExpiryDate && (
+                        <span className={`mp-membership-expiry${expired ? " mp-text-red" : expiringSoon ? " mp-text-amber" : ""}`}>
+                          Expires {new Date(m.membershipExpiryDate).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mp-membership-item-right">
+                    <StatusBadge status={m.membershipStatus} />
+                    <div className="mp-membership-actions">
+                      <button
+                        className="btn-edit"
+                        onClick={() => handleSelectMembership(m._id)}
+                        disabled={isSelected}
+                      >
+                        {isSelected ? "Viewing" : "Show Detail"}
+                      </button>
+                      {!isCancelled && (
+                        <button
+                          className="btn-remove"
+                          onClick={() => handleRemoveRequest(m._id)}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* Membership History */}
-        <div className="mp-card mp-history-card">
-          <h2 className="mp-card-title">Membership History</h2>
-          {history.length === 0 ? (
-            <p className="mp-hint">No history available.</p>
-          ) : (
-            <div className="mp-history-list">
-              {history.map((h, i) => (
-                <div key={h._id || i} className="mp-history-item">
-                  <div className="mp-history-row">
-                    <span className="mp-history-type">{h.membershipType}</span>
-                    <StatusBadge status={h.status} />
+        {/* ── Detail section ── */}
+        {selectedMemberId && isLoadingProfile && (
+          <div className="mp-hint" style={{ textAlign: "center", padding: "24px" }}>
+            Loading details...
+          </div>
+        )}
+
+        {selectedMemberId && !isLoadingProfile && member && (
+          <>
+            {/* Header card */}
+            <div className="mp-header-card">
+              <div className="mp-avatar">
+                {member.firstName?.[0]}{member.lastName?.[0]}
+              </div>
+              <div className="mp-header-info">
+                <h1>{member.firstName} {member.lastName}</h1>
+                <p>{member.email}</p>
+                <StatusBadge status={member.membershipStatus} />
+              </div>
+            </div>
+
+            {/* Expiry banners */}
+            {isExpired() && (
+              <div className="mp-banner mp-banner-error">
+                Your membership has expired.
+                <button className="btn-renew" onClick={handleRenew} disabled={isRenewing}>
+                  {isRenewing ? "Renewing..." : "Renew Now"}
+                </button>
+              </div>
+            )}
+            {!isExpired() && isExpiringSoon() && (
+              <div className="mp-banner mp-banner-warn">
+                Your membership expires on {expiryDate}.
+                <button className="btn-renew" onClick={handleRenew} disabled={isRenewing}>
+                  {isRenewing ? "Renewing..." : "Renew Early"}
+                </button>
+              </div>
+            )}
+
+            <div className="mp-grid">
+              {/* Personal Info */}
+              <div className="mp-card">
+                <h2 className="mp-card-title">Personal Information</h2>
+                <div className="mp-field">
+                  <label>First Name</label>
+                  <span>{member.firstName}</span>
+                </div>
+                <div className="mp-field">
+                  <label>Last Name</label>
+                  <span>{member.lastName}</span>
+                </div>
+                <div className="mp-field">
+                  <label>Email</label>
+                  <span>{member.email}</span>
+                </div>
+                {member.dateOfBirth && (
+                  <div className="mp-field">
+                    <label>Date of Birth</label>
+                    <span>{new Date(member.dateOfBirth).toLocaleDateString()}</span>
                   </div>
-                  <div className="mp-history-dates">
-                    {h.startDate && (
-                      <span>From {new Date(h.startDate).toLocaleDateString()}</span>
-                    )}
-                    {h.expiryDate && (
-                      <span>To {new Date(h.expiryDate).toLocaleDateString()}</span>
-                    )}
+                )}
+                {member.age != null && (
+                  <div className="mp-field">
+                    <label>Age</label>
+                    <span>{member.age}</span>
                   </div>
-                  {h.membershipPrice !== undefined && (
-                    <span className="mp-history-price">${h.membershipPrice}</span>
+                )}
+              </div>
+
+              {/* Contact & Address */}
+              <div className="mp-card">
+                <div className="mp-card-header">
+                  <h2 className="mp-card-title">Contact & Address</h2>
+                  {!isEditing && (
+                    <button className="btn-edit" onClick={handleEditStart}>Edit</button>
                   )}
                 </div>
-              ))}
+
+                {isEditing ? (
+                  <div className="mp-edit-form">
+                    <div className="mp-field">
+                      <label>Phone Number</label>
+                      <input name="phoneNumber" value={editData.phoneNumber} onChange={handleEditChange} className="mp-input" />
+                    </div>
+                    <div className="mp-field">
+                      <label>Date of Birth</label>
+                      <input type="date" name="dateOfBirth" value={editData.dateOfBirth || ""} onChange={handleEditChange} className="mp-input" />
+                    </div>
+                    <div className="mp-field">
+                      <label>Street</label>
+                      <input name="address_street" value={editData.address?.street || ""} onChange={handleEditChange} className="mp-input" />
+                    </div>
+                    <div className="mp-field-row">
+                      <div className="mp-field">
+                        <label>City</label>
+                        <input name="address_city" value={editData.address?.city || ""} onChange={handleEditChange} className="mp-input" />
+                      </div>
+                      <div className="mp-field">
+                        <label>State</label>
+                        <input name="address_state" value={editData.address?.state || ""} onChange={handleEditChange} className="mp-input" />
+                      </div>
+                    </div>
+                    <div className="mp-field-row">
+                      <div className="mp-field">
+                        <label>Zip Code</label>
+                        <input name="address_zipCode" value={editData.address?.zipCode || ""} onChange={handleEditChange} className="mp-input" />
+                      </div>
+                      <div className="mp-field">
+                        <label>Country</label>
+                        <input name="address_country" value={editData.address?.country || ""} onChange={handleEditChange} className="mp-input" />
+                      </div>
+                    </div>
+                    <div className="mp-edit-actions">
+                      <button className="btn-save" onClick={handleEditSave} disabled={isUpdating}>
+                        {isUpdating ? "Saving..." : "Save"}
+                      </button>
+                      <button className="btn-cancel" onClick={handleEditCancel}>Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="mp-field">
+                      <label>Phone</label>
+                      <span>{member.phoneNumber || "—"}</span>
+                    </div>
+                    <div className="mp-field">
+                      <label>Address</label>
+                      <span>
+                        {[
+                          member.address?.street,
+                          member.address?.city,
+                          member.address?.state,
+                          member.address?.zipCode,
+                          member.address?.country,
+                        ].filter(Boolean).join(", ") || "—"}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Membership Details */}
+              <div className="mp-card">
+                <h2 className="mp-card-title">Membership Details</h2>
+                <div className="mp-field">
+                  <label>Type</label>
+                  <span>{member.membershipType}</span>
+                </div>
+                <div className="mp-field">
+                  <label>Status</label>
+                  <StatusBadge status={member.membershipStatus} />
+                </div>
+                <div className="mp-field">
+                  <label>Expiry Date</label>
+                  <span className={isExpired() ? "text-red-600" : isExpiringSoon() ? "text-amber-600" : ""}>
+                    {expiryDate}
+                  </span>
+                </div>
+                {membership?.startDate && (
+                  <div className="mp-field">
+                    <label>Start Date</label>
+                    <span>{new Date(membership.startDate).toLocaleDateString()}</span>
+                  </div>
+                )}
+                {membership?.membershipPrice !== undefined && (
+                  <div className="mp-field">
+                    <label>Price Paid</label>
+                    <span>${membership.membershipPrice}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Document Verification */}
+              <div className="mp-card">
+                <div className="mp-card-header">
+                  <h2 className="mp-card-title">Document Verification</h2>
+                  {member.membershipStatus === "PENDING_VERIFICATION" && (
+                    <button className="btn-edit" onClick={() => setShowUploadSection((v) => !v)}>
+                      {showUploadSection ? "Cancel" : "Upload"}
+                    </button>
+                  )}
+                </div>
+
+                {member.verificationDocumentId ? (
+                  <div className="mp-field">
+                    <label>Status</label>
+                    <StatusBadge status={member.verificationDocumentId.verificationStatus || "PENDING"} />
+                  </div>
+                ) : (
+                  <p className="mp-hint">No document uploaded yet.</p>
+                )}
+
+                {showUploadSection && (
+                  <div className="mp-upload-section">
+                    <div className="mp-field">
+                      <label>Document Type</label>
+                      <select value={documentType} onChange={(e) => setDocumentType(e.target.value)} className="mp-input">
+                        <option value="STUDENT_ID">Student ID</option>
+                        <option value="AGE_PROOF">Age Proof</option>
+                        <option value="ADDRESS_PROOF">Address Proof</option>
+                        <option value="OTHER">Other</option>
+                      </select>
+                    </div>
+                    <div className="mp-field">
+                      <label>File</label>
+                      <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileSelect} />
+                    </div>
+                    {previewImage && <img src={previewImage} alt="Preview" className="mp-preview-img" />}
+                    <button className="btn-primary" onClick={handleDocumentUpload} disabled={isUploading || !documentFile}>
+                      {isUploading ? "Uploading..." : "Submit Document"}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-        </div>
+
+            {/* Membership History */}
+            <div className="mp-card mp-history-card">
+              <h2 className="mp-card-title">Membership History</h2>
+              {history.length === 0 ? (
+                <p className="mp-hint">No history available.</p>
+              ) : (
+                <div className="mp-history-list">
+                  {history.map((h, i) => (
+                    <div key={h._id || i} className="mp-history-item">
+                      <div className="mp-history-row">
+                        <span className="mp-history-type">{h.membershipType}</span>
+                        <StatusBadge status={h.status} />
+                      </div>
+                      <div className="mp-history-dates">
+                        {h.startDate && <span>From {new Date(h.startDate).toLocaleDateString()}</span>}
+                        {h.expiryDate && <span>To {new Date(h.expiryDate).toLocaleDateString()}</span>}
+                      </div>
+                      {h.membershipPrice !== undefined && (
+                        <span className="mp-history-price">${h.membershipPrice}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
+
+      {/* Confirm remove dialog */}
+      {confirmCancelId && (
+        <div className="mp-overlay">
+          <div className="mp-dialog">
+            <h3>Cancel Membership?</h3>
+            <p>This will cancel your membership. You won't be able to undo this action.</p>
+            <div className="mp-dialog-actions">
+              <button className="btn-cancel" onClick={handleRemoveCancel} disabled={isCancelling}>
+                Keep Membership
+              </button>
+              <button className="btn-remove" onClick={handleRemoveConfirm} disabled={isCancelling}>
+                {isCancelling ? "Cancelling..." : "Yes, Cancel"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
