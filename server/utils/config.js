@@ -1,10 +1,16 @@
+const env = process.env.VERCEL_ENV || "development";
+const branch = process.env.VERCEL_GIT_COMMIT_REF || "local";
 
-require("dotenv").config();
+let BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
+if (env === "production") {
+  BASE_URL = "https://api-prod.onrender.com";
+} else if (env === "preview") {
+  if (branch === "qa") {
+    BASE_URL = "https://api-qa.onrender.com";
+  } else if (branch === "qanext") {
+    BASE_URL = "https://api-qanext.onrender.com";
+  }
+}
 
- const BASE_URL =
-  process.env.NODE_ENV === "production"
-    ? "https://smash-schedule.vercel.app"
-    : "http://localhost:5173";
-
-    module.exports = BASE_URL
+export default BASE_URL;
