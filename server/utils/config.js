@@ -11,7 +11,7 @@ if (env === "preview") {
   if (branch === "qa") {
     BASE_URL = "https://main-qa.onrender.com";
   } else if (branch === "qanext") {
-    BASE_URL = "https://qa-next.onrender.com";
+    BASE_URL = "https://api-qanext.onrender.com";
   }
 }
 
