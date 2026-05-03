@@ -1,18 +1,20 @@
-const env = process.env.VERCEL_ENV || "development";
-const branch = process.env.VERCEL_GIT_COMMIT_REF || "local";
+// src/config/api.js
 
-let BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const env = import.meta.env.MODE; // "development" or "production"
+const branch = import.meta.env.VITE_BRANCH || "local";
+
+let BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 if (env === "production") {
   BASE_URL = "https://api-prod-orvq.onrender.com";
 }
 
-if (env === "preview") {
+if (env === "production") {
   if (branch === "qa") {
     BASE_URL = "https://main-qa.onrender.com";
   } else if (branch === "qanext") {
-    BASE_URL = "https://api-qanext.onrender.com";
+    BASE_URL = "https://qa-next.onrender.com";
   }
 }
 
-export default BASE_URL;`   `
+export default BASE_URL;
