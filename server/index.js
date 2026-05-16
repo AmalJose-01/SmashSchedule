@@ -9,7 +9,13 @@ const path = require("path");
 
 
 const app = express();
-var whitelist = ['http://localhost:5173', 'http://localhost:5174', 'https://smash-schedule.vercel.app', 'http://localhost:5175']
+var whitelist = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  'https://smash-schedule.vercel.app',
+  'https://smash-schedule-git-main-qa-amaljose-01s-projects.vercel.app'
+]
 
 var corsOptions = {
   origin: function (origin, callback) {
