@@ -46,11 +46,12 @@ const GRADE_COLORS = {
 };
 
 const TABS = [
-  { key: "config",    label: "Config",    icon: Settings },
-  { key: "players",   label: "Players",   icon: Users },
-  { key: "groups",    label: "Groups",    icon: Layers },
-  { key: "matches",   label: "Matches",   icon: Swords },
-  { key: "standings", label: "Standings", icon: Trophy },
+  { key: "config",           label: "Config",           icon: Settings },
+  { key: "players",          label: "Players",          icon: Users },
+  { key: "groups",           label: "Groups",           icon: Layers },
+  { key: "matches",          label: "Matches",          icon: Swords },
+  { key: "standings",        label: "Standings",        icon: Trophy },
+  { key: "playerStandings",  label: "Player Standings", icon: Trophy },
 ];
 
 // ── DnD helpers ───────────────────────────────────────────────────────────────
@@ -676,7 +677,79 @@ const MatchesTab = ({ tournamentId, matchType }) => {
   );
 };
 
+// Group-level standings (one row per group, aggregated from player stats / 2)
 const StandingsTab = ({ tournamentId }) => {
+  const { data, isLoading } = useGetStandings(tournamentId);
+  const groups = data?.data ?? [];
+
+  if (isLoading) return <Spinner />;
+  if (groups.length === 0)
+    return <Empty text="Standings will appear after matches are played." />;
+
+  const groupRows = groups.map((g) => {
+    const players = g.standings ?? [];
+    const sum = players.reduce(
+      (acc, p) => ({
+        wins:          acc.wins          + (p.wins          || 0),
+        losses:        acc.losses        + (p.losses        || 0),
+        matchesPlayed: acc.matchesPlayed + (p.matchesPlayed || 0),
+        totalPoints:   acc.totalPoints   + (p.totalPoints   || 0),
+        pointsFor:     acc.pointsFor     + (p.pointsFor     || 0),
+        pointsAgainst: acc.pointsAgainst + (p.pointsAgainst || 0),
+      }),
+      { wins: 0, losses: 0, matchesPlayed: 0, totalPoints: 0, pointsFor: 0, pointsAgainst: 0 }
+    );
+    const divisor = players.length > 0 ? 2 : 1;
+    return {
+      _id:           g._id,
+      groupName:     g.groupName,
+      matchesPlayed: sum.matchesPlayed / divisor,
+      wins:          sum.wins          / divisor,
+      losses:        sum.losses        / divisor,
+      totalPoints:   sum.totalPoints   / divisor,
+      pointsDiff:    (sum.pointsFor - sum.pointsAgainst) / divisor,
+    };
+  }).sort((a, b) => {
+    if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+    return b.pointsDiff - a.pointsDiff;
+  });
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+      <table className="w-full text-sm">
+        <thead className="bg-gray-50 text-gray-500 text-left text-xs">
+          <tr>
+            <th className="px-5 py-2 font-semibold">#</th>
+            <th className="px-5 py-2 font-semibold">Group</th>
+            <th className="px-4 py-2 font-semibold text-center">P</th>
+            <th className="px-4 py-2 font-semibold text-center">W</th>
+            <th className="px-4 py-2 font-semibold text-center">L</th>
+            <th className="px-4 py-2 font-semibold text-center">+/-</th>
+            <th className="px-4 py-2 font-semibold text-center">Pts</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {groupRows.map((g, i) => (
+            <tr key={g._id} className={i === 0 ? "bg-yellow-50" : "hover:bg-gray-50"}>
+              <td className="px-5 py-2.5 font-bold text-gray-500">{i + 1}</td>
+              <td className="px-5 py-2.5 font-medium text-gray-800">{g.groupName}</td>
+              <td className="px-4 py-2.5 text-center text-gray-600">{g.matchesPlayed}</td>
+              <td className="px-4 py-2.5 text-center text-green-600 font-semibold">{g.wins}</td>
+              <td className="px-4 py-2.5 text-center text-red-400">{g.losses}</td>
+              <td className={`px-4 py-2.5 text-center font-medium ${g.pointsDiff >= 0 ? "text-green-600" : "text-red-400"}`}>
+                {g.pointsDiff >= 0 ? "+" : ""}{g.pointsDiff}
+              </td>
+              <td className="px-4 py-2.5 text-center font-bold text-teal-700">{g.totalPoints}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+// Player-level standings (original view — one row per player, grouped by group)
+const PlayerStandingsTab = ({ tournamentId }) => {
   const { data, isLoading } = useGetStandings(tournamentId);
   const groups = data?.data ?? [];
 
@@ -847,7 +920,8 @@ const TournamentDetail = () => {
         {tab === "players"   && <PlayersTab   tournamentId={tournamentId} />}
         {tab === "groups"    && <GroupsTab    tournamentId={tournamentId} />}
         {tab === "matches"   && <MatchesTab   tournamentId={tournamentId} matchType={tournament.matchType} />}
-        {tab === "standings" && <StandingsTab tournamentId={tournamentId} />}
+        {tab === "standings"       && <StandingsTab       tournamentId={tournamentId} />}
+        {tab === "playerStandings" && <PlayerStandingsTab tournamentId={tournamentId} />}
       </div>
     </div>
   );
