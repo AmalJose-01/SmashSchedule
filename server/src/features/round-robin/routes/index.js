@@ -37,6 +37,7 @@ router.delete("/tournaments/:tournamentId/players/:playerId", auth, RoundRobinMe
 
 // Match Score Recording
 router.post("/matches/:matchId/score", auth, RoundRobinMatchController.recordScore);
+router.post("/matches/:matchId/reset", auth, RoundRobinMatchController.resetScore);
 router.put("/matches/:matchId", auth, RoundRobinMatchController.updateMatch);
 
 module.exports = router;

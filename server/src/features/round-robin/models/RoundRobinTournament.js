@@ -24,6 +24,9 @@ const RoundRobinTournamentSchema = new Schema(
     },
     pointsForWin: { type: Number, default: 2 },
     pointsForLoss: { type: Number, default: 0 },
+    numberOfSets: { type: Number, default: 3 },
+    setWinningPoint: { type: Number, default: 21 },
+    winningPointGap: { type: Number, default: 2 },
     groups: [{ type: Schema.Types.ObjectId, ref: "RoundRobinGroup" }],
   },
   { timestamps: true }

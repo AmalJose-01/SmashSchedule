@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
+  resetMatchScoreAPI,
   getRoundRobinTournamentsAPI,
   getRoundRobinTournamentByIdAPI,
   createRoundRobinTournamentAPI,
@@ -24,6 +25,7 @@ import {
   recordMatchScoreAPI,
   updateMatchAPI,
 } from "./roundRobin.services.js";
+
 
 export const rrKeys = {
   tournaments: ["rr-tournaments"],
@@ -266,6 +268,20 @@ export const useRecordMatchScore = () => {
       }
     },
     onError: (err) => toast.error(err.response?.data?.message || "Failed to record score"),
+  });
+};
+
+export const useResetMatchScore = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: resetMatchScoreAPI,
+    onSuccess: (_, __, context) => {
+      toast.success("Score reset — ready to re-enter");
+      queryClient.invalidateQueries({ queryKey: ["rr-matches"] });
+      queryClient.invalidateQueries({ queryKey: ["rr-standings"] });
+      queryClient.invalidateQueries({ queryKey: ["rr-groups"] });
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to reset score"),
   });
 };
 
