@@ -76,7 +76,7 @@ const Step1 = ({ form, setForm, errors }) => (
         className={inputCls(errors.matchType) + " bg-white"}
       >
         <option value="Singles">Singles</option>
-        <option value="Doubles" disabled>Doubles (coming soon)</option>
+        <option value="Doubles">Doubles</option>
       </select>
     </Field>
     <div className="grid grid-cols-2 gap-4">
@@ -121,10 +121,13 @@ const Step2 = ({ form, setForm, errors }) => (
           className={inputCls(errors.numberOfGroups)}
         />
       </Field>
-      <Field label="Players per Group" error={errors.playersPerGroup}>
+      <Field
+        label={form.matchType === "Doubles" ? "Players per Group (min 3)" : "Players per Group"}
+        error={errors.playersPerGroup}
+      >
         <input
           type="number"
-          min={2}
+          min={form.matchType === "Doubles" ? 3 : 2}
           value={form.playersPerGroup}
           onChange={(e) => setForm((f) => ({ ...f, playersPerGroup: e.target.value }))}
           className={inputCls(errors.playersPerGroup)}
@@ -170,6 +173,46 @@ const Step2 = ({ form, setForm, errors }) => (
           className={inputCls()}
         />
       </Field>
+    </div>
+
+    <div className="border-t border-gray-100 pt-4">
+      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Set Scoring Rules</p>
+      <div className="grid grid-cols-3 gap-4">
+        <Field label="Number of Sets" error={errors.numberOfSets}>
+          <select
+            value={form.numberOfSets}
+            onChange={(e) => setForm((f) => ({ ...f, numberOfSets: e.target.value }))}
+            className={inputCls(errors.numberOfSets) + " bg-white"}
+          >
+            <option value={1}>Best of 1</option>
+            <option value={3}>Best of 3</option>
+            <option value={5}>Best of 5</option>
+          </select>
+        </Field>
+        <Field label="Winning Point" error={errors.setWinningPoint}>
+          <input
+            type="number"
+            min={1}
+            value={form.setWinningPoint}
+            onChange={(e) => setForm((f) => ({ ...f, setWinningPoint: e.target.value }))}
+            placeholder="e.g. 21"
+            className={inputCls(errors.setWinningPoint)}
+          />
+        </Field>
+        <Field label="Winning Gap" error={errors.winningPointGap}>
+          <input
+            type="number"
+            min={1}
+            value={form.winningPointGap}
+            onChange={(e) => setForm((f) => ({ ...f, winningPointGap: e.target.value }))}
+            placeholder="e.g. 2"
+            className={inputCls(errors.winningPointGap)}
+          />
+        </Field>
+      </div>
+      <p className="text-xs text-gray-400 mt-2">
+        A set is won by reaching {form.setWinningPoint || "?"} points with a {form.winningPointGap || "?"}-point lead.
+      </p>
     </div>
   </div>
 );
@@ -266,10 +309,13 @@ const Step4 = ({ form, selectedIds, membersData }) => {
           ["Name", form.tournamentName],
           ["Match Type", form.matchType],
           ["Groups", form.numberOfGroups],
-          ["Players per Group", form.playersPerGroup],
+          [form.matchType === "Doubles" ? "Players per Group (all pair combinations)" : "Players per Group", form.playersPerGroup],
           ["Courts", form.numberOfCourts],
           ["Grouping Strategy", form.groupingStrategy],
           ["Win / Loss Points", `${form.pointsForWin} / ${form.pointsForLoss}`],
+          ["Sets", `Best of ${form.numberOfSets}`],
+          ["Set Winning Point", form.setWinningPoint],
+          ["Winning Gap", form.winningPointGap],
           ["Start Date", form.startDate || "—"],
           ["End Date", form.endDate || "—"],
         ].map(([k, v]) => (
@@ -313,6 +359,9 @@ const INITIAL_FORM = {
   groupingStrategy: "random",
   pointsForWin: 2,
   pointsForLoss: 0,
+  numberOfSets: 3,
+  setWinningPoint: 21,
+  winningPointGap: 2,
 };
 
 const CreateTournamentRR = () => {
@@ -335,8 +384,14 @@ const CreateTournamentRR = () => {
     }
     if (step === 1) {
       if (!form.numberOfGroups || form.numberOfGroups < 1) e.numberOfGroups = "At least 1 group required";
-      if (!form.playersPerGroup || form.playersPerGroup < 2) e.playersPerGroup = "At least 2 players per group";
+      if (form.matchType === "Doubles") {
+        if (!form.playersPerGroup || form.playersPerGroup < 3) e.playersPerGroup = "At least 3 players per group for doubles";
+      } else {
+        if (!form.playersPerGroup || form.playersPerGroup < 2) e.playersPerGroup = "At least 2 players per group";
+      }
       if (!form.numberOfCourts || form.numberOfCourts < 1) e.numberOfCourts = "At least 1 court required";
+      if (!form.setWinningPoint || form.setWinningPoint < 1) e.setWinningPoint = "Required";
+      if (!form.winningPointGap || form.winningPointGap < 1) e.winningPointGap = "Required";
     }
     if (step === 2 && selectedIds.length < 2) {
       e.members = "Select at least 2 members";
@@ -352,11 +407,14 @@ const CreateTournamentRR = () => {
     try {
       const result = await createTournament({
         ...form,
-        numberOfGroups: Number(form.numberOfGroups),
-        playersPerGroup: Number(form.playersPerGroup),
-        numberOfCourts: Number(form.numberOfCourts),
-        pointsForWin: Number(form.pointsForWin),
-        pointsForLoss: Number(form.pointsForLoss),
+        numberOfGroups:   Number(form.numberOfGroups),
+        playersPerGroup:  Number(form.playersPerGroup),
+        numberOfCourts:   Number(form.numberOfCourts),
+        pointsForWin:     Number(form.pointsForWin),
+        pointsForLoss:    Number(form.pointsForLoss),
+        numberOfSets:     Number(form.numberOfSets),
+        setWinningPoint:  Number(form.setWinningPoint),
+        winningPointGap:  Number(form.winningPointGap),
       });
 
       const tournamentId = result.data._id;

@@ -4,24 +4,34 @@ import { useRecordMatchScore } from "../services/roundRobin.queries.js";
 
 const EMPTY_SET = { home: "", away: "" };
 
-const isValidSet = (set) => {
-  const h = Number(set.home);
-  const a = Number(set.away);
-  if (h === 0 && a === 0) return true;           // empty set allowed
-  if (h === a && h > 0) return false;            // no ties above 0
-  return h >= 21 || a >= 21;                     // one side must reach 21
-};
-
 const inputCls =
   "w-16 text-center border border-gray-200 rounded-lg py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-300";
 
-const ScoreEntry = ({ match, tournamentId, onScoreRecorded }) => {
+/**
+ * A set is won when one side reaches winPt with at least gap lead.
+ * 0-0 is treated as empty (allowed to skip).
+ */
+const isValidSet = (set, winPt, gap) => {
+  const h = Number(set.home) || 0;
+  const a = Number(set.away) || 0;
+  if (h === 0 && a === 0) return true;
+  if (h === a) return false;
+  const maxScore = Math.max(h, a);
+  const diff = Math.abs(h - a);
+  return maxScore >= winPt && diff >= gap;
+};
+
+const ScoreEntry = ({ match, tournamentId, tournament, onScoreRecorded }) => {
+  const maxSets = tournament?.numberOfSets    ?? 3;
+  const winPt   = tournament?.setWinningPoint ?? 21;
+  const gap     = tournament?.winningPointGap ?? 2;
+  const reqWins = Math.ceil(maxSets / 2);
+
   const [sets, setSets] = useState([{ ...EMPTY_SET }]);
   const [validationError, setValidationError] = useState("");
 
   const { mutate: recordScore, isPending } = useRecordMatchScore();
 
-  // Pre-fill existing scores when match already has sets
   useEffect(() => {
     if (match?.sets?.length > 0) {
       setSets(match.sets.map((s) => ({ home: s.home ?? "", away: s.away ?? "" })));
@@ -31,14 +41,13 @@ const ScoreEntry = ({ match, tournamentId, onScoreRecorded }) => {
   }, [match?._id]);
 
   const updateSet = (idx, field, value) => {
-    setSets((prev) =>
-      prev.map((s, i) => (i === idx ? { ...s, [field]: value } : s))
-    );
+    const num = value === "" ? "" : Math.min(Number(value), winPt);
+    setSets((prev) => prev.map((s, i) => (i === idx ? { ...s, [field]: num } : s)));
     setValidationError("");
   };
 
   const addSet = () => {
-    if (sets.length < 3) setSets((prev) => [...prev, { ...EMPTY_SET }]);
+    if (sets.length < maxSets) setSets((prev) => [...prev, { ...EMPTY_SET }]);
   };
 
   const removeSet = (idx) => {
@@ -48,7 +57,6 @@ const ScoreEntry = ({ match, tournamentId, onScoreRecorded }) => {
   const handleSubmit = () => {
     setValidationError("");
 
-    // Parse all, then drop trailing empty sets before sending
     const parsed = sets.map((s) => ({ home: Number(s.home) || 0, away: Number(s.away) || 0 }));
     const activeSets = parsed.filter((s) => !(s.home === 0 && s.away === 0));
 
@@ -57,10 +65,15 @@ const ScoreEntry = ({ match, tournamentId, onScoreRecorded }) => {
       return;
     }
 
+    if (activeSets.length > maxSets) {
+      setValidationError(`Maximum ${maxSets} set${maxSets !== 1 ? "s" : ""} allowed.`);
+      return;
+    }
+
     for (let i = 0; i < activeSets.length; i++) {
-      if (!isValidSet(activeSets[i])) {
+      if (!isValidSet(activeSets[i], winPt, gap)) {
         setValidationError(
-          `Set ${i + 1}: Invalid score — one player must reach 21, and scores cannot be equal.`
+          `Set ${i + 1}: winner must reach ${winPt} points with a ${gap}-point lead.`
         );
         return;
       }
@@ -68,11 +81,7 @@ const ScoreEntry = ({ match, tournamentId, onScoreRecorded }) => {
 
     recordScore(
       { matchId: match._id, sets: activeSets, tournamentId },
-      {
-        onSuccess: (data) => {
-          if (onScoreRecorded) onScoreRecorded(data);
-        },
-      }
+      { onSuccess: (data) => { if (onScoreRecorded) onScoreRecorded(data); } }
     );
   };
 
@@ -80,11 +89,21 @@ const ScoreEntry = ({ match, tournamentId, onScoreRecorded }) => {
 
   return (
     <div className="space-y-4">
+      {/* Scoring rule hint */}
+      {!isCompleted && (
+        <p className="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2">
+          Best of {maxSets} · Set won at {winPt} pts with {gap}-pt lead · First to {reqWins} set{reqWins !== 1 ? "s" : ""} wins
+        </p>
+      )}
+
       {/* Player labels */}
       <div className="flex items-center gap-4">
         <div className="flex-1 text-center">
           <p className="text-sm font-semibold text-gray-700 truncate">
             {match?.player1Id?.name ?? "Player 1"}
+            {match?.player1PartnerId && (
+              <span className="text-gray-400"> / {match.player1PartnerId.name}</span>
+            )}
           </p>
           <p className="text-xs text-gray-400">(Home)</p>
         </div>
@@ -92,6 +111,9 @@ const ScoreEntry = ({ match, tournamentId, onScoreRecorded }) => {
         <div className="flex-1 text-center">
           <p className="text-sm font-semibold text-gray-700 truncate">
             {match?.player2Id?.name ?? "Player 2"}
+            {match?.player2PartnerId && (
+              <span className="text-gray-400"> / {match.player2PartnerId.name}</span>
+            )}
           </p>
           <p className="text-xs text-gray-400">(Away)</p>
         </div>
@@ -108,6 +130,7 @@ const ScoreEntry = ({ match, tournamentId, onScoreRecorded }) => {
               <input
                 type="number"
                 min={0}
+                max={winPt}
                 value={set.home}
                 onChange={(e) => updateSet(idx, "home", e.target.value)}
                 disabled={isCompleted}
@@ -118,6 +141,7 @@ const ScoreEntry = ({ match, tournamentId, onScoreRecorded }) => {
               <input
                 type="number"
                 min={0}
+                max={winPt}
                 value={set.away}
                 onChange={(e) => updateSet(idx, "away", e.target.value)}
                 disabled={isCompleted}
@@ -138,12 +162,12 @@ const ScoreEntry = ({ match, tournamentId, onScoreRecorded }) => {
       </div>
 
       {/* Add set button */}
-      {!isCompleted && sets.length < 3 && (
+      {!isCompleted && sets.length < maxSets && (
         <button
           onClick={addSet}
           className="flex items-center gap-1.5 text-sm text-teal-600 font-medium hover:text-teal-700 transition-colors"
         >
-          <Plus className="w-4 h-4" /> Add Set
+          <Plus className="w-4 h-4" /> Add Set {sets.length + 1} of {maxSets}
         </button>
       )}
 

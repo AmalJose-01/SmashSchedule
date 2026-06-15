@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft, Users, Layers, Swords, RefreshCw, CheckCircle,
-  ChevronDown, ChevronUp, Trophy, Loader2, GripVertical, AlertTriangle, CalendarDays
+  ChevronDown, ChevronUp, Trophy, Loader2, GripVertical, AlertTriangle, CalendarDays,
+  Settings, Pencil, Lock
 } from "lucide-react";
 import {
   DndContext, DragOverlay, PointerSensor, useSensor, useSensors, closestCenter, useDroppable,
@@ -12,6 +13,7 @@ import { CSS } from "@dnd-kit/utilities";
 import Logout from "../../../../components/Logout.jsx";
 import {
   useGetRoundRobinTournament,
+  useUpdateRoundRobinTournament,
   useGetTournamentPlayers,
   useGetGroups,
   useGetMatches,
@@ -44,6 +46,7 @@ const GRADE_COLORS = {
 };
 
 const TABS = [
+  { key: "config",    label: "Config",    icon: Settings },
   { key: "players",   label: "Players",   icon: Users },
   { key: "groups",    label: "Groups",    icon: Layers },
   { key: "matches",   label: "Matches",   icon: Swords },
@@ -97,6 +100,204 @@ const DroppableGroup = ({ id, children, className }) => {
 };
 
 // ── Sub-sections ──────────────────────────────────────────────────────────────
+
+const inputCls = (err) =>
+  `w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300 ${err ? "border-red-400" : "border-gray-200"}`;
+
+const Field = ({ label, children }) => (
+  <div>
+    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{label}</label>
+    {children}
+  </div>
+);
+
+const ViewRow = ({ label, value }) => (
+  <div className="flex justify-between items-center py-2.5 border-b border-gray-100 last:border-0">
+    <span className="text-sm text-gray-500">{label}</span>
+    <span className="text-sm font-semibold text-gray-800">{value ?? "—"}</span>
+  </div>
+);
+
+const ConfigTab = ({ tournament, isFinalized }) => {
+  const { mutate: updateTournament, isPending } = useUpdateRoundRobinTournament();
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({});
+
+  useEffect(() => {
+    setForm({
+      tournamentName: tournament.tournamentName ?? "",
+      description:    tournament.description    ?? "",
+      startDate:      tournament.startDate ? new Date(tournament.startDate).toISOString().slice(0, 16) : "",
+      endDate:        tournament.endDate   ? new Date(tournament.endDate).toISOString().slice(0, 16)   : "",
+      numberOfCourts: tournament.numberOfCourts  ?? 1,
+      pointsForWin:   tournament.pointsForWin    ?? 2,
+      pointsForLoss:  tournament.pointsForLoss   ?? 0,
+      numberOfSets:   tournament.numberOfSets    ?? 3,
+      setWinningPoint:tournament.setWinningPoint ?? 21,
+      winningPointGap:tournament.winningPointGap ?? 2,
+    });
+  }, [tournament]);
+
+  const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
+
+  const handleSave = () => {
+    updateTournament(
+      {
+        id: tournament._id,
+        data: {
+          ...form,
+          numberOfCourts:  Number(form.numberOfCourts),
+          pointsForWin:    Number(form.pointsForWin),
+          pointsForLoss:   Number(form.pointsForLoss),
+          numberOfSets:    Number(form.numberOfSets),
+          setWinningPoint: Number(form.setWinningPoint),
+          winningPointGap: Number(form.winningPointGap),
+        },
+      },
+      { onSuccess: () => setEditing(false) }
+    );
+  };
+
+  const formatDate = (d) =>
+    d ? new Date(d).toLocaleString("en-AU", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+
+  // ── View mode ──────────────────────────────────────────────────────────────
+  if (!editing || isFinalized) {
+    return (
+      <div className="space-y-4">
+        {isFinalized && (
+          <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5">
+            <Lock className="w-3.5 h-3.5" />
+            Configuration is locked once matches are scheduled.
+          </div>
+        )}
+
+        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+          <div className="px-5 py-3 bg-teal-50 border-b border-teal-100 flex items-center justify-between">
+            <h3 className="font-semibold text-teal-800 text-sm">Tournament Info</h3>
+            {!isFinalized && (
+              <button
+                onClick={() => setEditing(true)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-teal-700 hover:text-teal-900 transition-colors"
+              >
+                <Pencil className="w-3.5 h-3.5" /> Edit
+              </button>
+            )}
+          </div>
+          <div className="px-5 py-1">
+            <ViewRow label="Name"       value={tournament.tournamentName} />
+            <ViewRow label="Match Type" value={tournament.matchType} />
+            <ViewRow label="Status"     value={tournament.status} />
+            <ViewRow label="Description" value={tournament.description || "—"} />
+            <ViewRow label="Start Date" value={formatDate(tournament.startDate)} />
+            <ViewRow label="End Date"   value={formatDate(tournament.endDate)} />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+          <div className="px-5 py-3 bg-teal-50 border-b border-teal-100">
+            <h3 className="font-semibold text-teal-800 text-sm">Structure</h3>
+          </div>
+          <div className="px-5 py-1">
+            <ViewRow label="Groups"            value={tournament.numberOfGroups} />
+            <ViewRow label="Players per Group" value={tournament.playersPerGroup} />
+            <ViewRow label="Courts"            value={tournament.numberOfCourts} />
+            <ViewRow label="Grouping Strategy" value={tournament.groupingStrategy} />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+          <div className="px-5 py-3 bg-teal-50 border-b border-teal-100">
+            <h3 className="font-semibold text-teal-800 text-sm">Scoring Rules</h3>
+          </div>
+          <div className="px-5 py-1">
+            <ViewRow label="Number of Sets"  value={`Best of ${tournament.numberOfSets ?? 3}`} />
+            <ViewRow label="Winning Point"   value={tournament.setWinningPoint ?? 21} />
+            <ViewRow label="Winning Gap"     value={`${tournament.winningPointGap ?? 2} points`} />
+            <ViewRow label="Points for Win"  value={tournament.pointsForWin ?? 2} />
+            <ViewRow label="Points for Loss" value={tournament.pointsForLoss ?? 0} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Edit mode ──────────────────────────────────────────────────────────────
+  return (
+    <div className="space-y-5">
+      {/* Tournament Info */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
+        <h3 className="font-semibold text-gray-700 text-sm">Tournament Info</h3>
+        <Field label="Tournament Name">
+          <input type="text" value={form.tournamentName} onChange={(e) => set("tournamentName", e.target.value)} className={inputCls()} />
+        </Field>
+        <Field label="Description">
+          <textarea value={form.description} onChange={(e) => set("description", e.target.value)} rows={2} className={inputCls() + " resize-none"} />
+        </Field>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Start Date & Time">
+            <input type="datetime-local" value={form.startDate} onChange={(e) => set("startDate", e.target.value)} className={inputCls()} />
+          </Field>
+          <Field label="End Date & Time">
+            <input type="datetime-local" value={form.endDate} onChange={(e) => set("endDate", e.target.value)} className={inputCls()} />
+          </Field>
+        </div>
+        <Field label="Number of Courts">
+          <input type="number" min={1} value={form.numberOfCourts} onChange={(e) => set("numberOfCourts", e.target.value)} className={inputCls()} />
+        </Field>
+      </div>
+
+      {/* Scoring Rules */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
+        <h3 className="font-semibold text-gray-700 text-sm">Scoring Rules</h3>
+        <div className="grid grid-cols-3 gap-4">
+          <Field label="Number of Sets">
+            <select value={form.numberOfSets} onChange={(e) => set("numberOfSets", e.target.value)} className={inputCls() + " bg-white"}>
+              <option value={1}>Best of 1</option>
+              <option value={3}>Best of 3</option>
+              <option value={5}>Best of 5</option>
+            </select>
+          </Field>
+          <Field label="Winning Point">
+            <input type="number" min={1} value={form.setWinningPoint} onChange={(e) => set("setWinningPoint", e.target.value)} className={inputCls()} />
+          </Field>
+          <Field label="Winning Gap">
+            <input type="number" min={1} value={form.winningPointGap} onChange={(e) => set("winningPointGap", e.target.value)} className={inputCls()} />
+          </Field>
+        </div>
+        <p className="text-xs text-gray-400">
+          A set is won by reaching {form.setWinningPoint} points with a {form.winningPointGap}-point lead.
+        </p>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Points for Win">
+            <input type="number" min={0} value={form.pointsForWin} onChange={(e) => set("pointsForWin", e.target.value)} className={inputCls()} />
+          </Field>
+          <Field label="Points for Loss">
+            <input type="number" min={0} value={form.pointsForLoss} onChange={(e) => set("pointsForLoss", e.target.value)} className={inputCls()} />
+          </Field>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex justify-end gap-3">
+        <button
+          onClick={() => setEditing(false)}
+          className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={isPending}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-teal-600 text-white text-sm font-semibold hover:bg-teal-700 disabled:opacity-60 transition-colors"
+        >
+          {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+          {isPending ? "Saving..." : "Save Changes"}
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const PlayersTab = ({ tournamentId }) => {
   const navigate = useNavigate();
@@ -165,7 +366,12 @@ const PlayersTab = ({ tournamentId }) => {
 
 const GroupsTab = ({ tournamentId }) => {
   const { data, isLoading } = useGetGroups(tournamentId);
+  const { data: matchesData } = useGetMatches(tournamentId);
   const { mutate: saveGroups, isPending: isSaving } = useSaveGroups();
+
+  const hasScores = (matchesData?.data ?? []).some(
+    (m) => m.status !== "scheduled" || m.sets?.length > 0
+  );
   const [expanded, setExpanded] = useState({});
   const [isEditing, setIsEditing] = useState(false);
   const [localGroups, setLocalGroups] = useState(null);
@@ -250,13 +456,20 @@ const GroupsTab = ({ tournamentId }) => {
     return (
       <div className="space-y-4">
         <div className="flex justify-end">
-          <button
-            onClick={handleEdit}
-            className="flex items-center gap-2 text-sm font-semibold text-teal-700 border border-teal-300 px-4 py-2 rounded-xl hover:bg-teal-50 transition-colors"
-          >
-            <GripVertical className="w-4 h-4" />
-            Rearrange Players
-          </button>
+          {hasScores ? (
+            <div className="flex items-center gap-2 text-xs text-gray-400 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5">
+              <Lock className="w-3.5 h-3.5" />
+              Groups are locked once scores have been entered.
+            </div>
+          ) : (
+            <button
+              onClick={handleEdit}
+              className="flex items-center gap-2 text-sm font-semibold text-teal-700 border border-teal-300 px-4 py-2 rounded-xl hover:bg-teal-50 transition-colors"
+            >
+              <GripVertical className="w-4 h-4" />
+              Rearrange Players
+            </button>
+          )}
         </div>
         {serverGroups.map((g) => {
           const open = expanded[g._id] !== false;
@@ -371,7 +584,7 @@ const GroupsTab = ({ tournamentId }) => {
   );
 };
 
-const MatchesTab = ({ tournamentId }) => {
+const MatchesTab = ({ tournamentId, matchType }) => {
   const navigate = useNavigate();
   const { data, isLoading } = useGetMatches(tournamentId);
   const matches = data?.data ?? [];
@@ -380,8 +593,17 @@ const MatchesTab = ({ tournamentId }) => {
   if (matches.length === 0)
     return <Empty text="No matches yet. Generate groups to create matches automatically." />;
 
+  // For doubles, group by fixture extracted from matchName ("Group A vs Group B - Match X")
+  // For singles, group by the group document name
   const byGroup = matches.reduce((acc, m) => {
-    const key = m.groupId?.groupName ?? "Ungrouped";
+    let key;
+    if (matchType === "Doubles") {
+      // matchName is "Group A vs Group B - Match X" — extract the fixture prefix
+      const parts = m.matchName.split(" - Match ");
+      key = parts.length > 1 ? parts[0] : (m.groupId?.groupName ?? "Doubles Matches");
+    } else {
+      key = m.groupId?.groupName ?? "Ungrouped";
+    }
     if (!acc[key]) acc[key] = [];
     acc[key].push(m);
     return acc;
@@ -393,31 +615,60 @@ const MatchesTab = ({ tournamentId }) => {
         <div key={groupName}>
           <h3 className="font-semibold text-gray-700 mb-3 text-sm">{groupName}</h3>
           <div className="space-y-2">
-            {groupMatches.map((m) => (
-              <div
-                key={m._id}
-                className="bg-white rounded-xl border border-gray-100 px-5 py-3 flex items-center gap-4 hover:shadow-sm transition-shadow cursor-pointer"
-                onClick={() => navigate(`/round-robin/match/${m._id}?tournament=${tournamentId}`)}
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-800 truncate">{m.matchName}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    {m.player1Id?.name ?? "—"} vs {m.player2Id?.name ?? "—"}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3 flex-shrink-0">
-                  {m.sets?.length > 0 && (
-                    <span className="text-xs text-gray-500 font-mono">
-                      {m.sets.map((s) => `${s.home}-${s.away}`).join(", ")}
+            {groupMatches.map((m) => {
+              const isCompleted = m.status === "completed";
+              const winnerId = m.winner?._id?.toString() ?? m.winner?.toString();
+              const p1Id     = m.player1Id?._id?.toString() ?? m.player1Id?.toString();
+              const homeWon  = isCompleted && !!winnerId && winnerId === p1Id;
+              const awayWon  = isCompleted && !!winnerId && winnerId !== p1Id;
+
+              const team1Name = m.player1PartnerId
+                ? `${m.player1Id?.name ?? "—"} / ${m.player1PartnerId?.name ?? "—"}`
+                : (m.player1Id?.name ?? "—");
+              const team2Name = m.player2PartnerId
+                ? `${m.player2Id?.name ?? "—"} / ${m.player2PartnerId?.name ?? "—"}`
+                : (m.player2Id?.name ?? "—");
+
+              return (
+                <div
+                  key={m._id}
+                  className="bg-white rounded-xl border border-gray-100 px-5 py-3 flex items-center gap-4 hover:shadow-sm transition-shadow cursor-pointer"
+                  onClick={() => navigate(`/round-robin/match/${m._id}?tournament=${tournamentId}`)}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-gray-400 truncate mb-1">{m.matchName}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`text-sm font-semibold px-2 py-0.5 rounded-lg ${
+                        homeWon ? "bg-green-100 text-green-700" :
+                        awayWon ? "text-red-400" :
+                        "text-gray-800"
+                      }`}>
+                        {team1Name}
+                      </span>
+                      <span className="inline-block px-1.5 py-0.5 rounded bg-red-500 text-white text-[10px] font-bold flex-shrink-0">VS</span>
+                      <span className={`text-sm font-semibold px-2 py-0.5 rounded-lg ${
+                        awayWon ? "bg-green-100 text-green-700" :
+                        homeWon ? "text-red-400" :
+                        "text-gray-800"
+                      }`}>
+                        {team2Name}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    {m.sets?.length > 0 && (
+                      <span className="text-xs text-gray-500 font-mono">
+                        {m.sets.map((s) => `${s.home}-${s.away}`).join(", ")}
+                      </span>
+                    )}
+                    <span className="text-xs text-gray-400">{m.court}</span>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${MATCH_STATUS_STYLES[m.status] ?? ""}`}>
+                      {m.status}
                     </span>
-                  )}
-                  <span className="text-xs text-gray-400">{m.court}</span>
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${MATCH_STATUS_STYLES[m.status] ?? ""}`}>
-                    {m.status}
-                  </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       ))}
@@ -493,7 +744,7 @@ const Empty = ({ text }) => (
 const TournamentDetail = () => {
   const navigate = useNavigate();
   const { id: tournamentId } = useParams();
-  const [tab, setTab] = useState("players");
+  const [tab, setTab] = useState("config");
 
   const { data: tData, isLoading: tLoading } = useGetRoundRobinTournament(tournamentId);
   const { mutate: generateGroups, isPending: isGenerating } = useGenerateGroups();
@@ -515,6 +766,7 @@ const TournamentDetail = () => {
 
   const canGenerate = ["Draft", "Active", "Scheduled"].includes(tournament.status);
   const canFinalize = tournament.status === "Scheduled";
+  const isFinalized = ["Scheduled", "Ongoing", "Completed"].includes(tournament.status);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
@@ -547,7 +799,7 @@ const TournamentDetail = () => {
         </div>
       </div>
 
-      <div className="p-6 max-w-5xl mx-auto">
+      <div className="px-[10px] py-6 w-full">
         {/* Action buttons */}
         <div className="flex flex-wrap gap-3 mb-6">
           {canGenerate && (
@@ -591,9 +843,10 @@ const TournamentDetail = () => {
         </div>
 
         {/* Tab content */}
+        {tab === "config"    && <ConfigTab    tournament={tournament} isFinalized={isFinalized} />}
         {tab === "players"   && <PlayersTab   tournamentId={tournamentId} />}
         {tab === "groups"    && <GroupsTab    tournamentId={tournamentId} />}
-        {tab === "matches"   && <MatchesTab   tournamentId={tournamentId} />}
+        {tab === "matches"   && <MatchesTab   tournamentId={tournamentId} matchType={tournament.matchType} />}
         {tab === "standings" && <StandingsTab tournamentId={tournamentId} />}
       </div>
     </div>

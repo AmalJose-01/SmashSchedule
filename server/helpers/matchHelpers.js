@@ -2,71 +2,77 @@
 
 /**
  * Get total points scored by home and away teams
- * @param {Array} sets - Array of sets [{home, away}]
- * @returns {Object} - { homeTotal, awayTotal }
  */
 const getTotalPoints = (sets) => {
   let homeTotal = 0;
   let awayTotal = 0;
-  let totalSets = 0;
 
-  sets.forEach(set => {
+  sets.forEach((set) => {
     homeTotal += set.home;
     awayTotal += set.away;
-    if (set.home > 0 && set.away > 0) {
-      // home wins this set
-      totalSets += 1;
-    }
   });
 
-  return { homeTotal, awayTotal, totalSets };
+  return { homeTotal, awayTotal };
 };
-
-
-const isValidScore = (sets) => {
-  return sets.every((set) => {
-    // Same score > 0 not allowed
-    if (set.home === set.away && set.home > 0) return false;
-
-    // Allow empty set
-    if (set.home === 0 && set.away === 0) return true;
-
-    // One side must reach 21
-    return set.home >= 21 || set.away >= 21;
-  });
-};
-
-
-
 
 /**
- * Determine winner based on best of 3 sets
- * @param {Array} sets - Array of sets [{home, away}]
- * @returns {String|null} - 'home', 'away' or null (draw)
+ * Validate all sets against tournament scoring config.
+ * @param {Array}  sets   - [{ home, away }]
+ * @param {Object} config - { setWinningPoint, winningPointGap }
  */
-function determineWinner(sets)  {
+const isValidScore = (sets, config = {}) => {
+  const winPt = config.setWinningPoint ?? 21;
+  const gap   = config.winningPointGap  ?? 2;
+
+  return sets.every((set) => {
+    const h = set.home;
+    const a = set.away;
+
+    // Allow empty set (0-0)
+    if (h === 0 && a === 0) return true;
+
+    // Tied above 0 — not allowed
+    if (h === a && h > 0) return false;
+
+    // Winner must reach setWinningPoint with at least winningPointGap lead
+    const maxScore = Math.max(h, a);
+    const diff     = Math.abs(h - a);
+    return maxScore >= winPt && diff >= gap;
+  });
+};
+
+/**
+ * Determine winner based on sets and tournament config.
+ * @param {Array}  sets   - [{ home, away }]
+ * @param {Object} config - { numberOfSets, setWinningPoint, winningPointGap }
+ */
+const determineWinner = (sets, config = {}) => {
+  const winPt      = config.setWinningPoint ?? 21;
+  const gap        = config.winningPointGap  ?? 2;
+  const maxSets    = config.numberOfSets     ?? sets.length;
+  const requiredWins = Math.ceil(maxSets / 2);
+
   let homeSetWins = 0;
   let awaySetWins = 0;
 
-  sets.forEach(set => {
-    if (set.home > set.away) homeSetWins += 1;
-    else if (set.away > set.home) awaySetWins += 1;
-    // if tie in a set, no increment
+  sets.forEach((set) => {
+    const h = set.home;
+    const a = set.away;
+    if (h >= winPt && h - a >= gap) homeSetWins++;
+    else if (a >= winPt && a - h >= gap) awaySetWins++;
   });
 
-   const totalSets = sets.length;
-  const requiredWins = Math.ceil(totalSets / 2);
-
-  let winner = null;
+  let winner      = null;
   let matchStatus = "ongoing";
 
   if (homeSetWins >= requiredWins) {
-      winner = "home";
+    winner      = "home";
     matchStatus = "finished";
   } else if (awaySetWins >= requiredWins) {
-    winner = "away";
+    winner      = "away";
     matchStatus = "finished";
   }
+
   return { winner, matchStatus };
 };
 
@@ -94,5 +100,4 @@ function determineKnockoutWinnerAndStatus(scores, teamsHome, teamsAway) {
   return { winner, status };
 }
 
-
-module.exports = { getTotalPoints, determineWinner, determineKnockoutWinnerAndStatus, isValidScore};
+module.exports = { getTotalPoints, determineWinner, determineKnockoutWinnerAndStatus, isValidScore };

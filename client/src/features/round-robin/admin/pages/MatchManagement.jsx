@@ -41,10 +41,24 @@ const MatchManagement = () => {
   const tournament = tData?.data;
   const standings = standingsData?.data ?? [];
 
-  // Find the group's standings for this match
+  const isDoubles = !!(match?.player1PartnerId);
+
+  // For doubles, find standings by group for each player's group separately
   const groupStandings = standings.find(
     (g) => g._id === match?.groupId?._id || g._id === match?.groupId
   );
+  // For doubles, also show away group's standings
+  const awayGroupStandings = isDoubles
+    ? standings.find((g) => {
+        const gid = g._id?.toString();
+        const homeGid = (match?.groupId?._id ?? match?.groupId)?.toString();
+        return gid !== homeGid &&
+          g.standings?.some((s) =>
+            s.playerId?.toString() === match?.player2Id?._id?.toString() ||
+            s.playerId?.toString() === match?.player2Id?.toString()
+          );
+      })
+    : null;
 
   const handleScoreRecorded = () => {
     setScoredMatchId(matchId);
@@ -105,7 +119,7 @@ const MatchManagement = () => {
         </div>
       </div>
 
-      <div className="p-6 max-w-2xl mx-auto space-y-6">
+      <div className="px-[10px] py-6 w-full space-y-6">
 
         {/* Match info card */}
         <div className="bg-white rounded-2xl shadow border border-gray-100 p-5 space-y-4">
@@ -122,9 +136,9 @@ const MatchManagement = () => {
 
           {/* Players */}
           <div className="flex items-center gap-4">
-            <PlayerCard player={match.player1Id} label="Home" winner={match.winner?._id === match.player1Id?._id || match.winner === match.player1Id?._id} />
+            <PlayerCard player={match.player1Id} partner={match.player1PartnerId} label="Home" winner={match.winner?._id === match.player1Id?._id || match.winner === match.player1Id?._id} />
             <span className="text-2xl text-gray-300 font-bold flex-shrink-0">VS</span>
-            <PlayerCard player={match.player2Id} label="Away" winner={match.winner?._id === match.player2Id?._id || match.winner === match.player2Id?._id} />
+            <PlayerCard player={match.player2Id} partner={match.player2PartnerId} label="Away" winner={match.winner?._id === match.player2Id?._id || match.winner === match.player2Id?._id} />
           </div>
 
           {/* Existing scores summary */}
@@ -151,6 +165,7 @@ const MatchManagement = () => {
           <ScoreEntry
             match={match}
             tournamentId={tournamentId}
+            tournament={tournament}
             onScoreRecorded={handleScoreRecorded}
           />
         </div>
@@ -182,11 +197,16 @@ const MatchManagement = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {(groupStandings.standings ?? []).map((s, i) => {
+                    const sid = s.playerId?.toString?.() ?? s.playerId;
                     const isInThisMatch =
-                      s.playerId === match.player1Id?._id ||
-                      s.playerId === match.player2Id?._id ||
-                      s.playerId?._id === match.player1Id?._id ||
-                      s.playerId?._id === match.player2Id?._id;
+                      sid === match.player1Id?._id?.toString() ||
+                      sid === match.player1Id?.toString() ||
+                      sid === match.player1PartnerId?._id?.toString() ||
+                      sid === match.player1PartnerId?.toString() ||
+                      sid === match.player2Id?._id?.toString() ||
+                      sid === match.player2Id?.toString() ||
+                      sid === match.player2PartnerId?._id?.toString() ||
+                      sid === match.player2PartnerId?.toString();
                     return (
                       <tr
                         key={i}
@@ -209,18 +229,74 @@ const MatchManagement = () => {
           </div>
         )}
 
-        {/* Other matches in same group */}
-        <OtherMatches matches={matches} currentMatchId={matchId} groupId={match.groupId?._id ?? match.groupId} tournamentId={tournamentId} />
+        {/* Away group standings (doubles only) */}
+        {awayGroupStandings && (
+          <div className="bg-white rounded-2xl shadow border border-gray-100 overflow-hidden">
+            <div className="px-5 py-3 bg-teal-50 border-b border-teal-100 flex items-center gap-2">
+              <Trophy className="w-4 h-4 text-teal-600" />
+              <h3 className="font-semibold text-teal-800 text-sm">
+                {awayGroupStandings.groupName} Standings
+              </h3>
+            </div>
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 text-gray-500 text-xs">
+                <tr>
+                  <th className="px-4 py-2 text-left font-semibold">#</th>
+                  <th className="px-4 py-2 text-left font-semibold">Player</th>
+                  <th className="px-4 py-2 text-center font-semibold">W</th>
+                  <th className="px-4 py-2 text-center font-semibold">L</th>
+                  <th className="px-4 py-2 text-center font-semibold">+/-</th>
+                  <th className="px-4 py-2 text-center font-semibold">Pts</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {(awayGroupStandings.standings ?? []).map((s, i) => {
+                  const sid = s.playerId?.toString?.() ?? s.playerId;
+                  const isInThisMatch =
+                    sid === match.player2Id?._id?.toString() ||
+                    sid === match.player2Id?.toString() ||
+                    sid === match.player2PartnerId?._id?.toString() ||
+                    sid === match.player2PartnerId?.toString();
+                  return (
+                    <tr key={i} className={`${i === 0 ? "bg-yellow-50" : "hover:bg-gray-50"} ${isInThisMatch ? "font-semibold" : ""}`}>
+                      <td className="px-4 py-2.5 text-gray-500">{i + 1}</td>
+                      <td className="px-4 py-2.5 text-gray-800">{s.name ?? s.playerId?.name ?? "—"}</td>
+                      <td className="px-4 py-2.5 text-center text-green-600">{s.wins}</td>
+                      <td className="px-4 py-2.5 text-center text-red-400">{s.losses}</td>
+                      <td className={`px-4 py-2.5 text-center ${s.pointsDiff >= 0 ? "text-green-600" : "text-red-400"}`}>
+                        {s.pointsDiff >= 0 ? "+" : ""}{s.pointsDiff}
+                      </td>
+                      <td className="px-4 py-2.5 text-center font-bold text-teal-700">{s.totalPoints}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Other matches in same fixture */}
+        <OtherMatches
+          matches={matches}
+          currentMatchId={matchId}
+          match={match}
+          isDoubles={isDoubles}
+          groupId={match.groupId?._id ?? match.groupId}
+          tournamentId={tournamentId}
+        />
       </div>
     </div>
   );
 };
 
 // ── Player card ───────────────────────────────────────────────────────────────
-const PlayerCard = ({ player, label, winner }) => (
+const PlayerCard = ({ player, partner, label, winner }) => (
   <div className={`flex-1 text-center p-4 rounded-xl transition-colors ${winner ? "bg-teal-50 border-2 border-teal-300" : "bg-gray-50"}`}>
     {winner && <Trophy className="w-4 h-4 text-teal-500 mx-auto mb-1" />}
     <p className="font-semibold text-gray-800 text-sm truncate">{player?.name ?? "—"}</p>
+    {partner && (
+      <p className="font-semibold text-gray-600 text-sm truncate">/ {partner.name}</p>
+    )}
     {player?.grade && (
       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block ${GRADE_COLORS[player.grade] ?? GRADE_COLORS.Unrated}`}>
         {player.grade}
@@ -230,14 +306,23 @@ const PlayerCard = ({ player, label, winner }) => (
   </div>
 );
 
-// ── Other matches in this group ───────────────────────────────────────────────
-const OtherMatches = ({ matches, currentMatchId, groupId, tournamentId }) => {
+// ── Other matches in this fixture ────────────────────────────────────────────
+const OtherMatches = ({ matches, currentMatchId, match, isDoubles, groupId, tournamentId }) => {
   const navigate = useNavigate();
-  const others = matches.filter(
-    (m) =>
-      m._id !== currentMatchId &&
-      (m.groupId?._id === groupId || m.groupId === groupId)
-  );
+
+  // For doubles, group by fixture name prefix ("Group A vs Group B")
+  // For singles, group by groupId
+  const fixtureName = isDoubles
+    ? (() => { const parts = match?.matchName?.split(" - Match "); return parts?.length > 1 ? parts[0] : null; })()
+    : null;
+
+  const others = matches.filter((m) => {
+    if (m._id === currentMatchId) return false;
+    if (isDoubles && fixtureName) {
+      return m.matchName?.startsWith(fixtureName + " - Match ");
+    }
+    return m.groupId?._id === groupId || m.groupId === groupId;
+  });
 
   if (others.length === 0) return null;
 
@@ -250,32 +335,59 @@ const OtherMatches = ({ matches, currentMatchId, groupId, tournamentId }) => {
 
   return (
     <div className="bg-white rounded-2xl shadow border border-gray-100 p-5">
-      <h3 className="font-semibold text-gray-700 mb-3 text-sm">Other Matches in Group</h3>
+      <h3 className="font-semibold text-gray-700 mb-3 text-sm">
+        {isDoubles ? `Other Matches — ${fixtureName ?? "Fixture"}` : "Other Matches in Group"}
+      </h3>
       <div className="space-y-2">
-        {others.map((m) => (
-          <div
-            key={m._id}
-            className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors border border-gray-100"
-            onClick={() => navigate(`/round-robin/match/${m._id}?tournament=${tournamentId}`)}
-          >
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-700 truncate">
-                {m.player1Id?.name ?? "—"} vs {m.player2Id?.name ?? "—"}
-              </p>
-              <p className="text-xs text-gray-400">{m.court}</p>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {m.sets?.length > 0 && (
-                <span className="text-xs text-gray-400 font-mono">
-                  {m.sets.map((s) => `${s.home}-${s.away}`).join(", ")}
+        {others.map((m) => {
+          const isCompleted = m.status === "completed";
+          const winnerId = m.winner?._id?.toString() ?? m.winner?.toString();
+          const p1Id     = m.player1Id?._id?.toString() ?? m.player1Id?.toString();
+          const homeWon  = isCompleted && !!winnerId && winnerId === p1Id;
+          const awayWon  = isCompleted && !!winnerId && winnerId !== p1Id;
+
+          const team1Name = m.player1PartnerId
+            ? `${m.player1Id?.name ?? "—"} / ${m.player1PartnerId?.name ?? "—"}`
+            : (m.player1Id?.name ?? "—");
+          const team2Name = m.player2PartnerId
+            ? `${m.player2Id?.name ?? "—"} / ${m.player2PartnerId?.name ?? "—"}`
+            : (m.player2Id?.name ?? "—");
+
+          return (
+            <div
+              key={m._id}
+              className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors border border-gray-100"
+              onClick={() => navigate(`/round-robin/match/${m._id}?tournament=${tournamentId}`)}
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`text-sm font-semibold px-2 py-0.5 rounded-lg ${
+                    homeWon ? "bg-green-100 text-green-700" :
+                    awayWon ? "text-red-400" :
+                    "text-gray-700"
+                  }`}>{team1Name}</span>
+                  <span className="inline-block px-1.5 py-0.5 rounded bg-red-500 text-white text-[10px] font-bold flex-shrink-0">VS</span>
+                  <span className={`text-sm font-semibold px-2 py-0.5 rounded-lg ${
+                    awayWon ? "bg-green-100 text-green-700" :
+                    homeWon ? "text-red-400" :
+                    "text-gray-700"
+                  }`}>{team2Name}</span>
+                </div>
+                <p className="text-xs text-gray-400 mt-0.5">{m.court}</p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {m.sets?.length > 0 && (
+                  <span className="text-xs text-gray-400 font-mono">
+                    {m.sets.map((s) => `${s.home}-${s.away}`).join(", ")}
+                  </span>
+                )}
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_STYLES_MATCH[m.status] ?? ""}`}>
+                  {m.status}
                 </span>
-              )}
-              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_STYLES_MATCH[m.status] ?? ""}`}>
-                {m.status}
-              </span>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

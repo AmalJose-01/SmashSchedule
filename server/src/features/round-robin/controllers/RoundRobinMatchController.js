@@ -4,6 +4,15 @@ const RoundRobinTournament = require("../models/RoundRobinTournament");
 const { determineWinner, isValidScore } = require("../../../../helpers/matchHelpers");
 const { updateStandings } = require("../services/standingsService");
 
+const getTournamentConfig = async (tournamentId) => {
+  const t = await RoundRobinTournament.findById(tournamentId).select("numberOfSets setWinningPoint winningPointGap");
+  return {
+    numberOfSets:    t?.numberOfSets    ?? 3,
+    setWinningPoint: t?.setWinningPoint ?? 21,
+    winningPointGap: t?.winningPointGap ?? 2,
+  };
+};
+
 const RoundRobinMatchController = {
   getMatches: async (req, res) => {
     try {
@@ -14,7 +23,9 @@ const RoundRobinMatchController = {
 
       const matches = await RoundRobinMatch.find({ tournamentId })
         .populate("player1Id", "name grade email")
+        .populate("player1PartnerId", "name grade email")
         .populate("player2Id", "name grade email")
+        .populate("player2PartnerId", "name grade email")
         .populate("groupId", "groupName")
         .sort({ createdAt: 1 });
 
@@ -37,30 +48,40 @@ const RoundRobinMatchController = {
         return res.status(400).json({ message: "sets array is required" });
       }
 
-      if (!isValidScore(sets)) {
-        return res.status(400).json({ message: "Invalid score — check set values (min 21, no ties)" });
-      }
-
-      const match = await RoundRobinMatch.findById(matchId);
+      // Fetch match first to get tournamentId
+      const match = await RoundRobinMatch.findById(matchId)
+        .populate("player1Id", "name")
+        .populate("player1PartnerId", "name")
+        .populate("player2Id", "name")
+        .populate("player2PartnerId", "name");
       if (!match) {
         return res.status(404).json({ message: "Match not found" });
       }
 
-      const { winner, matchStatus } = determineWinner(sets);
+      // Load tournament scoring config
+      const config = await getTournamentConfig(match.tournamentId);
+
+      if (!isValidScore(sets, config)) {
+        return res.status(400).json({
+          message: `Invalid score — each set winner must reach ${config.setWinningPoint} with a ${config.winningPointGap}-point lead`,
+        });
+      }
+
+      const { winner, matchStatus } = determineWinner(sets, config);
 
       match.sets = sets;
       match.status = matchStatus === "finished" ? "completed" : "ongoing";
 
       if (matchStatus === "finished" && winner) {
         match.winner = winner === "home" ? match.player1Id : match.player2Id;
-        match.loser = winner === "home" ? match.player2Id : match.player1Id;
+        match.loser  = winner === "home" ? match.player2Id : match.player1Id;
       }
 
       await match.save();
 
       let updatedStandings = null;
       if (matchStatus === "finished" && match.groupId) {
-        updatedStandings = await updateStandings(match, sets);
+        updatedStandings = await updateStandings(match, sets, config);
       }
 
       return res.status(200).json({

@@ -13,7 +13,7 @@ const upload = multer({
   },
 });
 
-// Admin routes (auth required) Git
+// Admin routes (auth required)
 router.get("/my-profile", auth, clubController.getMyClubProfile);
 router.put("/my-profile", auth, clubController.upsertClubProfile);
 router.post("/upload-logo", auth, upload.single("logo"), clubController.uploadClubLogo);

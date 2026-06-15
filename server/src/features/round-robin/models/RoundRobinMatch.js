@@ -13,7 +13,9 @@ const RoundRobinMatchSchema = new Schema(
     groupId: { type: Schema.Types.ObjectId, ref: "RoundRobinGroup" },
     matchName: { type: String, required: true },
     player1Id: { type: Schema.Types.ObjectId, ref: "RoundRobinPlayer" },
+    player1PartnerId: { type: Schema.Types.ObjectId, ref: "RoundRobinPlayer", default: null },
     player2Id: { type: Schema.Types.ObjectId, ref: "RoundRobinPlayer" },
+    player2PartnerId: { type: Schema.Types.ObjectId, ref: "RoundRobinPlayer", default: null },
     court: { type: String, default: "" },
     scheduledTime: { type: Date },
     status: {
