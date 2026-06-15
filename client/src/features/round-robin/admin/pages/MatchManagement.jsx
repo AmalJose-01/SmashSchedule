@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
-  ArrowLeft, Swords, MapPin, Layers, Trophy,
+  ArrowLeft, Swords, Trophy,
   Loader2, CheckCircle, Clock
 } from "lucide-react";
 import Logout from "../../../../components/Logout.jsx";
@@ -43,22 +43,64 @@ const MatchManagement = () => {
 
   const isDoubles = !!(match?.player1PartnerId);
 
-  // For doubles, find standings by group for each player's group separately
-  const groupStandings = standings.find(
-    (g) => g._id === match?.groupId?._id || g._id === match?.groupId
-  );
-  // For doubles, also show away group's standings
-  const awayGroupStandings = isDoubles
-    ? standings.find((g) => {
-        const gid = g._id?.toString();
-        const homeGid = (match?.groupId?._id ?? match?.groupId)?.toString();
-        return gid !== homeGid &&
-          g.standings?.some((s) =>
+  // Singles: find the one group standings for this match
+  const groupStandings = !isDoubles
+    ? standings.find(
+        (g) => g._id === match?.groupId?._id || g._id === match?.groupId
+      )
+    : null;
+
+  // Doubles: aggregate player-level stats into group-level standings.
+  // Each doubles match credits 2 players per side, so sum / 2 = group total.
+  const doublesGroupStandings = useMemo(() => {
+    if (!isDoubles || !standings.length) return null;
+
+    const homeGroupId = (match?.groupId?._id ?? match?.groupId)?.toString();
+    const awayGroupId = standings
+      .find((g) =>
+        g.standings?.some(
+          (s) =>
             s.playerId?.toString() === match?.player2Id?._id?.toString() ||
             s.playerId?.toString() === match?.player2Id?.toString()
-          );
-      })
-    : null;
+        )
+      )
+      ?._id?.toString();
+
+    const rows = standings.map((group) => {
+      const players = group.standings ?? [];
+      const sum = players.reduce(
+        (acc, p) => ({
+          wins:          acc.wins          + (p.wins          || 0),
+          losses:        acc.losses        + (p.losses        || 0),
+          matchesPlayed: acc.matchesPlayed + (p.matchesPlayed || 0),
+          totalPoints:   acc.totalPoints   + (p.totalPoints   || 0),
+          pointsFor:     acc.pointsFor     + (p.pointsFor     || 0),
+          pointsAgainst: acc.pointsAgainst + (p.pointsAgainst || 0),
+        }),
+        { wins: 0, losses: 0, matchesPlayed: 0, totalPoints: 0, pointsFor: 0, pointsAgainst: 0 }
+      );
+      const gid = group._id?.toString();
+      return {
+        _id:           gid,
+        groupName:     group.groupName,
+        wins:          sum.wins / 2,
+        losses:        sum.losses / 2,
+        matchesPlayed: sum.matchesPlayed / 2,
+        totalPoints:   sum.totalPoints / 2,
+        pointsDiff:    (sum.pointsFor - sum.pointsAgainst) / 2,
+        isHomeGroup:   gid === homeGroupId,
+        isAwayGroup:   gid === awayGroupId,
+      };
+    });
+
+    // Sort: totalPoints → pointsDiff
+    rows.sort((a, b) => {
+      if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+      return b.pointsDiff - a.pointsDiff;
+    });
+
+    return rows;
+  }, [isDoubles, standings, match]);
 
   const handleScoreRecorded = () => {
     setScoredMatchId(matchId);
@@ -119,73 +161,22 @@ const MatchManagement = () => {
         </div>
       </div>
 
-      <div className="px-[10px] py-6 w-full space-y-6">
-
-        {/* Match info card */}
-        <div className="bg-white rounded-2xl shadow border border-gray-100 p-5 space-y-4">
-          <div className="flex items-center justify-between text-sm text-gray-500 border-b border-gray-100 pb-3">
-            <div className="flex items-center gap-2">
-              <Layers className="w-4 h-4" />
-              <span>{match.groupId?.groupName ?? "—"}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4" />
-              <span>{match.court || "—"}</span>
-            </div>
+      {/* ── Sticky standings (always visible below header) ────────────────────── */}
+      {(groupStandings || doublesGroupStandings) && (
+        <div className="sticky top-[64px] z-[5] bg-white shadow border-b border-gray-100 overflow-hidden">
+          <div className="px-5 py-2 bg-teal-50 border-b border-teal-100 flex items-center gap-2">
+            <Trophy className="w-4 h-4 text-teal-600" />
+            <h3 className="font-semibold text-teal-800 text-sm">
+              {groupStandings ? `${groupStandings.groupName} Standings` : "Group Standings"}
+            </h3>
+            {standingsLoading && <Loader2 className="w-3.5 h-3.5 text-teal-400 animate-spin ml-auto" />}
           </div>
 
-          {/* Players */}
-          <div className="flex items-center gap-4">
-            <PlayerCard player={match.player1Id} partner={match.player1PartnerId} label="Home" winner={match.winner?._id === match.player1Id?._id || match.winner === match.player1Id?._id} />
-            <span className="text-2xl text-gray-300 font-bold flex-shrink-0">VS</span>
-            <PlayerCard player={match.player2Id} partner={match.player2PartnerId} label="Away" winner={match.winner?._id === match.player2Id?._id || match.winner === match.player2Id?._id} />
-          </div>
-
-          {/* Existing scores summary */}
-          {match.sets?.length > 0 && (
-            <div className="flex justify-center gap-3 pt-2">
-              {match.sets.map((s, i) => (
-                <div key={i} className="text-center">
-                  <p className="text-xs text-gray-400 mb-0.5">Set {i + 1}</p>
-                  <p className="font-mono font-bold text-gray-700">
-                    {s.home} — {s.away}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Score entry */}
-        <div className="bg-white rounded-2xl shadow border border-gray-100 p-5">
-          <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <Swords className="w-4 h-4 text-teal-600" />
-            Score Entry
-          </h3>
-          <ScoreEntry
-            match={match}
-            tournamentId={tournamentId}
-            tournament={tournament}
-            onScoreRecorded={handleScoreRecorded}
-          />
-        </div>
-
-        {/* Group standings for this match */}
-        {groupStandings && (
-          <div className="bg-white rounded-2xl shadow border border-gray-100 overflow-hidden">
-            <div className="px-5 py-3 bg-teal-50 border-b border-teal-100 flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-teal-600" />
-              <h3 className="font-semibold text-teal-800 text-sm">
-                {groupStandings.groupName} Standings
-              </h3>
-            </div>
-            {standingsLoading ? (
-              <div className="flex justify-center py-6">
-                <Loader2 className="w-5 h-5 text-teal-400 animate-spin" />
-              </div>
-            ) : (
+          {/* Singles standings */}
+          {groupStandings && !standingsLoading && (
+            <div className="overflow-x-auto max-h-48 overflow-y-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 text-gray-500 text-xs">
+                <thead className="bg-gray-50 text-gray-500 text-xs sticky top-0">
                   <tr>
                     <th className="px-4 py-2 text-left font-semibold">#</th>
                     <th className="px-4 py-2 text-left font-semibold">Player</th>
@@ -201,17 +192,10 @@ const MatchManagement = () => {
                     const isInThisMatch =
                       sid === match.player1Id?._id?.toString() ||
                       sid === match.player1Id?.toString() ||
-                      sid === match.player1PartnerId?._id?.toString() ||
-                      sid === match.player1PartnerId?.toString() ||
                       sid === match.player2Id?._id?.toString() ||
-                      sid === match.player2Id?.toString() ||
-                      sid === match.player2PartnerId?._id?.toString() ||
-                      sid === match.player2PartnerId?.toString();
+                      sid === match.player2Id?.toString();
                     return (
-                      <tr
-                        key={i}
-                        className={`${i === 0 ? "bg-yellow-50" : "hover:bg-gray-50"} ${isInThisMatch ? "font-semibold" : ""}`}
-                      >
+                      <tr key={i} className={`${i === 0 ? "bg-yellow-50" : "hover:bg-gray-50"} ${isInThisMatch ? "font-semibold" : ""}`}>
                         <td className="px-4 py-2.5 text-gray-500">{i + 1}</td>
                         <td className="px-4 py-2.5 text-gray-800">{s.name ?? s.playerId?.name ?? "—"}</td>
                         <td className="px-4 py-2.5 text-center text-green-600">{s.wins}</td>
@@ -225,55 +209,64 @@ const MatchManagement = () => {
                   })}
                 </tbody>
               </table>
-            )}
-          </div>
-        )}
-
-        {/* Away group standings (doubles only) */}
-        {awayGroupStandings && (
-          <div className="bg-white rounded-2xl shadow border border-gray-100 overflow-hidden">
-            <div className="px-5 py-3 bg-teal-50 border-b border-teal-100 flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-teal-600" />
-              <h3 className="font-semibold text-teal-800 text-sm">
-                {awayGroupStandings.groupName} Standings
-              </h3>
             </div>
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-500 text-xs">
-                <tr>
-                  <th className="px-4 py-2 text-left font-semibold">#</th>
-                  <th className="px-4 py-2 text-left font-semibold">Player</th>
-                  <th className="px-4 py-2 text-center font-semibold">W</th>
-                  <th className="px-4 py-2 text-center font-semibold">L</th>
-                  <th className="px-4 py-2 text-center font-semibold">+/-</th>
-                  <th className="px-4 py-2 text-center font-semibold">Pts</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {(awayGroupStandings.standings ?? []).map((s, i) => {
-                  const sid = s.playerId?.toString?.() ?? s.playerId;
-                  const isInThisMatch =
-                    sid === match.player2Id?._id?.toString() ||
-                    sid === match.player2Id?.toString() ||
-                    sid === match.player2PartnerId?._id?.toString() ||
-                    sid === match.player2PartnerId?.toString();
-                  return (
-                    <tr key={i} className={`${i === 0 ? "bg-yellow-50" : "hover:bg-gray-50"} ${isInThisMatch ? "font-semibold" : ""}`}>
+          )}
+
+          {/* Doubles group standings */}
+          {doublesGroupStandings && !standingsLoading && (
+            <div className="overflow-x-auto max-h-48 overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 text-gray-500 text-xs sticky top-0">
+                  <tr>
+                    <th className="px-4 py-2 text-left font-semibold">#</th>
+                    <th className="px-4 py-2 text-left font-semibold">Group</th>
+                    <th className="px-4 py-2 text-center font-semibold">W</th>
+                    <th className="px-4 py-2 text-center font-semibold">L</th>
+                    <th className="px-4 py-2 text-center font-semibold">+/-</th>
+                    <th className="px-4 py-2 text-center font-semibold">Pts</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {doublesGroupStandings.map((g, i) => (
+                    <tr
+                      key={g._id}
+                      className={`${i === 0 ? "bg-yellow-50" : "hover:bg-gray-50"} ${g.isHomeGroup || g.isAwayGroup ? "font-semibold" : ""}`}
+                    >
                       <td className="px-4 py-2.5 text-gray-500">{i + 1}</td>
-                      <td className="px-4 py-2.5 text-gray-800">{s.name ?? s.playerId?.name ?? "—"}</td>
-                      <td className="px-4 py-2.5 text-center text-green-600">{s.wins}</td>
-                      <td className="px-4 py-2.5 text-center text-red-400">{s.losses}</td>
-                      <td className={`px-4 py-2.5 text-center ${s.pointsDiff >= 0 ? "text-green-600" : "text-red-400"}`}>
-                        {s.pointsDiff >= 0 ? "+" : ""}{s.pointsDiff}
+                      <td className="px-4 py-2.5 text-gray-800">
+                        <span className="flex items-center gap-1.5">
+                          {g.groupName}
+                          {g.isHomeGroup && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-100 text-teal-700">HOME</span>}
+                          {g.isAwayGroup && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">AWAY</span>}
+                        </span>
                       </td>
-                      <td className="px-4 py-2.5 text-center font-bold text-teal-700">{s.totalPoints}</td>
+                      <td className="px-4 py-2.5 text-center text-green-600">{g.wins}</td>
+                      <td className="px-4 py-2.5 text-center text-red-400">{g.losses}</td>
+                      <td className={`px-4 py-2.5 text-center ${g.pointsDiff >= 0 ? "text-green-600" : "text-red-400"}`}>
+                        {g.pointsDiff >= 0 ? "+" : ""}{g.pointsDiff}
+                      </td>
+                      <td className="px-4 py-2.5 text-center font-bold text-teal-700">{g.totalPoints}</td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="px-[10px] py-6 w-full space-y-6">
+
+
+        {/* Score entry */}
+        <div className="bg-white rounded-2xl shadow border border-gray-100 p-5">
+          <ScoreEntry
+            match={match}
+            tournamentId={tournamentId}
+            tournament={tournament}
+            onScoreRecorded={handleScoreRecorded}
+          />
+        </div>
 
         {/* Other matches in same fixture */}
         <OtherMatches

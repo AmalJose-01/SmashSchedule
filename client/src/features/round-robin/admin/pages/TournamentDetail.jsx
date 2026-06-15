@@ -744,7 +744,7 @@ const Empty = ({ text }) => (
 const TournamentDetail = () => {
   const navigate = useNavigate();
   const { id: tournamentId } = useParams();
-  const [tab, setTab] = useState("config");
+  const [tab, setTab] = useState("matches");
 
   const { data: tData, isLoading: tLoading } = useGetRoundRobinTournament(tournamentId);
   const { mutate: generateGroups, isPending: isGenerating } = useGenerateGroups();

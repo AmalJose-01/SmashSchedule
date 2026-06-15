@@ -80,3 +80,6 @@ export const recordMatchScoreAPI = ({ matchId, sets }) =>
 
 export const updateMatchAPI = ({ matchId, data }) =>
   apiClient.put(`${BASE}/matches/${matchId}`, data).then((r) => r.data);
+
+export const resetMatchScoreAPI = (matchId) =>
+  apiClient.post(`${BASE}/matches/${matchId}/reset`).then((r) => r.data);

@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const RoundRobinMatch = require("../models/RoundRobinMatch");
 const RoundRobinTournament = require("../models/RoundRobinTournament");
 const { determineWinner, isValidScore } = require("../../../../helpers/matchHelpers");
-const { updateStandings } = require("../services/standingsService");
+const { updateStandings, reverseStandings } = require("../services/standingsService");
 
 const getTournamentConfig = async (tournamentId) => {
   const t = await RoundRobinTournament.findById(tournamentId).select("numberOfSets setWinningPoint winningPointGap");
@@ -115,6 +115,39 @@ const RoundRobinMatchController = {
       return res.status(200).json({ message: "Match updated", data: match });
     } catch (error) {
       console.log("updateMatch error:", error);
+      return res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+  },
+
+  resetScore: async (req, res) => {
+    try {
+      const { matchId } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(matchId)) {
+        return res.status(400).json({ message: "Invalid match id" });
+      }
+
+      const match = await RoundRobinMatch.findById(matchId)
+        .populate("player1Id", "name")
+        .populate("player1PartnerId", "name")
+        .populate("player2Id", "name")
+        .populate("player2PartnerId", "name");
+      if (!match) return res.status(404).json({ message: "Match not found" });
+
+      // Reverse standings only if the match was completed
+      if (match.status === "completed" && match.sets?.length > 0 && match.groupId) {
+        const config = await getTournamentConfig(match.tournamentId);
+        await reverseStandings(match, match.sets, config);
+      }
+
+      match.sets   = [];
+      match.winner = null;
+      match.loser  = null;
+      match.status = "scheduled";
+      await match.save();
+
+      return res.status(200).json({ message: "Score reset", data: match });
+    } catch (error) {
+      console.log("resetScore error:", error);
       return res.status(500).json({ message: "Internal server error", error: error.message });
     }
   },

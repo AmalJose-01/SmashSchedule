@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Minus, Send, AlertCircle } from "lucide-react";
-import { useRecordMatchScore } from "../services/roundRobin.queries.js";
+import { Plus, Minus, Send, AlertCircle, RotateCcw } from "lucide-react";
+import { useRecordMatchScore, useResetMatchScore } from "../services/roundRobin.queries.js";
 
 const EMPTY_SET = { home: "", away: "" };
 
@@ -31,6 +31,7 @@ const ScoreEntry = ({ match, tournamentId, tournament, onScoreRecorded }) => {
   const [validationError, setValidationError] = useState("");
 
   const { mutate: recordScore, isPending } = useRecordMatchScore();
+  const { mutate: resetScore, isPending: isResetting } = useResetMatchScore();
 
   useEffect(() => {
     if (match?.sets?.length > 0) {
@@ -190,8 +191,18 @@ const ScoreEntry = ({ match, tournamentId, tournament, onScoreRecorded }) => {
           {isPending ? "Saving..." : "Record Score"}
         </button>
       ) : (
-        <div className="text-center text-sm text-green-600 font-semibold bg-green-50 py-2.5 rounded-xl">
-          Match completed — score locked
+        <div className="space-y-2">
+          <div className="text-center text-sm text-green-600 font-semibold bg-green-50 py-2.5 rounded-xl">
+            Match completed — score locked
+          </div>
+          <button
+            onClick={() => resetScore(match._id)}
+            disabled={isResetting}
+            className="w-full flex items-center justify-center gap-2 border border-red-200 text-red-500 py-2.5 rounded-xl font-semibold text-sm hover:bg-red-50 disabled:opacity-60 transition-colors"
+          >
+            <RotateCcw className="w-4 h-4" />
+            {isResetting ? "Resetting..." : "Edit Score"}
+          </button>
         </div>
       )}
     </div>

@@ -148,4 +148,76 @@ const updateStandings = async (match, sets, config = {}) => {
   return { groupA: groupA.standings, groupB: groupB?.standings ?? null };
 };
 
-module.exports = { updateStandings };
+/**
+ * Reverse a previously recorded match result from standings.
+ * Subtracts the stats that were added when the score was first recorded.
+ */
+const reverseStandings = async (match, sets, config = {}) => {
+  const { winner } = determineWinner(sets, config);
+  const { homeTotal, awayTotal } = getTotalPoints(sets);
+  const homeWon = winner === "home";
+  const awayWon = winner === "away";
+
+  const isDoubles = !!match.player1PartnerId;
+
+  const groupA = await RoundRobinGroup.findById(match.groupId);
+  if (!groupA) return null;
+
+  let groupB = null;
+  if (isDoubles) {
+    groupB = await RoundRobinGroup.findOne({
+      tournamentId: match.tournamentId,
+      "players.playerId": getId(match.player2Id),
+      _id: { $ne: groupA._id },
+    });
+  }
+
+  const getName = (field) => (field && typeof field === "object" ? field.name : "") ?? "";
+
+  const reverseResult = (entry, ptsFor, ptsAgainst, won) => {
+    entry.matchesPlayed = Math.max(0, entry.matchesPlayed - 1);
+    entry.pointsFor     = Math.max(0, entry.pointsFor     - ptsFor);
+    entry.pointsAgainst = Math.max(0, entry.pointsAgainst - ptsAgainst);
+    if (won) {
+      entry.wins        = Math.max(0, entry.wins        - 1);
+      entry.totalPoints = Math.max(0, entry.totalPoints - 2);
+    } else {
+      entry.losses      = Math.max(0, entry.losses      - 1);
+    }
+  };
+
+  if (!isDoubles) {
+    const p1Entry = ensureEntry(groupA.standings, getId(match.player1Id), getName(match.player1Id));
+    const p2Entry = ensureEntry(groupA.standings, getId(match.player2Id), getName(match.player2Id));
+    reverseResult(p1Entry, homeTotal, awayTotal, homeWon);
+    reverseResult(p2Entry, awayTotal, homeTotal, awayWon);
+    rankStandings(groupA.standings);
+    groupA.markModified("standings");
+    await groupA.save();
+    return { groupA: groupA.standings, groupB: null };
+  }
+
+  // Doubles — reverse Group A (home pair)
+  const p1Entry  = ensureEntry(groupA.standings, getId(match.player1Id),        getName(match.player1Id));
+  const p1pEntry = ensureEntry(groupA.standings, getId(match.player1PartnerId), getName(match.player1PartnerId));
+  reverseResult(p1Entry,  homeTotal, awayTotal, homeWon);
+  reverseResult(p1pEntry, homeTotal, awayTotal, homeWon);
+  rankStandings(groupA.standings);
+  groupA.markModified("standings");
+  await groupA.save();
+
+  // Doubles — reverse Group B (away pair)
+  if (groupB) {
+    const p2Entry  = ensureEntry(groupB.standings, getId(match.player2Id),        getName(match.player2Id));
+    const p2pEntry = ensureEntry(groupB.standings, getId(match.player2PartnerId), getName(match.player2PartnerId));
+    reverseResult(p2Entry,  awayTotal, homeTotal, awayWon);
+    reverseResult(p2pEntry, awayTotal, homeTotal, awayWon);
+    rankStandings(groupB.standings);
+    groupB.markModified("standings");
+    await groupB.save();
+  }
+
+  return { groupA: groupA.standings, groupB: groupB?.standings ?? null };
+};
+
+module.exports = { updateStandings, reverseStandings };
