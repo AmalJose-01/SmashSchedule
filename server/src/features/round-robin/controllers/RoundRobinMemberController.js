@@ -7,8 +7,8 @@ const RoundRobinMemberController = {
   createMember: async (req, res) => {
     try {
       const { name, grade, email, contact, nationalMemberId, dateOfBirth, gender } = req.body;
-      if (!name || !grade || !email) {
-        return res.status(400).json({ message: "name, grade, and email are required" });
+      if (!name || !email) {
+        return res.status(400).json({ message: "name and email are required" });
       }
 
       const existing = await RoundRobinMember.findOne({ email: email.toLowerCase().trim(), adminId: req.userId });
@@ -19,7 +19,7 @@ const RoundRobinMemberController = {
       const member = await RoundRobinMember.create({
         adminId: req.userId,
         name,
-        grade,
+        ...(grade && { grade }),
         email,
         contact: contact || "",
         ...(nationalMemberId && { nationalMemberId }),
@@ -130,6 +130,7 @@ const RoundRobinMemberController = {
       const parseDOB = (raw) => {
         if (!raw) return null;
         const str = String(raw).trim();
+        if (!str) return null;
         // Handle DD.MM.YYYY or DD/MM/YYYY
         const dmyMatch = str.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})$/);
         if (dmyMatch) {
