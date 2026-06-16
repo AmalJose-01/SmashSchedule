@@ -1,15 +1,13 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Search, Pencil, Trash2, Users, Upload } from "lucide-react";
+import { ArrowLeft, Plus, Search, Pencil, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import * as XLSX from "xlsx";
 import Logout from "../../../../components/Logout.jsx";
 import MemberForm from "../components/MemberForm.jsx";
 import {
   useGetRoundRobinMembers,
   useDeleteRoundRobinMember,
-  useBulkImportRoundRobinMembers,
   rrKeys,
 } from "../services/roundRobin.queries.js";
 import { deleteRoundRobinMemberAPI } from "../services/roundRobin.services.js";
@@ -39,11 +37,8 @@ const MemberManagement = () => {
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [confirmBulk, setConfirmBulk] = useState(false);
 
-  const fileInputRef = useRef(null);
-
   const { data, isLoading } = useGetRoundRobinMembers();
   const { mutate: deleteMember, isPending: isDeleting } = useDeleteRoundRobinMember();
-  const { mutate: bulkImport, isPending: isImporting } = useBulkImportRoundRobinMembers();
 
   const members = data?.data ?? [];
   const q = search.toLowerCase();
@@ -103,75 +98,6 @@ const MemberManagement = () => {
     setEditingMember(null);
   };
 
-  const handleImportXlsx = (e) => {
-    const file = e.target.files?.[0];
-    if (!fileInputRef.current) return;
-    fileInputRef.current.value = "";
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      try {
-        const wb = XLSX.read(evt.target.result, { type: "array" });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
-
-        const members = rows
-          .map((row) => {
-            // Normalise keys: lowercase + trim
-            const get = (...keys) => {
-              for (const k of keys) {
-                const match = Object.keys(row).find(
-                  (rk) => rk.trim().toLowerCase() === k.toLowerCase()
-                );
-                if (match !== undefined) return String(row[match]).trim();
-              }
-              return "";
-            };
-
-            const name = get("name");
-            const email = get("email");
-            if (!name || !email) return null;
-
-            // Member number may come as float e.g. 45145.0 → "45145"
-            const rawMemberId = get("badminton victoria member no.", "member no", "member id", "nationalMemberID", "nationalMemberId");
-            const nationalMemberId = rawMemberId
-              ? String(parseInt(rawMemberId, 10) || rawMemberId)
-              : "";
-
-            return {
-              name,
-              email,
-              dateOfBirth: get("date of birth", "dob", "dateofbirth") || "",
-              grade: get("grade") || "",
-              nationalMemberId,
-              contact: get("contact", "phone", "mobile") || "",
-              gender: get("gender") || "",
-            };
-          })
-          .filter(Boolean);
-
-        if (members.length === 0) {
-          toast.error("No valid rows found in the file");
-          return;
-        }
-
-        bulkImport(members, {
-          onSuccess: (res) => {
-            const { success = 0, updated = 0, failed = 0 } = res.data ?? {};
-            toast.success(
-              `Import complete — ${success} added, ${updated} updated${failed ? `, ${failed} failed` : ""}`
-            );
-          },
-          onError: () => toast.error("Import failed"),
-        });
-      } catch {
-        toast.error("Could not read the file. Make sure it is a valid .xlsx file.");
-      }
-    };
-    reader.readAsArrayBuffer(file);
-  };
-
   const handleBulkDelete = async () => {
     setBulkDeleting(true);
     setConfirmBulk(false);
@@ -214,30 +140,13 @@ const MemberManagement = () => {
               {members.length} member{members.length !== 1 ? "s" : ""} in the global bank
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx,.xls"
-              className="hidden"
-              onChange={handleImportXlsx}
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isImporting}
-              className="flex items-center gap-2 bg-white border border-purple-300 text-purple-700 px-4 py-2 rounded-xl font-semibold hover:bg-purple-50 transition-colors disabled:opacity-60"
-            >
-              <Upload className="w-4 h-4" />
-              {isImporting ? "Importing..." : "Import xlsx"}
-            </button>
-            <button
-              onClick={() => setFormOpen(true)}
-              className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-xl font-semibold hover:bg-purple-700 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Add Member
-            </button>
-          </div>
+          <button
+            onClick={() => setFormOpen(true)}
+            className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-xl font-semibold hover:bg-purple-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Add Member
+          </button>
         </div>
 
         {/* Search */}
