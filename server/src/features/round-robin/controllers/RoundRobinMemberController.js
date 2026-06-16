@@ -120,7 +120,34 @@ const RoundRobinMemberController = {
         return res.status(400).json({ message: "members array is required and cannot be empty" });
       }
 
-      const results = { success: 0, failed: 0, errors: [] };
+      const VALID_GRADES = ["A", "B", "C", "D", "E", "Unrated"];
+
+      /**
+       * Parse a dateOfBirth string that may be DD.MM.YYYY, DD/MM/YYYY,
+       * or any format natively supported by Date.parse.
+       * Returns a Date object or null if unparseable.
+       */
+      const parseDOB = (raw) => {
+        if (!raw) return null;
+        const str = String(raw).trim();
+        // Handle DD.MM.YYYY or DD/MM/YYYY
+        const dmyMatch = str.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})$/);
+        if (dmyMatch) {
+          const [, dd, mm, yyyy] = dmyMatch;
+          const d = new Date(`${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}`);
+          return isNaN(d.getTime()) ? null : d;
+        }
+        const d = new Date(str);
+        return isNaN(d.getTime()) ? null : d;
+      };
+
+      /**
+       * Sanitise grade — map anything not in the enum to "Unrated".
+       */
+      const sanitiseGrade = (raw) =>
+        VALID_GRADES.includes(raw) ? raw : "Unrated";
+
+      const results = { success: 0, updated: 0, failed: 0, errors: [] };
 
       for (const m of members) {
         const { name, grade, email, contact, nationalMemberId, dateOfBirth, gender } = m;
@@ -131,24 +158,29 @@ const RoundRobinMemberController = {
         }
 
         try {
-          const existing = await RoundRobinMember.findOne({ email: email.toLowerCase().trim(), adminId: req.userId });
-          if (existing) {
-            results.failed++;
-            results.errors.push({ email, reason: "Email already exists" });
-            continue;
-          }
+          const cleanEmail = email.toLowerCase().trim();
+          const cleanGrade = sanitiseGrade(grade);
+          const cleanDOB   = parseDOB(dateOfBirth);
 
-          await RoundRobinMember.create({
-            adminId: req.userId,
+          const payload = {
             name,
-            grade: grade || "Unrated",
-            email,
+            grade: cleanGrade,
             contact: contact || "",
             ...(nationalMemberId && { nationalMemberId }),
-            ...(dateOfBirth && { dateOfBirth }),
-            ...(gender && { gender }),
-          });
-          results.success++;
+            ...(cleanDOB        && { dateOfBirth: cleanDOB }),
+            ...(gender          && { gender }),
+          };
+
+          const existing = await RoundRobinMember.findOne({ email: cleanEmail, adminId: req.userId });
+          if (existing) {
+            // Update existing member instead of failing
+            Object.assign(existing, payload);
+            await existing.save();
+            results.updated++;
+          } else {
+            await RoundRobinMember.create({ adminId: req.userId, email: cleanEmail, ...payload });
+            results.success++;
+          }
         } catch (err) {
           results.failed++;
           results.errors.push({ email, reason: err.message });
