@@ -138,7 +138,7 @@ const MatchManagement = () => {
       <div className="flex justify-between items-center bg-white p-4 shadow-lg sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate(`/round-robin/tournament/${tournamentId}`)}
+            onClick={() => navigate(`/round-robin/tournament/${tournamentId}`, { state: { tab: "matches" } })}
             className="p-2 rounded-full hover:bg-gray-100 transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-gray-600" />

@@ -11,6 +11,7 @@ const RoundRobinTournamentController = {
         numberOfCourts,
         numberOfGroups,
         playersPerGroup,
+        numberOfMatchesPerMember,
         startDate,
         endDate,
         groupingStrategy,
@@ -32,6 +33,7 @@ const RoundRobinTournamentController = {
         numberOfCourts,
         numberOfGroups,
         playersPerGroup,
+        numberOfMatchesPerMember: numberOfMatchesPerMember ?? 3,
         startDate,
         endDate,
         groupingStrategy: groupingStrategy || "random",
@@ -92,7 +94,7 @@ const RoundRobinTournamentController = {
 
       const allowedFields = [
         "tournamentName", "matchType", "description", "numberOfCourts",
-        "numberOfGroups", "playersPerGroup", "startDate", "endDate",
+        "numberOfGroups", "playersPerGroup", "numberOfMatchesPerMember", "startDate", "endDate",
         "groupingStrategy", "pointsForWin", "pointsForLoss", "status",
       ];
 

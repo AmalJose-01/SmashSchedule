@@ -15,6 +15,7 @@ const RoundRobinTournamentSchema = new Schema(
     numberOfCourts: { type: Number, required: true },
     numberOfGroups: { type: Number, required: true },
     playersPerGroup: { type: Number, required: true },
+    numberOfMatchesPerMember: { type: Number, default: 3 },
     startDate: { type: Date },
     endDate: { type: Date },
     groupingStrategy: {

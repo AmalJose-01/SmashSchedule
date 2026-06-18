@@ -143,6 +143,19 @@ const Step2 = ({ form, setForm, errors }) => (
         className={inputCls(errors.numberOfCourts)}
       />
     </Field>
+    <Field label="Number of Matches per Member" error={errors.numberOfMatchesPerMember}>
+      <input
+        type="number"
+        min={1}
+        value={form.numberOfMatchesPerMember}
+        onChange={(e) => setForm((f) => ({ ...f, numberOfMatchesPerMember: e.target.value }))}
+        className={inputCls(errors.numberOfMatchesPerMember)}
+      />
+      <p className="text-xs text-gray-400 mt-1">
+        Each member plays this many matches. Set it to {form.playersPerGroup - 1 || "(players per group) - 1"} or
+        higher for a full round robin.
+      </p>
+    </Field>
     <Field label="Grouping Strategy">
       <select
         value={form.groupingStrategy}
@@ -311,6 +324,7 @@ const Step4 = ({ form, selectedIds, membersData }) => {
           ["Groups", form.numberOfGroups],
           [form.matchType === "Doubles" ? "Players per Group (all pair combinations)" : "Players per Group", form.playersPerGroup],
           ["Courts", form.numberOfCourts],
+          ["Matches per Member", form.numberOfMatchesPerMember],
           ["Grouping Strategy", form.groupingStrategy],
           ["Win / Loss Points", `${form.pointsForWin} / ${form.pointsForLoss}`],
           ["Sets", `Best of ${form.numberOfSets}`],
@@ -356,6 +370,7 @@ const INITIAL_FORM = {
   numberOfGroups: 2,
   playersPerGroup: 4,
   numberOfCourts: 2,
+  numberOfMatchesPerMember: 3,
   groupingStrategy: "random",
   pointsForWin: 2,
   pointsForLoss: 0,
@@ -390,6 +405,7 @@ const CreateTournamentRR = () => {
         if (!form.playersPerGroup || form.playersPerGroup < 2) e.playersPerGroup = "At least 2 players per group";
       }
       if (!form.numberOfCourts || form.numberOfCourts < 1) e.numberOfCourts = "At least 1 court required";
+      if (!form.numberOfMatchesPerMember || form.numberOfMatchesPerMember < 1) e.numberOfMatchesPerMember = "At least 1 match per member required";
       if (!form.setWinningPoint || form.setWinningPoint < 1) e.setWinningPoint = "Required";
       if (!form.winningPointGap || form.winningPointGap < 1) e.winningPointGap = "Required";
     }
@@ -410,6 +426,7 @@ const CreateTournamentRR = () => {
         numberOfGroups:   Number(form.numberOfGroups),
         playersPerGroup:  Number(form.playersPerGroup),
         numberOfCourts:   Number(form.numberOfCourts),
+        numberOfMatchesPerMember: Number(form.numberOfMatchesPerMember),
         pointsForWin:     Number(form.pointsForWin),
         pointsForLoss:    Number(form.pointsForLoss),
         numberOfSets:     Number(form.numberOfSets),

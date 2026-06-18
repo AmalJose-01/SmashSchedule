@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   ArrowLeft, Users, Layers, Swords, RefreshCw, CheckCircle,
   ChevronDown, ChevronUp, Trophy, Loader2, GripVertical, AlertTriangle, CalendarDays,
@@ -817,7 +817,8 @@ const Empty = ({ text }) => (
 const TournamentDetail = () => {
   const navigate = useNavigate();
   const { id: tournamentId } = useParams();
-  const [tab, setTab] = useState("matches");
+  const location = useLocation();
+  const [tab, setTab] = useState(location.state?.tab || "players");
 
   const { data: tData, isLoading: tLoading } = useGetRoundRobinTournament(tournamentId);
   const { mutate: generateGroups, isPending: isGenerating } = useGenerateGroups();
