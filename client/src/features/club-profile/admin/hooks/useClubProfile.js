@@ -148,6 +148,7 @@ export const useClubProfile = () => {
 
   return {
     club,
+    loginEmail: data?.email || "",
     formData,
     isLoading,
     isEditing,

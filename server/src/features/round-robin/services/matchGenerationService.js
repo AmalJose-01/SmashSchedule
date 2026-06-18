@@ -17,7 +17,7 @@ const groupPlayers = (players, numberOfGroups, strategy) => {
       [ordered[i], ordered[j]] = [ordered[j], ordered[i]];
     }
   } else if (strategy === "by-grade" || strategy === "balanced") {
-    const gradeOrder = ["A", "B", "C", "D", "E", "Unrated"];
+    const gradeOrder = ["A", "B", "C", "D", "E", "F", "G", "H", "Unrated"];
     ordered.sort(
       (a, b) => gradeOrder.indexOf(a.grade) - gradeOrder.indexOf(b.grade)
     );

@@ -10,6 +10,7 @@ const ClubProfile = () => {
 
   const {
     club,
+    loginEmail,
     formData,
     isLoading,
     isEditing,
@@ -160,7 +161,7 @@ const ClubProfile = () => {
               </div>
               <div className="cp-info-item">
                 <label>Email</label>
-                <span>{club?.email || <span className="empty">—</span>}</span>
+                <span>{club?.email || loginEmail || <span className="empty">—</span>}</span>
               </div>
             </div>
           )}

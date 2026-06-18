@@ -160,8 +160,13 @@ export const useBulkImportRoundRobinMembers = () => {
   return useMutation({
     mutationFn: bulkImportRoundRobinMembersAPI,
     onSuccess: (data) => {
-      const { success, failed } = data.data;
-      toast.success(`Imported ${success} member(s)${failed > 0 ? `, ${failed} skipped` : ""}`);
+      const { success, updated, reactivated, failed } = data.data;
+      const parts = [];
+      if (success) parts.push(`${success} added`);
+      if (reactivated) parts.push(`${reactivated} restored`);
+      if (updated) parts.push(`${updated} updated`);
+      if (failed) parts.push(`${failed} skipped`);
+      toast.success(parts.length ? parts.join(" · ") : "No members imported");
       queryClient.invalidateQueries({ queryKey: rrKeys.members });
     },
     onError: (err) => toast.error(err.response?.data?.message || "Bulk import failed"),
