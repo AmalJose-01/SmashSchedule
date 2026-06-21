@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, ListChecks, Users, ArrowLeft } from "lucide-react";
+import { Plus, ListChecks, Users, ArrowLeft, CreditCard } from "lucide-react";
 import { useGetRoundRobinTournaments, useGetRoundRobinMembers } from "../services/roundRobin.queries.js";
 import Logout from "../../../../components/Logout.jsx";
 
@@ -31,6 +31,15 @@ const actionCards = [
     title: "Manage Members",
     description: "Maintain your global player bank. Add, edit, or bulk import members.",
     path: "/round-robin/members",
+  },
+  {
+    icon: CreditCard,
+    color: "text-amber-600",
+    bg: "bg-amber-50",
+    border: "border-amber-200",
+    title: "Square Payments",
+    description: "Connect your Square account and Terminal device to collect entry fees.",
+    path: "/admin/square-settings",
   },
 ];
 
@@ -80,7 +89,7 @@ const RoundRobinDashboard = () => {
         </div>
 
         {/* Action cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {actionCards.map(({ icon: Icon, color, bg, border, title, description, path }) => (
             <div
               key={path}

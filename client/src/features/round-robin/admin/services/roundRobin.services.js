@@ -83,3 +83,35 @@ export const updateMatchAPI = ({ matchId, data }) =>
 
 export const resetMatchScoreAPI = (matchId) =>
   apiClient.post(`${BASE}/matches/${matchId}/reset`).then((r) => r.data);
+
+// ── Square Payments ───────────────────────────────────────────────────────────
+const SQUARE_BASE = "/admin/square";
+
+export const saveSquareCredentialsAPI = (data) =>
+  apiClient.post(`${SQUARE_BASE}/credentials`, data).then((r) => r.data);
+
+export const getSquareConnectUrlAPI = () =>
+  apiClient.get(`${SQUARE_BASE}/connect`).then((r) => r.data);
+
+export const getSquareStatusAPI = () =>
+  apiClient.get(`${SQUARE_BASE}/status`).then((r) => r.data);
+
+export const disconnectSquareAPI = () =>
+  apiClient.post(`${SQUARE_BASE}/disconnect`).then((r) => r.data);
+
+export const getSquareLocationsAPI = () =>
+  apiClient.get(`${SQUARE_BASE}/locations`).then((r) => r.data);
+
+export const saveSquareSettingsAPI = (data) =>
+  apiClient.post(`${SQUARE_BASE}/settings`, data).then((r) => r.data);
+
+export const collectPaymentAPI = ({ tournamentId, playerId }) =>
+  apiClient
+    .post(`${BASE}/tournaments/${tournamentId}/players/${playerId}/collect-payment`)
+    .then((r) => r.data);
+
+export const getPaymentStatusAPI = (paymentId) =>
+  apiClient.get(`${BASE}/payments/${paymentId}/status`).then((r) => r.data);
+
+export const getTournamentPaymentsAPI = (tournamentId) =>
+  apiClient.get(`${BASE}/tournaments/${tournamentId}/payments`).then((r) => r.data);

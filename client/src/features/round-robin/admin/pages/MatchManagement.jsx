@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, Swords, Trophy,
-  Loader2, CheckCircle, Clock
+  Loader2, CheckCircle, Clock, ChevronDown, ChevronUp
 } from "lucide-react";
 import Logout from "../../../../components/Logout.jsx";
 import ScoreEntry from "../components/ScoreEntry.jsx";
@@ -276,6 +276,7 @@ const MatchManagement = () => {
           isDoubles={isDoubles}
           groupId={match.groupId?._id ?? match.groupId}
           tournamentId={tournamentId}
+          tournament={tournament}
         />
       </div>
     </div>
@@ -300,8 +301,8 @@ const PlayerCard = ({ player, partner, label, winner }) => (
 );
 
 // ── Other matches in this fixture ────────────────────────────────────────────
-const OtherMatches = ({ matches, currentMatchId, match, isDoubles, groupId, tournamentId }) => {
-  const navigate = useNavigate();
+const OtherMatches = ({ matches, currentMatchId, match, isDoubles, groupId, tournamentId, tournament }) => {
+  const [expandedId, setExpandedId] = useState(null);
 
   // For doubles, group by fixture name prefix ("Group A vs Group B")
   // For singles, group by groupId
@@ -346,38 +347,56 @@ const OtherMatches = ({ matches, currentMatchId, match, isDoubles, groupId, tour
             ? `${m.player2Id?.name ?? "—"} / ${m.player2PartnerId?.name ?? "—"}`
             : (m.player2Id?.name ?? "—");
 
+          const isExpanded = expandedId === m._id;
+
           return (
-            <div
-              key={m._id}
-              className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors border border-gray-100"
-              onClick={() => navigate(`/round-robin/match/${m._id}?tournament=${tournamentId}`)}
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`text-sm font-semibold px-2 py-0.5 rounded-lg ${
-                    homeWon ? "bg-green-100 text-green-700" :
-                    awayWon ? "text-red-400" :
-                    "text-gray-700"
-                  }`}>{team1Name}</span>
-                  <span className="inline-block px-1.5 py-0.5 rounded bg-red-500 text-white text-[10px] font-bold flex-shrink-0">VS</span>
-                  <span className={`text-sm font-semibold px-2 py-0.5 rounded-lg ${
-                    awayWon ? "bg-green-100 text-green-700" :
-                    homeWon ? "text-red-400" :
-                    "text-gray-700"
-                  }`}>{team2Name}</span>
+            <div key={m._id} className="rounded-xl border border-gray-100 overflow-hidden">
+              <div
+                className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors"
+                onClick={() => setExpandedId((prev) => (prev === m._id ? null : m._id))}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`text-sm font-semibold px-2 py-0.5 rounded-lg ${
+                      homeWon ? "bg-green-100 text-green-700" :
+                      awayWon ? "text-red-400" :
+                      "text-gray-700"
+                    }`}>{team1Name}</span>
+                    <span className="inline-block px-1.5 py-0.5 rounded bg-red-500 text-white text-[10px] font-bold flex-shrink-0">VS</span>
+                    <span className={`text-sm font-semibold px-2 py-0.5 rounded-lg ${
+                      awayWon ? "bg-green-100 text-green-700" :
+                      homeWon ? "text-red-400" :
+                      "text-gray-700"
+                    }`}>{team2Name}</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-0.5">{m.court}</p>
                 </div>
-                <p className="text-xs text-gray-400 mt-0.5">{m.court}</p>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {m.sets?.length > 0 && (
-                  <span className="text-xs text-gray-400 font-mono">
-                    {m.sets.map((s) => `${s.home}-${s.away}`).join(", ")}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {m.sets?.length > 0 && (
+                    <span className="text-xs text-gray-400 font-mono">
+                      {m.sets.map((s) => `${s.home}-${s.away}`).join(", ")}
+                    </span>
+                  )}
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_STYLES_MATCH[m.status] ?? ""}`}>
+                    {m.status}
                   </span>
-                )}
-                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_STYLES_MATCH[m.status] ?? ""}`}>
-                  {m.status}
-                </span>
+                  {isExpanded ? (
+                    <ChevronUp className="w-4 h-4 text-gray-400" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-gray-400" />
+                  )}
+                </div>
               </div>
+
+              {isExpanded && (
+                <div className="border-t border-gray-100 bg-gray-50/50 p-4">
+                  <ScoreEntry
+                    match={m}
+                    tournamentId={tournamentId}
+                    tournament={tournament}
+                  />
+                </div>
+              )}
             </div>
           );
         })}

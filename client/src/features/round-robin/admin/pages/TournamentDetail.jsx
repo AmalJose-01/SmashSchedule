@@ -3,14 +3,16 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   ArrowLeft, Users, Layers, Swords, RefreshCw, CheckCircle,
   ChevronDown, ChevronUp, Trophy, Loader2, GripVertical, AlertTriangle, CalendarDays,
-  Settings, Pencil, Lock
+  Settings, Pencil, Lock, Search, UserPlus, CreditCard
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   DndContext, DragOverlay, PointerSensor, useSensor, useSensors, closestCenter, useDroppable,
 } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Logout from "../../../../components/Logout.jsx";
+import ScoreEntry from "../components/ScoreEntry.jsx";
 import {
   useGetRoundRobinTournament,
   useUpdateRoundRobinTournament,
@@ -22,12 +24,19 @@ import {
   useSaveGroups,
   useFinalizeRoundRobinTournament,
   useRemovePlayerFromTournament,
+  useGetRoundRobinMembers,
+  useAddMembersToTournament,
+  useCollectPayment,
+  useGetPaymentStatus,
+  useGetSquareStatus,
+  useGetTournamentPayments,
 } from "../services/roundRobin.queries.js";
 
 const STATUS_STYLES = {
   Draft:     "bg-gray-100 text-gray-600",
   Active:    "bg-blue-100 text-blue-700",
   Scheduled: "bg-yellow-100 text-yellow-700",
+  Finalized: "bg-teal-100 text-teal-700",
   Ongoing:   "bg-green-100 text-green-700",
   Completed: "bg-purple-100 text-purple-700",
 };
@@ -131,6 +140,7 @@ const ConfigTab = ({ tournament, isFinalized }) => {
       startDate:      tournament.startDate ? new Date(tournament.startDate).toISOString().slice(0, 16) : "",
       endDate:        tournament.endDate   ? new Date(tournament.endDate).toISOString().slice(0, 16)   : "",
       numberOfCourts: tournament.numberOfCourts  ?? 1,
+      entryFee:       tournament.entryFee        ?? 0,
       pointsForWin:   tournament.pointsForWin    ?? 2,
       pointsForLoss:  tournament.pointsForLoss   ?? 0,
       numberOfSets:   tournament.numberOfSets    ?? 3,
@@ -148,6 +158,7 @@ const ConfigTab = ({ tournament, isFinalized }) => {
         data: {
           ...form,
           numberOfCourts:  Number(form.numberOfCourts),
+          entryFee:        Number(form.entryFee),
           pointsForWin:    Number(form.pointsForWin),
           pointsForLoss:   Number(form.pointsForLoss),
           numberOfSets:    Number(form.numberOfSets),
@@ -204,6 +215,7 @@ const ConfigTab = ({ tournament, isFinalized }) => {
             <ViewRow label="Players per Group" value={tournament.playersPerGroup} />
             <ViewRow label="Courts"            value={tournament.numberOfCourts} />
             <ViewRow label="Grouping Strategy" value={tournament.groupingStrategy} />
+            <ViewRow label="Entry Fee" value={tournament.entryFee > 0 ? `$${tournament.entryFee.toFixed(2)}` : "Free"} />
           </div>
         </div>
 
@@ -243,9 +255,14 @@ const ConfigTab = ({ tournament, isFinalized }) => {
             <input type="datetime-local" value={form.endDate} onChange={(e) => set("endDate", e.target.value)} className={inputCls()} />
           </Field>
         </div>
-        <Field label="Number of Courts">
-          <input type="number" min={1} value={form.numberOfCourts} onChange={(e) => set("numberOfCourts", e.target.value)} className={inputCls()} />
-        </Field>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Number of Courts">
+            <input type="number" min={1} value={form.numberOfCourts} onChange={(e) => set("numberOfCourts", e.target.value)} className={inputCls()} />
+          </Field>
+          <Field label="Entry Fee ($)">
+            <input type="number" min={0} step="0.01" value={form.entryFee} onChange={(e) => set("entryFee", e.target.value)} className={inputCls()} placeholder="0 = free" />
+          </Field>
+        </div>
       </div>
 
       {/* Scoring Rules */}
@@ -300,31 +317,224 @@ const ConfigTab = ({ tournament, isFinalized }) => {
   );
 };
 
-const PlayersTab = ({ tournamentId }) => {
+const AddPlayersPanel = ({ tournamentId, existingPlayers, defaultOpen = false }) => {
+  const [open, setOpen] = useState(defaultOpen);
+  const [search, setSearch] = useState("");
+  const [selectedIds, setSelectedIds] = useState([]);
+  const { data: membersData, isLoading } = useGetRoundRobinMembers();
+  const { mutate: addMembers, isPending } = useAddMembersToTournament();
+
+  const existingEmails = new Set(existingPlayers.map((p) => p.email));
+  const members = (membersData?.data ?? []).filter((m) => !existingEmails.has(m.email));
+  const filtered = members.filter(
+    (m) =>
+      m.name.toLowerCase().includes(search.toLowerCase()) ||
+      m.email.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const toggle = (id) =>
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+  const toggleAll = () =>
+    setSelectedIds(selectedIds.length === filtered.length ? [] : filtered.map((m) => m._id));
+
+  const handleAdd = () => {
+    addMembers(
+      { tournamentId, memberIds: selectedIds },
+      { onSuccess: () => { setSelectedIds([]); setOpen(false); } }
+    );
+  };
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="flex items-center gap-2 text-sm text-teal-600 font-semibold hover:underline"
+      >
+        <UserPlus className="w-4 h-4" /> Add Players
+      </button>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-gray-700 text-sm">Add Players from Member Bank</h3>
+        <button onClick={() => setOpen(false)} className="text-xs text-gray-400 hover:text-gray-600">
+          Close
+        </button>
+      </div>
+
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Search members..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-300"
+        />
+      </div>
+
+      {isLoading ? (
+        <p className="text-center text-gray-400 py-6 text-sm">Loading members...</p>
+      ) : filtered.length === 0 ? (
+        <p className="text-center text-gray-400 py-6 text-sm">
+          {members.length === 0 ? "All members are already in this tournament." : "No members match your search."}
+        </p>
+      ) : (
+        <>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-500">{selectedIds.length} selected</p>
+            <button onClick={toggleAll} className="text-xs text-teal-600 font-medium hover:underline">
+              {selectedIds.length === filtered.length ? "Deselect all" : "Select all"}
+            </button>
+          </div>
+          <div className="border border-gray-200 rounded-xl overflow-hidden max-h-64 overflow-y-auto">
+            {filtered.map((m) => {
+              const checked = selectedIds.includes(m._id);
+              return (
+                <label
+                  key={m._id}
+                  className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors border-b border-gray-100 last:border-0 ${
+                    checked ? "bg-teal-50" : "hover:bg-gray-50"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggle(m._id)}
+                    className="accent-teal-600 w-4 h-4"
+                  />
+                  <span className="flex-1 text-sm font-medium text-gray-800">{m.name}</span>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${GRADE_COLORS[m.grade] ?? GRADE_COLORS.Unrated}`}>
+                    {m.grade}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      <div className="flex justify-end">
+        <button
+          onClick={handleAdd}
+          disabled={selectedIds.length === 0 || isPending}
+          className="flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-xl font-semibold text-sm hover:bg-teal-700 disabled:opacity-50 transition-colors"
+        >
+          {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+          {isPending ? "Adding..." : `Add ${selectedIds.length || ""} Player${selectedIds.length === 1 ? "" : "s"}`}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Triggers a Square Terminal checkout for a single registered player's entry fee
+// and polls for the result (the Terminal pops up on the admin's paired device).
+// `existingPayment` is that player's latest payment record (if any), so the button
+// shows the correct state on load/refresh instead of always defaulting to "Collect Payment".
+const CollectPaymentButton = ({ tournamentId, player, existingPayment }) => {
+  const [paymentId, setPaymentId] = useState(existingPayment?._id ?? null);
+  const { mutate: collect, isPending } = useCollectPayment();
+  const { data: statusData } = useGetPaymentStatus(paymentId);
+  const status = statusData?.data?.status ?? existingPayment?.status;
+
+  useEffect(() => {
+    setPaymentId(existingPayment?._id ?? null);
+  }, [existingPayment?._id]);
+
+  const handleClick = () => {
+    collect(
+      { tournamentId, playerId: player._id },
+      { onSuccess: (res) => setPaymentId(res?.data?.paymentId ?? null) }
+    );
+  };
+
+  if (status === "COMPLETED") {
+    return (
+      <span className="flex items-center gap-1.5 text-xs text-green-600 font-semibold">
+        <CheckCircle className="w-3.5 h-3.5" /> Paid
+      </span>
+    );
+  }
+
+  if (paymentId && ["PENDING", "IN_PROGRESS"].includes(status)) {
+    return (
+      <span className="flex items-center gap-1.5 text-xs text-amber-600 font-medium">
+        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Waiting on Terminal...
+      </span>
+    );
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={isPending}
+      className="flex items-center gap-1.5 text-xs font-semibold text-teal-600 border border-teal-200 px-2.5 py-1 rounded-lg hover:bg-teal-50 disabled:opacity-50 transition-colors"
+    >
+      <CreditCard className="w-3.5 h-3.5" />
+      {isPending ? "Sending..." : status === "CANCELED" || status === "FAILED" ? "Retry Payment" : "Collect Payment"}
+    </button>
+  );
+};
+
+const PlayersTab = ({ tournamentId, isFinalized, tournament }) => {
   const navigate = useNavigate();
   const { data, isLoading } = useGetTournamentPlayers(tournamentId);
   const { mutate: removePlayer, isPending } = useRemovePlayerFromTournament();
+  const { data: squareStatusData } = useGetSquareStatus();
+  const hasEntryFee = (tournament?.entryFee ?? 0) > 0;
+  const { data: paymentsData } = useGetTournamentPayments(hasEntryFee ? tournamentId : null);
   const players = data?.data ?? [];
+  const squareReady = !!squareStatusData?.data?.connected && !!squareStatusData?.data?.deviceId;
+  const paymentsByPlayerId = (paymentsData?.data ?? []).reduce((map, payment) => {
+    map[payment.playerId] = payment;
+    return map;
+  }, {});
 
   if (isLoading) return <Spinner />;
 
   if (players.length === 0)
     return (
-      <div className="text-center py-14">
-        <Users className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-        <p className="text-gray-400 text-sm mb-4">No players registered yet.</p>
-        <button
-          onClick={() => navigate("/round-robin/members")}
-          className="inline-flex items-center gap-2 text-sm text-teal-600 font-semibold hover:underline"
-        >
-          Go to Member Bank →
-        </button>
+      <div className="space-y-4">
+        {isFinalized ? (
+          <div className="text-center py-14">
+            <Users className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-400 text-sm">No players registered yet.</p>
+            <p className="text-xs text-gray-400 mt-1">Players can no longer be added once matches are scheduled.</p>
+          </div>
+        ) : (
+          <AddPlayersPanel tournamentId={tournamentId} existingPlayers={players} defaultOpen />
+        )}
       </div>
     );
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-gray-500 font-medium">{players.length} player{players.length !== 1 ? "s" : ""} registered</p>
+      {hasEntryFee && !squareReady && (
+        <div className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-sm text-amber-800">
+          <span>This tournament has an entry fee, but Square isn't fully set up yet.</span>
+          <button
+            onClick={() => navigate("/admin/square-settings")}
+            className="flex-shrink-0 text-xs font-semibold text-teal-700 hover:underline"
+          >
+            Connect Square →
+          </button>
+        </div>
+      )}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-500 font-medium">{players.length} player{players.length !== 1 ? "s" : ""} registered</p>
+        {isFinalized && (
+          <span className="flex items-center gap-1.5 text-xs text-gray-400">
+            <Lock className="w-3.5 h-3.5" /> Locked — matches already scheduled
+          </span>
+        )}
+      </div>
+
+      {!isFinalized && <AddPlayersPanel tournamentId={tournamentId} existingPlayers={players} />}
+
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-teal-50 text-teal-700 text-left">
@@ -333,7 +543,8 @@ const PlayersTab = ({ tournamentId }) => {
               <th className="px-5 py-3 font-semibold">Grade</th>
               <th className="px-5 py-3 font-semibold">Email</th>
               <th className="px-5 py-3 font-semibold">Contact</th>
-              <th className="px-5 py-3 font-semibold text-right">Remove</th>
+              {hasEntryFee && <th className="px-5 py-3 font-semibold">Payment</th>}
+              {!isFinalized && <th className="px-5 py-3 font-semibold text-right">Remove</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -347,15 +558,26 @@ const PlayersTab = ({ tournamentId }) => {
                 </td>
                 <td className="px-5 py-3 text-gray-500">{p.email}</td>
                 <td className="px-5 py-3 text-gray-500">{p.contact}</td>
-                <td className="px-5 py-3 text-right">
-                  <button
-                    onClick={() => removePlayer({ tournamentId, playerId: p._id })}
-                    disabled={isPending}
-                    className="text-xs text-red-400 hover:text-red-600 font-medium disabled:opacity-50"
-                  >
-                    Remove
-                  </button>
-                </td>
+                {hasEntryFee && (
+                  <td className="px-5 py-3">
+                    <CollectPaymentButton
+                      tournamentId={tournamentId}
+                      player={p}
+                      existingPayment={paymentsByPlayerId[p._id]}
+                    />
+                  </td>
+                )}
+                {!isFinalized && (
+                  <td className="px-5 py-3 text-right">
+                    <button
+                      onClick={() => removePlayer({ tournamentId, playerId: p._id })}
+                      disabled={isPending}
+                      className="text-xs text-red-400 hover:text-red-600 font-medium disabled:opacity-50"
+                    >
+                      Remove
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -365,7 +587,7 @@ const PlayersTab = ({ tournamentId }) => {
   );
 };
 
-const GroupsTab = ({ tournamentId }) => {
+const GroupsTab = ({ tournamentId, isFinalized }) => {
   const { data, isLoading } = useGetGroups(tournamentId);
   const { data: matchesData } = useGetMatches(tournamentId);
   const { mutate: saveGroups, isPending: isSaving } = useSaveGroups();
@@ -373,6 +595,7 @@ const GroupsTab = ({ tournamentId }) => {
   const hasScores = (matchesData?.data ?? []).some(
     (m) => m.status !== "scheduled" || m.sets?.length > 0
   );
+  const rearrangeLocked = isFinalized || hasScores;
   const [expanded, setExpanded] = useState({});
   const [isEditing, setIsEditing] = useState(false);
   const [localGroups, setLocalGroups] = useState(null);
@@ -457,10 +680,12 @@ const GroupsTab = ({ tournamentId }) => {
     return (
       <div className="space-y-4">
         <div className="flex justify-end">
-          {hasScores ? (
+          {rearrangeLocked ? (
             <div className="flex items-center gap-2 text-xs text-gray-400 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5">
               <Lock className="w-3.5 h-3.5" />
-              Groups are locked once scores have been entered.
+              {hasScores
+                ? "Groups are locked once scores have been entered."
+                : "Groups are locked once matches have been scheduled."}
             </div>
           ) : (
             <button
@@ -585,8 +810,8 @@ const GroupsTab = ({ tournamentId }) => {
   );
 };
 
-const MatchesTab = ({ tournamentId, matchType }) => {
-  const navigate = useNavigate();
+const MatchesTab = ({ tournamentId, matchType, tournament }) => {
+  const [expandedId, setExpandedId] = useState(null);
   const { data, isLoading } = useGetMatches(tournamentId);
   const matches = data?.data ?? [];
 
@@ -630,43 +855,61 @@ const MatchesTab = ({ tournamentId, matchType }) => {
                 ? `${m.player2Id?.name ?? "—"} / ${m.player2PartnerId?.name ?? "—"}`
                 : (m.player2Id?.name ?? "—");
 
+              const isExpanded = expandedId === m._id;
+
               return (
-                <div
-                  key={m._id}
-                  className="bg-white rounded-xl border border-gray-100 px-5 py-3 flex items-center gap-4 hover:shadow-sm transition-shadow cursor-pointer"
-                  onClick={() => navigate(`/round-robin/match/${m._id}?tournament=${tournamentId}`)}
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-gray-400 truncate mb-1">{m.matchName}</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`text-sm font-semibold px-2 py-0.5 rounded-lg ${
-                        homeWon ? "bg-green-100 text-green-700" :
-                        awayWon ? "text-red-400" :
-                        "text-gray-800"
-                      }`}>
-                        {team1Name}
+                <div key={m._id} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+                  <div
+                    className="px-5 py-3 flex items-center gap-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => setExpandedId((prev) => (prev === m._id ? null : m._id))}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-gray-400 truncate mb-1">{m.matchName}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`text-sm font-semibold px-2 py-0.5 rounded-lg ${
+                          homeWon ? "bg-green-100 text-green-700" :
+                          awayWon ? "text-red-400" :
+                          "text-gray-800"
+                        }`}>
+                          {team1Name}
+                        </span>
+                        <span className="inline-block px-1.5 py-0.5 rounded bg-red-500 text-white text-[10px] font-bold flex-shrink-0">VS</span>
+                        <span className={`text-sm font-semibold px-2 py-0.5 rounded-lg ${
+                          awayWon ? "bg-green-100 text-green-700" :
+                          homeWon ? "text-red-400" :
+                          "text-gray-800"
+                        }`}>
+                          {team2Name}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      {m.sets?.length > 0 && (
+                        <span className="text-xs text-gray-500 font-mono">
+                          {m.sets.map((s) => `${s.home}-${s.away}`).join(", ")}
+                        </span>
+                      )}
+                      <span className="text-xs text-gray-400">{m.court}</span>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${MATCH_STATUS_STYLES[m.status] ?? ""}`}>
+                        {m.status}
                       </span>
-                      <span className="inline-block px-1.5 py-0.5 rounded bg-red-500 text-white text-[10px] font-bold flex-shrink-0">VS</span>
-                      <span className={`text-sm font-semibold px-2 py-0.5 rounded-lg ${
-                        awayWon ? "bg-green-100 text-green-700" :
-                        homeWon ? "text-red-400" :
-                        "text-gray-800"
-                      }`}>
-                        {team2Name}
-                      </span>
+                      {isExpanded ? (
+                        <ChevronUp className="w-4 h-4 text-gray-400" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-gray-400" />
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    {m.sets?.length > 0 && (
-                      <span className="text-xs text-gray-500 font-mono">
-                        {m.sets.map((s) => `${s.home}-${s.away}`).join(", ")}
-                      </span>
-                    )}
-                    <span className="text-xs text-gray-400">{m.court}</span>
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${MATCH_STATUS_STYLES[m.status] ?? ""}`}>
-                      {m.status}
-                    </span>
-                  </div>
+
+                  {isExpanded && (
+                    <div className="border-t border-gray-100 bg-gray-50/50 p-4">
+                      <ScoreEntry
+                        match={m}
+                        tournamentId={tournamentId}
+                        tournament={tournament}
+                      />
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -840,7 +1083,8 @@ const TournamentDetail = () => {
 
   const canGenerate = ["Draft", "Active", "Scheduled"].includes(tournament.status);
   const canFinalize = tournament.status === "Scheduled";
-  const isFinalized = ["Scheduled", "Ongoing", "Completed"].includes(tournament.status);
+  const isFinalized = ["Scheduled", "Finalized", "Ongoing", "Completed"].includes(tournament.status);
+  const isPostFinalize = ["Finalized", "Ongoing", "Completed"].includes(tournament.status);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
@@ -876,7 +1120,7 @@ const TournamentDetail = () => {
       <div className="px-[10px] py-6 w-full">
         {/* Action buttons */}
         <div className="flex flex-wrap gap-3 mb-6">
-          {canGenerate && (
+          {canGenerate ? (
             <button
               onClick={() => generateGroups(tournamentId)}
               disabled={isGenerating}
@@ -885,8 +1129,16 @@ const TournamentDetail = () => {
               {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               {isGenerating ? "Generating..." : tournament.groups?.length > 0 ? "Regenerate Groups & Matches" : "Generate Groups & Matches"}
             </button>
+          ) : isPostFinalize && (
+            <button
+              disabled
+              className="flex items-center gap-2 bg-gray-100 text-gray-400 px-4 py-2 rounded-xl text-sm font-semibold cursor-not-allowed"
+            >
+              <Lock className="w-4 h-4" />
+              Regenerate Groups & Matches
+            </button>
           )}
-          {canFinalize && (
+          {canFinalize ? (
             <button
               onClick={() => finalize(tournamentId)}
               disabled={isFinalizing}
@@ -894,6 +1146,14 @@ const TournamentDetail = () => {
             >
               <CheckCircle className="w-4 h-4" />
               {isFinalizing ? "Finalizing..." : "Finalize Tournament"}
+            </button>
+          ) : isPostFinalize && (
+            <button
+              disabled
+              className="flex items-center gap-2 bg-gray-100 text-gray-400 px-4 py-2 rounded-xl text-sm font-semibold cursor-not-allowed"
+            >
+              <Lock className="w-4 h-4" />
+              Tournament Finalized
             </button>
           )}
         </div>
@@ -918,9 +1178,9 @@ const TournamentDetail = () => {
 
         {/* Tab content */}
         {tab === "config"    && <ConfigTab    tournament={tournament} isFinalized={isFinalized} />}
-        {tab === "players"   && <PlayersTab   tournamentId={tournamentId} />}
-        {tab === "groups"    && <GroupsTab    tournamentId={tournamentId} />}
-        {tab === "matches"   && <MatchesTab   tournamentId={tournamentId} matchType={tournament.matchType} />}
+        {tab === "players"   && <PlayersTab   tournamentId={tournamentId} isFinalized={isFinalized} tournament={tournament} />}
+        {tab === "groups"    && <GroupsTab    tournamentId={tournamentId} isFinalized={isFinalized} />}
+        {tab === "matches"   && <MatchesTab   tournamentId={tournamentId} matchType={tournament.matchType} tournament={tournament} />}
         {tab === "standings"       && <StandingsTab       tournamentId={tournamentId} />}
         {tab === "playerStandings" && <PlayerStandingsTab tournamentId={tournamentId} />}
       </div>

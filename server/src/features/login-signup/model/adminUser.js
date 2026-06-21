@@ -79,7 +79,20 @@ const adminUserSchema = new mongoose.Schema(
       ref: "Team"
     },
 
-   
+    // Square Payments (per-admin OAuth connection — multi-tenant)
+    // Each admin brings their own Square Developer "app" (Application ID +
+    // Secret), entered from the frontend Settings page — NOT a shared
+    // platform-level credential in .env. The secret is encrypted at rest.
+    squareApplicationId: { type: String, default: null },
+    squareApplicationSecretEnc: { type: String, default: null, select: false },
+    squareMerchantId: { type: String, default: null },
+    squareAccessToken: { type: String, default: null, select: false },
+    squareRefreshToken: { type: String, default: null, select: false },
+    squareTokenExpiresAt: { type: Date, default: null },
+    squareLocationId: { type: String, default: null },
+    squareLocationName: { type: String, default: null },
+    squareDeviceId: { type: String, default: null },
+
   },
   { timestamps: true }
 );
@@ -100,6 +113,10 @@ adminUserSchema.set("toJSON", {
     if (ret.password) {
       delete ret.password;
     }
+    // Never leak Square tokens/secrets to the client, even if accidentally selected
+    delete ret.squareAccessToken;
+    delete ret.squareRefreshToken;
+    delete ret.squareApplicationSecretEnc;
 
     return ret;
   },

@@ -15,6 +15,7 @@ const STATUS_STYLES = {
   Draft:      "bg-gray-100 text-gray-600",
   Active:     "bg-blue-100 text-blue-700",
   Scheduled:  "bg-yellow-100 text-yellow-700",
+  Finalized:  "bg-teal-100 text-teal-700",
   Ongoing:    "bg-green-100 text-green-700",
   Completed:  "bg-purple-100 text-purple-700",
 };
@@ -170,7 +171,7 @@ const TournamentList = () => {
                   {/* Checkbox */}
                   <div
                     className="absolute top-3 left-3"
-                    onClick={(e) => { e.stopPropagation(); toggleOne(t._id); }}
+                    onClick={(e) => e.stopPropagation()}
                   >
                     <input
                       type="checkbox"
