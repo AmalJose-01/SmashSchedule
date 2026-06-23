@@ -27,7 +27,9 @@ const ScoreEntry = ({ match, tournamentId, tournament, onScoreRecorded }) => {
   const gap     = tournament?.winningPointGap ?? 2;
   const reqWins = Math.ceil(maxSets / 2);
 
-  const [sets, setSets] = useState([{ ...EMPTY_SET }]);
+  const [sets, setSets] = useState(
+    Array.from({ length: maxSets }, () => ({ ...EMPTY_SET }))
+  );
   const [validationError, setValidationError] = useState("");
 
   const { mutate: recordScore, isPending } = useRecordMatchScore();
@@ -37,9 +39,10 @@ const ScoreEntry = ({ match, tournamentId, tournament, onScoreRecorded }) => {
     if (match?.sets?.length > 0) {
       setSets(match.sets.map((s) => ({ home: s.home ?? "", away: s.away ?? "" })));
     } else {
-      setSets([{ ...EMPTY_SET }]);
+      // Default to the tournament's configured number of sets (e.g. Best of 3 → 3 rows)
+      setSets(Array.from({ length: maxSets }, () => ({ ...EMPTY_SET })));
     }
-  }, [match?._id]);
+  }, [match?._id, maxSets]);
 
   const updateSet = (idx, field, value) => {
     const num = value === "" ? "" : Math.min(Number(value), winPt);

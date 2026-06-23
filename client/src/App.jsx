@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import AdminRoutes from "./routes/AdminRoutes.jsx";
 import UserRoutes from "./routes/UserRoutes.jsx";
 import "./App.css";
@@ -11,11 +11,16 @@ import TournamentList from "./pages/user/TournamentList.jsx";
 import GroupStageList from "./pages/user/GroupStageList.jsx";
 import KnockoutResult from "./pages/user/KnockoutResult.jsx";
 import SaveTeamRegistration from "./pages/user/SaveTeamRegistration.jsx";
-import CheckoutPage from "./pages/admin/CheckoutPage.jsx";
 import Success from "./pages/common/Success.jsx";
 import ViewTournamentDetail from "./pages/user/ViewTournamentDetail.jsx";
 import Login from "./pages/admin/Login.jsx";
 import LoginSelector from "./pages/common/LoginSelector.jsx";
+
+// Lazy-loaded: CheckoutPage pulls in Stripe.js, which would otherwise load
+// (and ping Stripe's telemetry endpoint) on every page in the app, even
+// tournament pages that only use Square. This way Stripe only loads when
+// someone actually navigates to /checkout.
+const CheckoutPage = lazy(() => import("./pages/admin/CheckoutPage.jsx"));
 
 function App() {
   const [count, setCount] = useState(0);
@@ -41,8 +46,15 @@ function App() {
             />
             <Route path="/knockoutResult" element={<KnockoutResult />} />
 
-            {/* Stripe Checkout Page */}
-            <Route path="/checkout" element={<CheckoutPage />} />
+            {/* Stripe Checkout Page — lazy-loaded so Stripe.js only loads here */}
+            <Route
+              path="/checkout"
+              element={
+                <Suspense fallback={null}>
+                  <CheckoutPage />
+                </Suspense>
+              }
+            />
 
             {/* Admin routes */}
             {AdminRoutes()}

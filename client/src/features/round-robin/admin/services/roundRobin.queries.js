@@ -24,6 +24,15 @@ import {
   getStandingsAPI,
   recordMatchScoreAPI,
   updateMatchAPI,
+  saveSquareCredentialsAPI,
+  getSquareConnectUrlAPI,
+  getSquareStatusAPI,
+  disconnectSquareAPI,
+  getSquareLocationsAPI,
+  saveSquareSettingsAPI,
+  collectPaymentAPI,
+  getPaymentStatusAPI,
+  getTournamentPaymentsAPI,
 } from "./roundRobin.services.js";
 
 
@@ -160,8 +169,13 @@ export const useBulkImportRoundRobinMembers = () => {
   return useMutation({
     mutationFn: bulkImportRoundRobinMembersAPI,
     onSuccess: (data) => {
-      const { success, failed } = data.data;
-      toast.success(`Imported ${success} member(s)${failed > 0 ? `, ${failed} skipped` : ""}`);
+      const { success, updated, reactivated, failed } = data.data;
+      const parts = [];
+      if (success) parts.push(`${success} added`);
+      if (reactivated) parts.push(`${reactivated} restored`);
+      if (updated) parts.push(`${updated} updated`);
+      if (failed) parts.push(`${failed} skipped`);
+      toast.success(parts.length ? parts.join(" · ") : "No members imported");
       queryClient.invalidateQueries({ queryKey: rrKeys.members });
     },
     onError: (err) => toast.error(err.response?.data?.message || "Bulk import failed"),
@@ -284,6 +298,96 @@ export const useResetMatchScore = () => {
     onError: (err) => toast.error(err.response?.data?.message || "Failed to reset score"),
   });
 };
+
+// ── Square Payments ───────────────────────────────────────────────────────────
+export const useSaveSquareCredentials = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: saveSquareCredentialsAPI,
+    onSuccess: () => {
+      toast.success("Square Application credentials saved");
+      queryClient.invalidateQueries({ queryKey: ["square-status"] });
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to save Square credentials"),
+  });
+};
+
+export const useGetSquareStatus = () =>
+  useQuery({
+    queryKey: ["square-status"],
+    queryFn: getSquareStatusAPI,
+    staleTime: 1000 * 30,
+  });
+
+export const useConnectSquare = () =>
+  useMutation({
+    mutationFn: getSquareConnectUrlAPI,
+    onSuccess: (data) => {
+      if (data?.url) window.location.href = data.url;
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to start Square connection"),
+  });
+
+export const useDisconnectSquare = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: disconnectSquareAPI,
+    onSuccess: () => {
+      toast.success("Square disconnected");
+      queryClient.invalidateQueries({ queryKey: ["square-status"] });
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to disconnect Square"),
+  });
+};
+
+export const useGetSquareLocations = (enabled) =>
+  useQuery({
+    queryKey: ["square-locations"],
+    queryFn: getSquareLocationsAPI,
+    enabled: !!enabled,
+  });
+
+export const useSaveSquareSettings = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: saveSquareSettingsAPI,
+    onSuccess: () => {
+      toast.success("Square settings saved");
+      queryClient.invalidateQueries({ queryKey: ["square-status"] });
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to save Square settings"),
+  });
+};
+
+export const useCollectPayment = () =>
+  useMutation({
+    mutationFn: collectPaymentAPI,
+    onSuccess: () => toast.success("Checkout sent to Terminal — ask the player to tap, insert, or swipe"),
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to start Terminal checkout"),
+  });
+
+export const useGetPaymentStatus = (paymentId, options = {}) =>
+  useQuery({
+    queryKey: ["rr-payment-status", paymentId],
+    queryFn: () => getPaymentStatusAPI(paymentId),
+    enabled: !!paymentId,
+    refetchInterval: (query) => {
+      const status = query.state.data?.data?.status;
+      return ["COMPLETED", "CANCELED", "FAILED"].includes(status) ? false : 2000;
+    },
+    ...options,
+  });
+
+// Latest payment per player for a tournament — lets the Players table show the
+// correct Paid/Waiting/Collect state for each player immediately on load,
+// instead of forgetting which player a Terminal checkout was for after a refresh.
+export const useGetTournamentPayments = (tournamentId) =>
+  useQuery({
+    queryKey: ["rr-tournament-payments", tournamentId],
+    queryFn: () => getTournamentPaymentsAPI(tournamentId),
+    enabled: !!tournamentId,
+    refetchInterval: 5000,
+  });
 
 export const useUpdateMatch = () => {
   const queryClient = useQueryClient();

@@ -73,7 +73,12 @@ const RoundRobinGroupController = {
           groupName: group.groupName,
           players: players.map((p) => ({ playerId: p._id, name: p.name })),
         }));
-        const { matches } = generateDoublesMatches(allGroupData, tournamentId, tournament.numberOfCourts);
+        const { matches } = generateDoublesMatches(
+          allGroupData,
+          tournamentId,
+          tournament.numberOfCourts,
+          tournament.numberOfMatchesPerMember
+        );
         const savedMatches = await RoundRobinMatch.insertMany(matches);
         allMatches = savedMatches;
       } else {
@@ -87,7 +92,8 @@ const RoundRobinGroupController = {
             group._id,
             group.groupName,
             tournament.numberOfCourts,
-            courtIndex
+            courtIndex,
+            tournament.numberOfMatchesPerMember
           );
           courtIndex = nextCourtIndex;
           const savedMatches = await RoundRobinMatch.insertMany(matches);
@@ -164,7 +170,12 @@ const RoundRobinGroupController = {
           groupName: group.groupName,
           players: playerRefs,
         }));
-        const { matches } = generateDoublesMatches(allGroupData, tournamentId, tournament.numberOfCourts);
+        const { matches } = generateDoublesMatches(
+          allGroupData,
+          tournamentId,
+          tournament.numberOfCourts,
+          tournament.numberOfMatchesPerMember
+        );
         const savedMatches = await RoundRobinMatch.insertMany(matches);
         allMatches = savedMatches;
       } else {
@@ -176,7 +187,8 @@ const RoundRobinGroupController = {
             group._id,
             group.groupName,
             tournament.numberOfCourts,
-            courtIndex
+            courtIndex,
+            tournament.numberOfMatchesPerMember
           );
           courtIndex = nextCourtIndex;
           const savedMatches = await RoundRobinMatch.insertMany(matches);

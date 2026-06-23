@@ -2,14 +2,18 @@ import React, { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useClubProfile } from "../hooks/useClubProfile";
 import AddressSearch from "../../../../components/AddressSearch";
+import { useGetSquareStatus } from "../../../round-robin/admin/services/roundRobin.queries.js";
 import "./ClubProfile.css";
 
 const ClubProfile = () => {
   const navigate = useNavigate();
   const logoInputRef = useRef(null);
+  const { data: squareStatusData } = useGetSquareStatus();
+  const squareStatus = squareStatusData?.data;
 
   const {
     club,
+    loginEmail,
     formData,
     isLoading,
     isEditing,
@@ -160,7 +164,7 @@ const ClubProfile = () => {
               </div>
               <div className="cp-info-item">
                 <label>Email</label>
-                <span>{club?.email || <span className="empty">—</span>}</span>
+                <span>{club?.email || loginEmail || <span className="empty">—</span>}</span>
               </div>
             </div>
           )}
@@ -266,6 +270,32 @@ const ClubProfile = () => {
               </div>
             </div>
           )}
+        </div>
+
+        {/* ===== SQUARE PAYMENTS ===== */}
+        <div className="cp-section-card">
+          <h2 className="cp-section-title">💳 Square Payments</h2>
+          <div className="cp-info-grid">
+            <div className="cp-info-item">
+              <label>Status</label>
+              <span>
+                {squareStatus?.connected ? (
+                  <span className="cp-complete-badge complete">✓ Connected</span>
+                ) : squareStatus?.hasCredentials ? (
+                  <span className="cp-complete-badge incomplete">⚠ Credentials saved — not connected</span>
+                ) : (
+                  <span className="cp-complete-badge incomplete">⚠ Not set up</span>
+                )}
+              </span>
+            </div>
+          </div>
+          <button
+            className="btn-edit-profile"
+            style={{ marginTop: 12 }}
+            onClick={() => navigate("/admin/square-settings")}
+          >
+            Manage Square Payments →
+          </button>
         </div>
       </div>
     </div>

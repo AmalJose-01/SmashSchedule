@@ -17,7 +17,7 @@ const groupPlayers = (players, numberOfGroups, strategy) => {
       [ordered[i], ordered[j]] = [ordered[j], ordered[i]];
     }
   } else if (strategy === "by-grade" || strategy === "balanced") {
-    const gradeOrder = ["A", "B", "C", "D", "E", "Unrated"];
+    const gradeOrder = ["A", "B", "C", "D", "E", "F", "G", "H", "Unrated"];
     ordered.sort(
       (a, b) => gradeOrder.indexOf(a.grade) - gradeOrder.indexOf(b.grade)
     );
@@ -44,14 +44,53 @@ const groupPlayers = (players, numberOfGroups, strategy) => {
 };
 
 /**
- * Generate all round-robin match combinations for a single group.
- * Singles: n*(n-1)/2 matches
+ * Build the standard "circle method" round-robin schedule for a list of players.
+ * Returns an array of rounds, each round being an array of [playerA, playerB] pairs.
+ * Across all (n-1) rounds (n players, padded with a bye if odd), every pair of
+ * players faces each other exactly once — taking only the first N rounds gives
+ * every player exactly N distinct matches (minus any round where they draw a bye).
+ * @param {Array} players
+ * @returns {Array<Array<[Object, Object]>>}
+ */
+const buildCircleMethodRounds = (players) => {
+  let arr = [...players];
+  const hasBye = arr.length % 2 !== 0;
+  if (hasBye) arr.push(null); // bye placeholder so pairing math stays even
+
+  const n = arr.length;
+  const rounds = [];
+
+  for (let r = 0; r < n - 1; r++) {
+    const round = [];
+    for (let i = 0; i < n / 2; i++) {
+      const p1 = arr[i];
+      const p2 = arr[n - 1 - i];
+      if (p1 && p2) round.push([p1, p2]);
+    }
+    rounds.push(round);
+
+    // Rotate everyone except the player fixed at index 0
+    const fixed = arr[0];
+    const rest = arr.slice(1);
+    rest.unshift(rest.pop());
+    arr = [fixed, ...rest];
+  }
+
+  return rounds;
+};
+
+/**
+ * Generate round-robin match combinations for a single group.
+ * Full round robin: n*(n-1)/2 matches (every player faces every other player once).
+ * If matchesPerMember is set and is less than n-1, only the first N rounds of the
+ * circle-method schedule are used, giving each player exactly N distinct matches.
  * @param {Array} players - Array of player objects { playerId, name }
  * @param {ObjectId} tournamentId
  * @param {ObjectId} groupId
  * @param {String} groupName
  * @param {Number} numberOfCourts
  * @param {Number} courtStartIndex - running court counter across groups
+ * @param {Number} [matchesPerMember] - cap on distinct matches per player; falls back to full round robin if omitted or >= n-1
  * @returns {{ matches: Array, nextCourtIndex: Number }}
  */
 const generateSinglesMatches = (
@@ -60,33 +99,80 @@ const generateSinglesMatches = (
   groupId,
   groupName,
   numberOfCourts,
-  courtStartIndex = 0
+  courtStartIndex = 0,
+  matchesPerMember = null
 ) => {
   const matches = [];
   let courtIndex = courtStartIndex;
   let matchCounter = 1;
 
-  for (let i = 0; i < players.length; i++) {
-    for (let j = i + 1; j < players.length; j++) {
-      const courtNumber = (courtIndex % numberOfCourts) + 1;
-      matches.push({
-        tournamentId,
-        groupId,
-        matchName: `${groupName} - Match ${matchCounter}`,
-        player1Id: players[i].playerId,
-        player2Id: players[j].playerId,
-        court: `Court ${courtNumber}`,
-        status: "scheduled",
-        sets: [],
-        winner: null,
-        loser: null,
-      });
-      courtIndex++;
-      matchCounter++;
+  const n = players.length;
+  const maxPossible = n - 1;
+  const useFullRoundRobin =
+    !matchesPerMember || matchesPerMember <= 0 || matchesPerMember >= maxPossible;
+
+  const pushMatch = (p1, p2) => {
+    const courtNumber = (courtIndex % numberOfCourts) + 1;
+    matches.push({
+      tournamentId,
+      groupId,
+      matchName: `${groupName} - Match ${matchCounter}`,
+      player1Id: p1.playerId,
+      player2Id: p2.playerId,
+      court: `Court ${courtNumber}`,
+      status: "scheduled",
+      sets: [],
+      winner: null,
+      loser: null,
+    });
+    courtIndex++;
+    matchCounter++;
+  };
+
+  if (useFullRoundRobin) {
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        pushMatch(players[i], players[j]);
+      }
+    }
+  } else {
+    const rounds = buildCircleMethodRounds(players).slice(0, matchesPerMember);
+    for (const round of rounds) {
+      for (const [p1, p2] of round) {
+        pushMatch(p1, p2);
+      }
     }
   }
 
   return { matches, nextCourtIndex: courtIndex };
+};
+
+/**
+ * Trim a list of generated matches so no player (by playerId, across player1Id,
+ * player2Id, player1PartnerId, player2PartnerId) appears in more than `limit`
+ * matches. Processes matches in their original order, greedily keeping a match
+ * only if every player involved still has remaining budget.
+ * @param {Array} matches
+ * @param {Number} limit
+ * @returns {Array}
+ */
+const capMatchesPerMember = (matches, limit) => {
+  if (!limit || limit <= 0) return matches;
+
+  const counts = new Map();
+  const idsOf = (m) =>
+    [m.player1Id, m.player2Id, m.player1PartnerId, m.player2PartnerId].filter(Boolean);
+
+  const kept = [];
+  for (const match of matches) {
+    const ids = idsOf(match).map(String);
+    const withinLimit = ids.every((id) => (counts.get(id) || 0) < limit);
+    if (withinLimit) {
+      ids.forEach((id) => counts.set(id, (counts.get(id) || 0) + 1));
+      kept.push(match);
+    }
+  }
+  return kept;
 };
 
 /**
@@ -105,12 +191,16 @@ const generateSinglesMatches = (
  *   …
  *   Match 21: P6-P7 vs P13-P14
  *
+ * If matchesPerMember is set, the generated fixture list is trimmed afterward so
+ * no player appears (as either a player or a partner) in more than that many matches.
+ *
  * @param {Array} allGroups - Array of { groupId, groupName, players: [{ playerId, name }] }
  * @param {ObjectId} tournamentId
  * @param {Number} numberOfCourts
+ * @param {Number} [matchesPerMember] - cap on matches per player; omit for no cap
  * @returns {{ matches: Array }}
  */
-const generateDoublesMatches = (allGroups, tournamentId, numberOfCourts) => {
+const generateDoublesMatches = (allGroups, tournamentId, numberOfCourts, matchesPerMember = null) => {
   // Build all C(n,2) intra-group pairs for each group
   const groupCombinations = allGroups.map(({ groupId, groupName, players }) => {
     const pairs = [];
@@ -124,7 +214,6 @@ const generateDoublesMatches = (allGroups, tournamentId, numberOfCourts) => {
 
   const matches = [];
   let courtIndex = 0;
-  let matchCounter = 1;
 
   // Inter-group round-robin: Group A vs Group B, A vs C, B vs C …
   for (let gi = 0; gi < groupCombinations.length; gi++) {
@@ -142,7 +231,9 @@ const generateDoublesMatches = (allGroups, tournamentId, numberOfCourts) => {
         matches.push({
           tournamentId,
           groupId: groupA.groupId,
-          matchName: `${fixtureName} - Match ${matchCounter}`,
+          // fixtureName kept separately so it can be renumbered after filtering;
+          // matchName is finalized below once the per-member cap has been applied.
+          _fixtureName: fixtureName,
           player1Id: pairA.player1.playerId,
           player1PartnerId: pairA.player2.playerId,
           player2Id: pairB.player1.playerId,
@@ -154,12 +245,24 @@ const generateDoublesMatches = (allGroups, tournamentId, numberOfCourts) => {
           loser: null,
         });
         courtIndex++;
-        matchCounter++;
       }
     }
   }
 
-  return { matches };
+  const kept = capMatchesPerMember(matches, matchesPerMember);
+
+  // Renumber matches sequentially within each fixture so the displayed
+  // "Match N" labels have no gaps left behind by the cap filter.
+  const fixtureCounters = new Map();
+  for (const match of kept) {
+    const fixtureName = match._fixtureName;
+    const next = (fixtureCounters.get(fixtureName) || 0) + 1;
+    fixtureCounters.set(fixtureName, next);
+    match.matchName = `${fixtureName} - Match ${next}`;
+    delete match._fixtureName;
+  }
+
+  return { matches: kept };
 };
 
-module.exports = { groupPlayers, generateSinglesMatches, generateDoublesMatches };
+module.exports = { groupPlayers, generateSinglesMatches, generateDoublesMatches, capMatchesPerMember };

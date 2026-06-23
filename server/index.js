@@ -5,6 +5,7 @@ const routes = require("./routes/index");
 const cors = require(`cors`);
 const errorHandler = require('./middleware/errorHandler');
 const stripeWebhook = require("./routes/stripeWebhook")
+const squareWebhook = require("./src/features/payments/square/squareWebhook")
 const path = require("path");
 
 
@@ -35,6 +36,8 @@ app.use(
   express.raw({ type: "application/json" }),
   stripeWebhook
 );
+
+app.use("/webhook/square", squareWebhook);
 
 
 // Connect to the database

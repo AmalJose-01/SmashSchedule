@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Search, Pencil, Trash2, Users } from "lucide-react";
+import { ArrowLeft, Plus, Search, Pencil, Trash2, Users, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import Logout from "../../../../components/Logout.jsx";
@@ -26,10 +26,39 @@ const formatDob = (dob) => {
   return new Date(dob).toLocaleDateString("en-AU", { day: "2-digit", month: "short", year: "numeric" });
 };
 
+const GRADE_ORDER = ["A", "B", "C", "D", "E", "F", "G", "H", "Unrated"];
+
+// ── Sorting helpers ─────────────────────────────────────────────────────────
+const SORTABLE_COLUMNS = {
+  name: { compare: (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }) },
+  grade: { compare: (a, b) => GRADE_ORDER.indexOf(a.grade) - GRADE_ORDER.indexOf(b.grade) },
+  gender: { compare: (a, b) => (a.gender || "").localeCompare(b.gender || "", undefined, { sensitivity: "base" }) },
+  dateOfBirth: { compare: (a, b) => new Date(a.dateOfBirth || 0) - new Date(b.dateOfBirth || 0) },
+  email: { compare: (a, b) => a.email.localeCompare(b.email, undefined, { sensitivity: "base" }) },
+};
+
+const SortHeader = ({ label, sortKey, sort, onSort, className = "" }) => {
+  const isActive = sort.key === sortKey;
+  const Icon = isActive ? (sort.dir === "asc" ? ArrowUp : ArrowDown) : ArrowUpDown;
+  return (
+    <th className={`px-3 py-3 font-semibold ${className}`}>
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className={`flex items-center gap-1 hover:text-purple-900 transition-colors ${isActive ? "text-purple-900" : ""}`}
+      >
+        {label}
+        <Icon className={`w-3.5 h-3.5 ${isActive ? "" : "text-gray-300"}`} />
+      </button>
+    </th>
+  );
+};
+
 const MemberManagement = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState({ key: "name", dir: "asc" });
   const [formOpen, setFormOpen] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
@@ -49,6 +78,18 @@ const MemberManagement = () => {
       m.grade.toLowerCase().includes(q) ||
       (m.nationalMemberId ?? "").toLowerCase().includes(q)
   );
+
+  const sorted = [...filtered].sort((a, b) => {
+    const { compare } = SORTABLE_COLUMNS[sort.key] ?? SORTABLE_COLUMNS.name;
+    const result = compare(a, b);
+    return sort.dir === "asc" ? result : -result;
+  });
+
+  const handleSort = (key) => {
+    setSort((prev) =>
+      prev.key === key ? { key, dir: prev.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }
+    );
+  };
 
   const allFilteredSelected =
     filtered.length > 0 && filtered.every((m) => selected.has(m._id));
@@ -210,17 +251,17 @@ const MemberManagement = () => {
                     />
                   </th>
                   <th className="px-3 py-3 font-semibold whitespace-nowrap hidden md:table-cell">Nat. ID</th>
-                  <th className="px-3 py-3 font-semibold">Name</th>
-                  <th className="px-3 py-3 font-semibold">Grade</th>
-                  <th className="px-3 py-3 font-semibold hidden sm:table-cell">Gender</th>
-                  <th className="px-3 py-3 font-semibold whitespace-nowrap hidden lg:table-cell">Date of Birth</th>
-                  <th className="px-3 py-3 font-semibold hidden sm:table-cell">Email</th>
+                  <SortHeader label="Name" sortKey="name" sort={sort} onSort={handleSort} />
+                  <SortHeader label="Grade" sortKey="grade" sort={sort} onSort={handleSort} />
+                  <SortHeader label="Gender" sortKey="gender" sort={sort} onSort={handleSort} className="hidden sm:table-cell" />
+                  <SortHeader label="Date of Birth" sortKey="dateOfBirth" sort={sort} onSort={handleSort} className="whitespace-nowrap hidden lg:table-cell" />
+                  <SortHeader label="Email" sortKey="email" sort={sort} onSort={handleSort} className="hidden sm:table-cell" />
                   <th className="px-3 py-3 font-semibold hidden lg:table-cell">Contact</th>
                   <th className="px-3 py-3 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {filtered.map((member) => {
+                {sorted.map((member) => {
                   const isSelected = selected.has(member._id);
                   return (
                     <tr

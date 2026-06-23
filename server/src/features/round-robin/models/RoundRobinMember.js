@@ -7,7 +7,7 @@ const RoundRobinMemberSchema = new Schema(
     name: { type: String, required: true },
     grade: {
       type: String,
-      enum: ["A", "B", "C", "D", "E", "Unrated"],
+      enum: ["A", "B", "C", "D", "E", "F", "G", "H", "Unrated"],
       default: "Unrated",
     },
     email: { type: String, required: true, lowercase: true, trim: true },

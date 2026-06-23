@@ -11,16 +11,29 @@ const RoundRobinMemberController = {
         return res.status(400).json({ message: "name and email are required" });
       }
 
-      const existing = await RoundRobinMember.findOne({ email: email.toLowerCase().trim(), adminId: req.userId });
+      const cleanEmail = email.toLowerCase().trim();
+      const existing = await RoundRobinMember.findOne({ email: cleanEmail, adminId: req.userId });
       if (existing) {
-        return res.status(409).json({ message: "A member with this email already exists" });
+        if (existing.isActive) {
+          return res.status(409).json({ message: "A member with this email already exists" });
+        }
+        // Previously removed member — reactivate instead of blocking re-creation.
+        existing.isActive = true;
+        existing.name = name;
+        if (grade) existing.grade = grade;
+        existing.contact = contact || "";
+        if (nationalMemberId) existing.nationalMemberId = nationalMemberId;
+        if (dateOfBirth) existing.dateOfBirth = dateOfBirth;
+        if (gender) existing.gender = gender;
+        await existing.save();
+        return res.status(201).json({ message: "Member created", data: existing });
       }
 
       const member = await RoundRobinMember.create({
         adminId: req.userId,
         name,
         ...(grade && { grade }),
-        email,
+        email: cleanEmail,
         contact: contact || "",
         ...(nationalMemberId && { nationalMemberId }),
         ...(dateOfBirth && { dateOfBirth }),
@@ -120,7 +133,7 @@ const RoundRobinMemberController = {
         return res.status(400).json({ message: "members array is required and cannot be empty" });
       }
 
-      const VALID_GRADES = ["A", "B", "C", "D", "E", "Unrated"];
+      const VALID_GRADES = ["A", "B", "C", "D", "E", "F", "G", "H", "Unrated"];
 
       /**
        * Parse a dateOfBirth string that may be DD.MM.YYYY, DD/MM/YYYY,
@@ -148,7 +161,7 @@ const RoundRobinMemberController = {
       const sanitiseGrade = (raw) =>
         VALID_GRADES.includes(raw) ? raw : "Unrated";
 
-      const results = { success: 0, updated: 0, failed: 0, errors: [] };
+      const results = { success: 0, updated: 0, reactivated: 0, failed: 0, errors: [] };
 
       for (const m of members) {
         const { name, grade, email, contact, nationalMemberId, dateOfBirth, gender } = m;
@@ -175,9 +188,15 @@ const RoundRobinMemberController = {
           const existing = await RoundRobinMember.findOne({ email: cleanEmail, adminId: req.userId });
           if (existing) {
             // Update existing member instead of failing
+            const wasInactive = !existing.isActive;
             Object.assign(existing, payload);
+            existing.isActive = true; // revive soft-deleted members instead of leaving them hidden
             await existing.save();
-            results.updated++;
+            if (wasInactive) {
+              results.reactivated++;
+            } else {
+              results.updated++;
+            }
           } else {
             await RoundRobinMember.create({ adminId: req.userId, email: cleanEmail, ...payload });
             results.success++;

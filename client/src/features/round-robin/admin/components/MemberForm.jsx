@@ -8,7 +8,7 @@ import {
   useBulkImportRoundRobinMembers,
 } from "../services/roundRobin.queries.js";
 
-const GRADES = ["A", "B", "C", "D", "E", "Unrated"];
+const GRADES = ["A", "B", "C", "D", "E", "F", "G", "H", "Unrated"];
 
 const EMPTY_FORM = {
   name: "", grade: "Unrated", email: "", contact: "",
@@ -363,7 +363,10 @@ const BulkImportTab = () => {
               Import complete
             </div>
             <p className="text-xs text-green-600">
-              {importResult.success} added · {importResult.failed} skipped
+              {importResult.success} added
+              {importResult.reactivated > 0 && ` · ${importResult.reactivated} restored`}
+              {importResult.updated > 0 && ` · ${importResult.updated} updated`}
+              {importResult.failed > 0 && ` · ${importResult.failed} skipped`}
             </p>
             {importResult.errors?.length > 0 && (
               <ul className="mt-2 space-y-0.5 max-h-24 overflow-y-auto">

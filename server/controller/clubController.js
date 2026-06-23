@@ -34,10 +34,10 @@ const clubController = {
   getMyClubProfile: async (req, res) => {
     try {
       let club = await Club.findOne({ adminId: req.userId }).lean();
+      const admin = await AdminUser.findById(req.userId).select("emailID").lean();
 
       if (!club) {
         // Return empty profile scaffold
-        const admin = await AdminUser.findById(req.userId).select("emailID").lean();
         return res.status(200).json({
           club: null,
           email: admin?.emailID || "",
@@ -45,7 +45,11 @@ const clubController = {
         });
       }
 
-      return res.status(200).json({ club, isProfileComplete: club.isProfileComplete });
+      return res.status(200).json({
+        club,
+        email: admin?.emailID || "",
+        isProfileComplete: club.isProfileComplete,
+      });
     } catch (error) {
       console.error("getMyClubProfile error:", error);
       return res.status(500).json({ message: "Internal Server Error" });

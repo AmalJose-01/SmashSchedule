@@ -11,11 +11,13 @@ const RoundRobinTournamentController = {
         numberOfCourts,
         numberOfGroups,
         playersPerGroup,
+        numberOfMatchesPerMember,
         startDate,
         endDate,
         groupingStrategy,
         pointsForWin,
         pointsForLoss,
+        entryFee,
       } = req.body;
 
       if (!tournamentName || !matchType || !numberOfCourts || !numberOfGroups || !playersPerGroup) {
@@ -32,11 +34,13 @@ const RoundRobinTournamentController = {
         numberOfCourts,
         numberOfGroups,
         playersPerGroup,
+        numberOfMatchesPerMember: numberOfMatchesPerMember ?? 3,
         startDate,
         endDate,
         groupingStrategy: groupingStrategy || "random",
         pointsForWin: pointsForWin ?? 2,
         pointsForLoss: pointsForLoss ?? 0,
+        entryFee: entryFee ?? 0,
         status: "Draft",
       });
 
@@ -92,8 +96,8 @@ const RoundRobinTournamentController = {
 
       const allowedFields = [
         "tournamentName", "matchType", "description", "numberOfCourts",
-        "numberOfGroups", "playersPerGroup", "startDate", "endDate",
-        "groupingStrategy", "pointsForWin", "pointsForLoss", "status",
+        "numberOfGroups", "playersPerGroup", "numberOfMatchesPerMember", "startDate", "endDate",
+        "groupingStrategy", "pointsForWin", "pointsForLoss", "status", "entryFee",
       ];
 
       allowedFields.forEach((field) => {
@@ -136,15 +140,19 @@ const RoundRobinTournamentController = {
         return res.status(400).json({ message: "Invalid tournament id" });
       }
 
-      const tournament = await RoundRobinTournament.findOneAndUpdate(
-        { _id: id, adminId: req.userId },
-        { status: "Scheduled" },
-        { new: true }
-      );
-
-      if (!tournament) {
+      const existing = await RoundRobinTournament.findOne({ _id: id, adminId: req.userId });
+      if (!existing) {
         return res.status(404).json({ message: "Tournament not found" });
       }
+      if (existing.status !== "Scheduled") {
+        return res.status(400).json({ message: "Tournament must be Scheduled before it can be finalized" });
+      }
+
+      const tournament = await RoundRobinTournament.findOneAndUpdate(
+        { _id: id, adminId: req.userId },
+        { status: "Finalized" },
+        { new: true }
+      );
 
       return res.status(200).json({ message: "Tournament finalized", data: tournament });
     } catch (error) {

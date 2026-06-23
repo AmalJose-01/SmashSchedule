@@ -20,7 +20,7 @@ import MemberManagement from "../features/round-robin/admin/pages/MemberManageme
 import TournamentList from "../features/round-robin/admin/pages/TournamentList.jsx";
 import CreateTournamentRR from "../features/round-robin/admin/pages/CreateTournament.jsx";
 import TournamentDetail from "../features/round-robin/admin/pages/TournamentDetail.jsx";
-import MatchManagement from "../features/round-robin/admin/pages/MatchManagement.jsx";
+import SquareSettings from "../features/round-robin/admin/pages/SquareSettings.jsx";
 import ErrorBoundary from "../components/ErrorBoundary.jsx";
 
 const AdminRoutes = () => {
@@ -202,11 +202,11 @@ const AdminRoutes = () => {
       />
 
       <Route
-        path="/round-robin/match/:matchId"
+        path="/admin/square-settings"
         element={
           <ProtectedRoute role="admin">
             <ErrorBoundary>
-              <MatchManagement />
+              <SquareSettings />
             </ErrorBoundary>
           </ProtectedRoute>
         }
