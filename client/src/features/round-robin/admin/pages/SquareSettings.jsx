@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, CreditCard, CheckCircle2, XCircle, Smartphone, MapPin, KeyRound } from "lucide-react";
+import { ArrowLeft, CreditCard, CheckCircle2, XCircle, Smartphone, MapPin, KeyRound, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import Logout from "../../../../components/Logout.jsx";
 import {
@@ -19,6 +19,9 @@ const SquareSettings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [applicationId, setApplicationId] = useState("");
   const [applicationSecret, setApplicationSecret] = useState("");
+  const [manualLocationId, setManualLocationId] = useState("");
+  const [manualLocationName, setManualLocationName] = useState("");
+  const [signatureKey, setSignatureKey] = useState("");
   const [selectedLocationId, setSelectedLocationId] = useState("");
   const [selectedDeviceId, setSelectedDeviceId] = useState("");
   const [pairingCode, setPairingCode] = useState(null); // { id, code }
@@ -26,6 +29,7 @@ const SquareSettings = () => {
   const { data: statusData, isLoading: statusLoading } = useGetSquareStatus();
   const status = statusData?.data;
   const hasCredentials = !!status?.hasCredentials;
+  const hasSignatureKey = !!status?.hasSignatureKey;
   const connected = !!status?.connected;
 
   const { mutate: saveCredentials, isPending: isSavingCredentials } = useSaveSquareCredentials();
@@ -75,16 +79,28 @@ const SquareSettings = () => {
   const selectedLocation = locations.find((l) => l.id === selectedLocationId);
 
   const handleSaveCredentials = () => {
-    if (!applicationId.trim() || !applicationSecret.trim()) {
+    // Once credentials already exist (whether or not OAuth has finished),
+    // the Application ID/Secret don't need to be re-entered just to add or
+    // change the Location ID / Webhook Signature Key.
+    const onlyUpdatingExtras = hasCredentials && (manualLocationId.trim() || signatureKey.trim());
+    if (!onlyUpdatingExtras && (!applicationId.trim() || !applicationSecret.trim())) {
       toast.error("Enter both your Application ID and Application Secret");
       return;
     }
     saveCredentials(
-      { applicationId: applicationId.trim(), applicationSecret: applicationSecret.trim() },
+      {
+        applicationId: applicationId.trim(),
+        applicationSecret: applicationSecret.trim(),
+        locationId: manualLocationId.trim() || undefined,
+        locationName: manualLocationName.trim() || undefined,
+        signatureKey: signatureKey.trim() || undefined,
+      },
       {
         onSuccess: () => {
           setApplicationId("");
           setApplicationSecret("");
+          setSignatureKey("");
+          if (manualLocationId.trim()) setSelectedLocationId(manualLocationId.trim());
         },
       }
     );
@@ -143,14 +159,75 @@ const SquareSettings = () => {
             </div>
           </div>
 
-          {connected ? (
-            <div className="flex items-center justify-between bg-green-50 border border-green-100 rounded-xl px-4 py-3">
+          {connected && (
+            <div className="flex items-center justify-between bg-green-50 border border-green-100 rounded-xl px-4 py-3 mb-3">
               <div className="flex items-center gap-2 text-green-700 text-sm font-medium">
                 <CheckCircle2 className="w-4 h-4" />
                 Saved — Application ID: {status?.maskedApplicationId}
               </div>
             </div>
-          ) : (
+          )}
+          {connected && (
+            <div className="space-y-3 border-t border-gray-100 pt-4">
+              <p className="text-xs text-gray-400">
+                Already connected — you can still update your Location ID or Webhook Signature Key below without
+                re-entering your Application ID/Secret.
+              </p>
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 mb-1.5">
+                  <MapPin className="w-3.5 h-3.5" /> Location ID <span className="text-gray-300">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={manualLocationId}
+                  onChange={(e) => setManualLocationId(e.target.value)}
+                  placeholder="e.g. L9W5JG29DAG2Z"
+                  autoComplete="off"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300"
+                />
+                <input
+                  type="text"
+                  value={manualLocationName}
+                  onChange={(e) => setManualLocationName(e.target.value)}
+                  placeholder="Location name (e.g. Ballarat Masters Badminton Club)"
+                  autoComplete="off"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm mt-2 focus:outline-none focus:ring-2 focus:ring-teal-300"
+                />
+              </div>
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 mb-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5" /> Webhook Signature Key{" "}
+                  <span className="text-gray-300">(optional)</span>
+                </label>
+                {hasSignatureKey && (
+                  <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-xs text-gray-500 mb-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-teal-500 flex-shrink-0" />
+                    A signature key is already saved. Enter a new one below to replace it.
+                  </div>
+                )}
+                <input
+                  type="password"
+                  value={signatureKey}
+                  onChange={(e) => setSignatureKey(e.target.value)}
+                  placeholder={hasSignatureKey ? "Enter to replace saved signature key" : "e.g. 9qOhVE1JITFpvQULUQUYQA"}
+                  autoComplete="new-password"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  From your Square Developer Dashboard → Webhooks. Encrypted before it's stored.
+                </p>
+              </div>
+              <button
+                onClick={handleSaveCredentials}
+                disabled={isSavingCredentials || (!manualLocationId.trim() && !signatureKey.trim())}
+                className="w-full flex items-center justify-center gap-2 bg-gray-800 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-900 disabled:opacity-60 transition-colors"
+              >
+                <KeyRound className="w-4 h-4" />
+                {isSavingCredentials ? "Saving..." : "Save"}
+              </button>
+            </div>
+          )}
+          {!connected && (
             <div className="space-y-3">
               {hasCredentials && (
                 <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-xs text-gray-500">
@@ -180,6 +257,55 @@ const SquareSettings = () => {
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300"
                 />
                 <p className="text-xs text-gray-400 mt-1">Encrypted before it's stored. Never shown again after saving.</p>
+              </div>
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 mb-1.5">
+                  <MapPin className="w-3.5 h-3.5" /> Location ID <span className="text-gray-300">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={manualLocationId}
+                  onChange={(e) => setManualLocationId(e.target.value)}
+                  placeholder="e.g. L9W5JG29DAG2Z"
+                  autoComplete="off"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300"
+                />
+                <input
+                  type="text"
+                  value={manualLocationName}
+                  onChange={(e) => setManualLocationName(e.target.value)}
+                  placeholder="Location name (e.g. Ballarat Masters Badminton Club)"
+                  autoComplete="off"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm mt-2 focus:outline-none focus:ring-2 focus:ring-teal-300"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Already know your Square Location ID (from the Square Dashboard or API reference)? Save it here so
+                  it's set immediately — you can still connect your Square account separately below for payments.
+                </p>
+              </div>
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 mb-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5" /> Webhook Signature Key{" "}
+                  <span className="text-gray-300">(optional)</span>
+                </label>
+                {hasSignatureKey && (
+                  <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-xs text-gray-500 mb-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-teal-500 flex-shrink-0" />
+                    A signature key is already saved. Enter a new one below to replace it.
+                  </div>
+                )}
+                <input
+                  type="password"
+                  value={signatureKey}
+                  onChange={(e) => setSignatureKey(e.target.value)}
+                  placeholder={hasSignatureKey ? "Enter to replace saved signature key" : "e.g. 9qOhVE1JITFpvQULUQUYQA"}
+                  autoComplete="new-password"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  From your Square Developer Dashboard → Webhooks. Used to verify that webhook events (e.g. Terminal
+                  checkout updates) really came from Square. Encrypted before it's stored.
+                </p>
               </div>
               <button
                 onClick={handleSaveCredentials}

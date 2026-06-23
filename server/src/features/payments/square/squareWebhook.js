@@ -1,6 +1,8 @@
 const express = require("express");
 const { WebhooksHelper } = require("square");
 const RoundRobinPayment = require("../../round-robin/models/RoundRobinPayment");
+const AdminUser = require("../../login-signup/model/adminUser");
+const { decrypt } = require("../../../utils/cryptoUtil");
 
 const router = express.Router();
 
@@ -10,11 +12,28 @@ const router = express.Router();
 // checkout id, so no per-admin routing is needed here.
 router.post("/", express.raw({ type: "application/json" }), async (req, res) => {
   try {
-    const signatureKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
     const signatureHeader = req.headers["x-square-hmacsha256-signature"];
     const notificationUrl = process.env.SQUARE_WEBHOOK_NOTIFICATION_URL || process.env.SQUARE_OAUTH_REDIRECT_URI;
 
     const rawBody = req.body.toString("utf8");
+    const event = JSON.parse(rawBody);
+
+    // Multi-tenant: each admin has their own Square app, so each has their
+    // own Webhook Signature Key. Look up the right one via the event's
+    // merchant_id rather than relying on a single shared env var. Fall back
+    // to the env var (legacy/single-tenant setups) if no per-admin key matches.
+    let signatureKey = null;
+    if (event.merchant_id) {
+      const admin = await AdminUser.findOne({ squareMerchantId: event.merchant_id }).select(
+        "+squareWebhookSignatureKeyEnc"
+      );
+      if (admin?.squareWebhookSignatureKeyEnc) {
+        signatureKey = decrypt(admin.squareWebhookSignatureKeyEnc);
+      }
+    }
+    if (!signatureKey) {
+      signatureKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
+    }
 
     if (signatureKey) {
       const isValid = await WebhooksHelper.verifySignature({
@@ -28,10 +47,8 @@ router.post("/", express.raw({ type: "application/json" }), async (req, res) => 
         return res.sendStatus(403);
       }
     } else {
-      console.log("SQUARE_WEBHOOK_SIGNATURE_KEY not set — skipping signature verification (dev only)");
+      console.log("No Square webhook signature key found (admin or env) — skipping signature verification (dev only)");
     }
-
-    const event = JSON.parse(rawBody);
 
     if (event.type === "terminal.checkout.updated") {
       const checkout = event.data?.object?.checkout;

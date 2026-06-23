@@ -25,9 +25,29 @@ const SquareOAuthController = {
     try {
       const applicationId = req.body.applicationId?.trim();
       const applicationSecret = req.body.applicationSecret?.trim();
+      // Optional manual override — lets an admin who already knows their
+      // Square Location ID (e.g. from the Square Dashboard or API reference
+      // page) save it directly, without waiting on the OAuth connect +
+      // list-locations round trip to succeed first.
+      const locationId = req.body.locationId?.trim();
+      const locationName = req.body.locationName?.trim();
+      // Optional Webhook Signature Key (Square Developer Dashboard ->
+      // Webhooks). Each admin's own Square app has its own key, since the
+      // single shared /webhook/square endpoint serves every admin's account.
+      const signatureKey = req.body.signatureKey?.trim();
 
+      // App ID/Secret are required for an initial save. But once an admin
+      // already has credentials saved, allow a "partial" update — e.g. just
+      // adding/changing the Location ID or Webhook Signature Key — without
+      // forcing them to re-enter the Application ID/Secret every time.
       if (!applicationId || !applicationSecret) {
-        return res.status(400).json({ message: "Application ID and Application Secret are required" });
+        if (!locationId && !signatureKey) {
+          return res.status(400).json({ message: "Application ID and Application Secret are required" });
+        }
+        const existing = await AdminUser.findById(req.userId);
+        if (!existing?.squareApplicationId) {
+          return res.status(400).json({ message: "Application ID and Application Secret are required" });
+        }
       }
 
       // Square's Application ID prefix tells you which environment it belongs
@@ -35,32 +55,47 @@ const SquareOAuthController = {
       // Using the wrong one against this server's configured environment is
       // a common mistake and Square rejects it with an opaque 400 — catch it
       // here with a clear message instead.
-      const looksSandbox = applicationId.startsWith("sandbox-sq0idb-");
-      const looksProduction = applicationId.startsWith("sq0idp-");
+      if (applicationId) {
+        const looksSandbox = applicationId.startsWith("sandbox-sq0idb-");
+        const looksProduction = applicationId.startsWith("sq0idp-");
 
-      if (isProduction && looksSandbox) {
-        return res.status(400).json({
-          message:
-            "This looks like a Sandbox Application ID (sandbox-sq0idb-...), but this server is configured for Square Production. Use your Production Application ID instead.",
-        });
-      }
-      if (!isProduction && looksProduction) {
-        return res.status(400).json({
-          message:
-            "This looks like a Production Application ID (sq0idp-...), but this server is configured for Square Sandbox. Use your Sandbox Application ID instead (it starts with sandbox-sq0idb-).",
-        });
+        if (isProduction && looksSandbox) {
+          return res.status(400).json({
+            message:
+              "This looks like a Sandbox Application ID (sandbox-sq0idb-...), but this server is configured for Square Production. Use your Production Application ID instead.",
+          });
+        }
+        if (!isProduction && looksProduction) {
+          return res.status(400).json({
+            message:
+              "This looks like a Production Application ID (sq0idp-...), but this server is configured for Square Sandbox. Use your Sandbox Application ID instead (it starts with sandbox-sq0idb-).",
+          });
+        }
       }
 
-      await AdminUser.findByIdAndUpdate(req.userId, {
-        squareApplicationId: applicationId,
-        squareApplicationSecretEnc: encrypt(applicationSecret),
-      });
+      const update = {};
+      if (applicationId && applicationSecret) {
+        update.squareApplicationId = applicationId;
+        update.squareApplicationSecretEnc = encrypt(applicationSecret);
+      }
+      if (locationId) {
+        update.squareLocationId = locationId;
+        update.squareLocationName = locationName || null;
+      }
+      if (signatureKey) {
+        update.squareWebhookSignatureKeyEnc = encrypt(signatureKey);
+      }
+
+      await AdminUser.findByIdAndUpdate(req.userId, update);
 
       return res.status(200).json({
         message: "Square credentials saved",
         data: {
-          maskedApplicationId: maskSecret(applicationId),
-          maskedSecret: maskSecret(applicationSecret),
+          maskedApplicationId: applicationId ? maskSecret(applicationId) : undefined,
+          maskedSecret: applicationSecret ? maskSecret(applicationSecret) : undefined,
+          locationId: locationId || null,
+          locationName: locationName || null,
+          maskedSignatureKey: signatureKey ? maskSecret(signatureKey) : null,
         },
       });
     } catch (error) {
@@ -162,7 +197,9 @@ const SquareOAuthController = {
   // GET /admin/square/status — connection status for the logged-in admin (no secrets returned)
   getSquareStatus: async (req, res) => {
     try {
-      const admin = await AdminUser.findById(req.userId).select("+squareApplicationSecretEnc");
+      const admin = await AdminUser.findById(req.userId).select(
+        "+squareApplicationSecretEnc +squareWebhookSignatureKeyEnc"
+      );
       if (!admin) {
         return res.status(404).json({ message: "Admin not found" });
       }
@@ -170,6 +207,7 @@ const SquareOAuthController = {
       return res.status(200).json({
         data: {
           hasCredentials: !!(admin.squareApplicationId && admin.squareApplicationSecretEnc),
+          hasSignatureKey: !!admin.squareWebhookSignatureKeyEnc,
           // Never return the full Application ID once saved — only a masked
           // preview. Updating credentials always requires re-entering both
           // fields in full, the same as the secret.
