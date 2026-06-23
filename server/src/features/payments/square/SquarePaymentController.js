@@ -22,7 +22,8 @@ const SquarePaymentController = {
       if (error) return res.status(400).json({ message: error });
 
       const client = getClientForAdmin(admin.squareAccessToken);
-      const { locations } = await client.locations.list();
+      // square SDK v37+ returns `{ data, rawResponse }`, not `{ locations }` directly.
+      const { locations } = (await client.locations.list()).data;
 
       const devicesByLocation = {};
       for (const loc of locations || []) {
@@ -50,6 +51,68 @@ const SquarePaymentController = {
     } catch (error) {
       console.log("listLocations error:", error?.message || error);
       return res.status(500).json({ message: "Failed to fetch Square locations", error: error.message });
+    }
+  },
+
+  // POST /admin/square/device-code — create a pairing code for a Square Terminal.
+  // The admin types this code into the physical Terminal device; once paired,
+  // Square assigns it a deviceId which we pick up via getDeviceCodeStatus.
+  createDeviceCode: async (req, res) => {
+    try {
+      const { admin, error } = await requireConnectedAdmin(req.userId);
+      if (error) return res.status(400).json({ message: error });
+
+      const { locationId, name } = req.body;
+      if (!locationId) {
+        return res.status(400).json({ message: "locationId is required" });
+      }
+
+      const client = getClientForAdmin(admin.squareAccessToken);
+      const { data } = await client.devices.codes.create({
+        idempotencyKey: randomUUID(),
+        deviceCode: {
+          name: name || `Terminal ${new Date().toISOString().slice(0, 10)}`,
+          productType: "TERMINAL_API",
+          locationId,
+        },
+      });
+
+      const deviceCode = data.deviceCode;
+      return res.status(201).json({
+        data: {
+          id: deviceCode.id,
+          code: deviceCode.code,
+          status: deviceCode.status,
+          pairBy: deviceCode.pairBy,
+        },
+      });
+    } catch (error) {
+      console.log("createDeviceCode error:", error?.message || error);
+      return res.status(500).json({ message: "Failed to create device pairing code", error: error.message });
+    }
+  },
+
+  // GET /admin/square/device-code/:id — poll pairing status; once status is
+  // PAIRED, the response includes the new deviceId so the frontend can save it.
+  getDeviceCodeStatus: async (req, res) => {
+    try {
+      const { admin, error } = await requireConnectedAdmin(req.userId);
+      if (error) return res.status(400).json({ message: error });
+
+      const client = getClientForAdmin(admin.squareAccessToken);
+      const { data } = await client.devices.codes.get({ id: req.params.id });
+      const deviceCode = data.deviceCode;
+
+      return res.status(200).json({
+        data: {
+          id: deviceCode.id,
+          status: deviceCode.status,
+          deviceId: deviceCode.deviceId || null,
+        },
+      });
+    } catch (error) {
+      console.log("getDeviceCodeStatus error:", error?.message || error);
+      return res.status(500).json({ message: "Failed to check pairing status", error: error.message });
     }
   },
 
@@ -114,7 +177,7 @@ const SquarePaymentController = {
       const client = getClientForAdmin(admin.squareAccessToken);
       const amountCents = Math.round(entryFee * 100);
 
-      const { checkout } = await client.terminal.checkouts.create({
+      const { data: checkoutData } = await client.terminal.checkouts.create({
         idempotencyKey: randomUUID(),
         checkout: {
           amountMoney: { amount: BigInt(amountCents), currency: "AUD" },
@@ -124,6 +187,7 @@ const SquarePaymentController = {
           locationId: admin.squareLocationId,
         },
       });
+      const { checkout } = checkoutData;
 
       const payment = await RoundRobinPayment.create({
         tournamentId: tournament._id,
@@ -193,7 +257,7 @@ const SquarePaymentController = {
           const { admin } = await requireConnectedAdmin(req.userId);
           if (admin) {
             const client = getClientForAdmin(admin.squareAccessToken);
-            const { checkout } = await client.terminal.checkouts.get({ checkoutId: payment.squareCheckoutId });
+            const { checkout } = (await client.terminal.checkouts.get({ checkoutId: payment.squareCheckoutId })).data;
             if (checkout?.status && checkout.status !== payment.status) {
               payment.status = checkout.status;
               if (checkout.paymentIds?.[0]) payment.squarePaymentId = checkout.paymentIds[0];

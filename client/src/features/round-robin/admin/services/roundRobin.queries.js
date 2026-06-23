@@ -30,6 +30,8 @@ import {
   disconnectSquareAPI,
   getSquareLocationsAPI,
   saveSquareSettingsAPI,
+  createSquareDeviceCodeAPI,
+  getSquareDeviceCodeStatusAPI,
   collectPaymentAPI,
   getPaymentStatusAPI,
   getTournamentPaymentsAPI,
@@ -358,6 +360,22 @@ export const useSaveSquareSettings = () => {
     onError: (err) => toast.error(err.response?.data?.message || "Failed to save Square settings"),
   });
 };
+
+export const useCreateSquareDeviceCode = () =>
+  useMutation({
+    mutationFn: createSquareDeviceCodeAPI,
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to create pairing code"),
+  });
+
+// Polls every 3s while a pairing code is active; the caller controls `enabled`
+// (start when a code is created, stop once paired or cancelled).
+export const useSquareDeviceCodeStatus = (deviceCodeId, enabled) =>
+  useQuery({
+    queryKey: ["square-device-code-status", deviceCodeId],
+    queryFn: () => getSquareDeviceCodeStatusAPI(deviceCodeId),
+    enabled: !!deviceCodeId && !!enabled,
+    refetchInterval: (query) => (query.state.data?.data?.status === "PAIRED" ? false : 3000),
+  });
 
 export const useCollectPayment = () =>
   useMutation({

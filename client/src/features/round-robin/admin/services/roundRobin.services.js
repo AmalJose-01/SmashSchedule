@@ -102,6 +102,12 @@ export const disconnectSquareAPI = () =>
 export const getSquareLocationsAPI = () =>
   apiClient.get(`${SQUARE_BASE}/locations`).then((r) => r.data);
 
+export const createSquareDeviceCodeAPI = ({ locationId, name }) =>
+  apiClient.post(`${SQUARE_BASE}/device-code`, { locationId, name }).then((r) => r.data);
+
+export const getSquareDeviceCodeStatusAPI = (id) =>
+  apiClient.get(`${SQUARE_BASE}/device-code/${id}`).then((r) => r.data);
+
 export const saveSquareSettingsAPI = (data) =>
   apiClient.post(`${SQUARE_BASE}/settings`, data).then((r) => r.data);
 

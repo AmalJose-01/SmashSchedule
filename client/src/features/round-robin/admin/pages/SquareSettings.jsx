@@ -10,6 +10,8 @@ import {
   useDisconnectSquare,
   useGetSquareLocations,
   useSaveSquareSettings,
+  useCreateSquareDeviceCode,
+  useSquareDeviceCodeStatus,
 } from "../services/roundRobin.queries.js";
 
 const SquareSettings = () => {
@@ -19,6 +21,7 @@ const SquareSettings = () => {
   const [applicationSecret, setApplicationSecret] = useState("");
   const [selectedLocationId, setSelectedLocationId] = useState("");
   const [selectedDeviceId, setSelectedDeviceId] = useState("");
+  const [pairingCode, setPairingCode] = useState(null); // { id, code }
 
   const { data: statusData, isLoading: statusLoading } = useGetSquareStatus();
   const status = statusData?.data;
@@ -30,8 +33,21 @@ const SquareSettings = () => {
   const { mutate: disconnectSquare, isPending: isDisconnecting } = useDisconnectSquare();
   const { data: locationsData, isLoading: locationsLoading } = useGetSquareLocations(connected);
   const { mutate: saveSettings, isPending: isSaving } = useSaveSquareSettings();
+  const { mutate: createDeviceCode, isPending: isCreatingCode } = useCreateSquareDeviceCode();
+  const { data: deviceCodeStatusData } = useSquareDeviceCodeStatus(pairingCode?.id, !!pairingCode);
 
   const locations = locationsData?.data ?? [];
+  const pairingStatus = deviceCodeStatusData?.data;
+
+  // Once Square reports the code as PAIRED, grab the new deviceId, select it,
+  // and clear the pairing UI.
+  useEffect(() => {
+    if (pairingStatus?.status === "PAIRED" && pairingStatus?.deviceId) {
+      setSelectedDeviceId(pairingStatus.deviceId);
+      toast.success("Terminal paired!");
+      setPairingCode(null);
+    }
+  }, [pairingStatus]);
 
   useEffect(() => {
     if (searchParams.get("square_connected")) {
@@ -40,7 +56,10 @@ const SquareSettings = () => {
     }
     const err = searchParams.get("square_error");
     if (err) {
-      toast.error(`Square connection failed (${err})`);
+      const detail = searchParams.get("square_error_detail");
+      toast.error(detail ? `Square connection failed: ${detail}` : `Square connection failed (${err})`, {
+        duration: 10000,
+      });
       setSearchParams({}, { replace: true });
     }
   }, [searchParams, setSearchParams]);
@@ -81,6 +100,19 @@ const SquareSettings = () => {
       locationName: selectedLocation?.name,
       deviceId: selectedDeviceId || null,
     });
+  };
+
+  const handleCreateDeviceCode = () => {
+    if (!selectedLocationId) {
+      toast.error("Choose a location first");
+      return;
+    }
+    createDeviceCode(
+      { locationId: selectedLocationId },
+      {
+        onSuccess: (res) => setPairingCode({ id: res?.data?.id, code: res?.data?.code }),
+      }
+    );
   };
 
   return (
@@ -261,9 +293,37 @@ const SquareSettings = () => {
                       </select>
                     ) : (
                       <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2">
-                        No paired Terminal devices found at this location yet. Pair your Square Terminal to this
-                        location from the Square Dashboard, then refresh this page.
+                        No paired Terminal devices found at this location yet. Pair one below.
                       </p>
+                    )}
+
+                    {/* Pair a new Terminal device by generating a code the admin enters
+                        on the physical device — no need to leave the app. */}
+                    {pairingCode ? (
+                      <div className="mt-3 bg-teal-50 border border-teal-100 rounded-xl px-4 py-3 text-center">
+                        <p className="text-xs text-teal-700 mb-1">
+                          Enter this code on your Square Terminal to pair it:
+                        </p>
+                        <p className="text-2xl font-bold tracking-widest text-teal-800">{pairingCode.code}</p>
+                        <p className="text-xs text-gray-400 mt-2">
+                          {pairingStatus?.status === "PAIRED" ? "Paired!" : "Waiting for the Terminal to pair..."}
+                        </p>
+                        <button
+                          onClick={() => setPairingCode(null)}
+                          className="mt-2 text-xs font-semibold text-gray-400 hover:text-gray-600"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleCreateDeviceCode}
+                        disabled={isCreatingCode}
+                        className="mt-3 w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-700 py-2 rounded-xl font-semibold text-xs hover:bg-gray-200 disabled:opacity-60 transition-colors"
+                      >
+                        <Smartphone className="w-3.5 h-3.5" />
+                        {isCreatingCode ? "Generating code..." : "Pair a new Terminal device"}
+                      </button>
                     )}
                   </div>
                 )}
