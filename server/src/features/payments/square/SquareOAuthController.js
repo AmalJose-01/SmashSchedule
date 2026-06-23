@@ -206,6 +206,7 @@ const SquareOAuthController = {
 
       return res.status(200).json({
         data: {
+          environment: isProduction ? "production" : "sandbox",
           hasCredentials: !!(admin.squareApplicationId && admin.squareApplicationSecretEnc),
           hasSignatureKey: !!admin.squareWebhookSignatureKeyEnc,
           // Never return the full Application ID once saved — only a masked

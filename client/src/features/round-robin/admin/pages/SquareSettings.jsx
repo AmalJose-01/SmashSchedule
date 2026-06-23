@@ -31,6 +31,7 @@ const SquareSettings = () => {
   const hasCredentials = !!status?.hasCredentials;
   const hasSignatureKey = !!status?.hasSignatureKey;
   const connected = !!status?.connected;
+  const isLive = status?.environment === "production";
 
   const { mutate: saveCredentials, isPending: isSavingCredentials } = useSaveSquareCredentials();
   const { mutate: connectSquare, isPending: isConnecting } = useConnectSquare();
@@ -139,6 +140,15 @@ const SquareSettings = () => {
             <ArrowLeft className="w-5 h-5 text-gray-600" />
           </button>
           <h2 className="text-xl font-semibold text-teal-800">Square Payments</h2>
+          {!statusLoading && (
+            <span
+              className={`text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full ${
+                isLive ? "bg-red-50 text-red-600 border border-red-100" : "bg-amber-50 text-amber-600 border border-amber-100"
+              }`}
+            >
+              {isLive ? "Live" : "Sandbox"}
+            </span>
+          )}
         </div>
         <Logout />
       </div>
@@ -241,7 +251,13 @@ const SquareSettings = () => {
                   type="text"
                   value={applicationId}
                   onChange={(e) => setApplicationId(e.target.value)}
-                  placeholder={hasCredentials ? "Enter to replace saved Application ID" : "sandbox-sq0idb-..."}
+                  placeholder={
+                    hasCredentials
+                      ? "Enter to replace saved Application ID"
+                      : isLive
+                      ? "sq0idp-..."
+                      : "sandbox-sq0idb-..."
+                  }
                   autoComplete="off"
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300"
                 />
@@ -252,11 +268,22 @@ const SquareSettings = () => {
                   type="password"
                   value={applicationSecret}
                   onChange={(e) => setApplicationSecret(e.target.value)}
-                  placeholder={hasCredentials ? "Enter to replace saved secret" : "sq0csp-..."}
+                  placeholder={
+                    hasCredentials
+                      ? "Enter to replace saved secret"
+                      : isLive
+                      ? "sq0csp-..."
+                      : "sandbox-sq0csb-..."
+                  }
                   autoComplete="new-password"
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300"
                 />
-                <p className="text-xs text-gray-400 mt-1">Encrypted before it's stored. Never shown again after saving.</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Encrypted before it's stored. Never shown again after saving.{" "}
+                  {isLive
+                    ? "Use your Production Application Secret (from the Production tab of your Square app)."
+                    : "Use your Sandbox Application Secret."}
+                </p>
               </div>
               <div>
                 <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 mb-1.5">
