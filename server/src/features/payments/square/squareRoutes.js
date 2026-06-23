@@ -18,4 +18,8 @@ router.post("/disconnect", auth, SquareOAuthController.disconnectSquare);
 router.get("/locations", auth, SquarePaymentController.listLocations);
 router.post("/settings", auth, SquarePaymentController.saveSquareSettings);
 
+// Terminal device pairing (Create Device Code flow)
+router.post("/device-code", auth, SquarePaymentController.createDeviceCode);
+router.get("/device-code/:id", auth, SquarePaymentController.getDeviceCodeStatus);
+
 module.exports = router;

@@ -128,7 +128,9 @@ const SquareOAuthController = {
 
       const clientSecret = decrypt(admin.squareApplicationSecretEnc);
 
-      const { body: tokenResponse } = await oauthClient.oAuth.obtainToken({
+      // The `square` SDK (v37+) returns `{ data, rawResponse }` from every call,
+      // not the old `{ body }` shape — the token fields live under `data`.
+      const { data: tokenResponse } = await oauthClient.oAuth.obtainToken({
         clientId: admin.squareApplicationId,
         clientSecret,
         code,
@@ -147,7 +149,13 @@ const SquareOAuthController = {
       return res.redirect(`${clientUrl}/admin/square-settings?square_connected=1`);
     } catch (error) {
       console.log("squareCallback error:", error);
-      return res.redirect(`${clientUrl}/admin/square-settings?square_error=server_error`);
+      // Surface the real reason in the redirect itself — the admin isn't
+      // necessarily watching the server console, so don't make them dig for it.
+      const detail =
+        error?.errors?.[0]?.detail || error?.body?.errors?.[0]?.detail || error?.message || "Unknown error";
+      return res.redirect(
+        `${clientUrl}/admin/square-settings?square_error=server_error&square_error_detail=${encodeURIComponent(detail)}`
+      );
     }
   },
 
