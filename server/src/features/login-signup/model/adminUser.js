@@ -92,6 +92,10 @@ const adminUserSchema = new mongoose.Schema(
     squareLocationId: { type: String, default: null },
     squareLocationName: { type: String, default: null },
     squareDeviceId: { type: String, default: null },
+    // Each admin's own Square app has its own Webhook Signature Key (Square
+    // Developer Dashboard -> Webhooks). Stored encrypted, like the App Secret,
+    // since the shared /webhook/square endpoint serves every admin's account.
+    squareWebhookSignatureKeyEnc: { type: String, default: null, select: false },
 
   },
   { timestamps: true }
@@ -117,6 +121,7 @@ adminUserSchema.set("toJSON", {
     delete ret.squareAccessToken;
     delete ret.squareRefreshToken;
     delete ret.squareApplicationSecretEnc;
+    delete ret.squareWebhookSignatureKeyEnc;
 
     return ret;
   },
