@@ -21,6 +21,7 @@ router.post("/tournaments/:id/generate-groups", auth, RoundRobinGroupController.
 router.post("/tournaments/:id/save-groups", auth, RoundRobinGroupController.saveGroups);
 router.get("/tournaments/:id/groups", auth, RoundRobinGroupController.getGroups);
 router.get("/tournaments/:id/matches", auth, RoundRobinMatchController.getMatches);
+router.get("/tournaments/:id/matches/pdf", auth, RoundRobinMatchController.downloadMatchSchedulePdf);
 router.get("/tournaments/:id/standings", auth, RoundRobinMatchController.getStandings);
 
 // Member Bank Management

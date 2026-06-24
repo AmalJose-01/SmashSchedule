@@ -72,6 +72,11 @@ export const getGroupsAPI = (tournamentId) =>
 export const getMatchesAPI = (tournamentId) =>
   apiClient.get(`${BASE}/tournaments/${tournamentId}/matches`).then((r) => r.data);
 
+export const downloadMatchSchedulePdfAPI = (tournamentId) =>
+  apiClient
+    .get(`${BASE}/tournaments/${tournamentId}/matches/pdf`, { responseType: "blob" })
+    .then((r) => r.data);
+
 export const getStandingsAPI = (tournamentId) =>
   apiClient.get(`${BASE}/tournaments/${tournamentId}/standings`).then((r) => r.data);
 
