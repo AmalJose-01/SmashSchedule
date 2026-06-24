@@ -170,6 +170,7 @@ const SquareOAuthController = {
         clientSecret,
         code,
         grantType: "authorization_code",
+        redirectUri: process.env.SQUARE_OAUTH_REDIRECT_URI,
       });
 
       const { accessToken, refreshToken, merchantId, expiresAt } = tokenResponse;
