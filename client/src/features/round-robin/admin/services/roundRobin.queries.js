@@ -107,9 +107,12 @@ export const useFinalizeRoundRobinTournament = () => {
   return useMutation({
     mutationFn: finalizeRoundRobinTournamentAPI,
     onSuccess: (_, id) => {
-      toast.success("Tournament finalized");
+      toast.success("Tournament finalized — matches scheduled");
       queryClient.invalidateQueries({ queryKey: rrKeys.tournament(id) });
       queryClient.invalidateQueries({ queryKey: rrKeys.tournaments });
+      queryClient.invalidateQueries({ queryKey: rrKeys.groups(id) });
+      queryClient.invalidateQueries({ queryKey: rrKeys.matches(id) });
+      queryClient.invalidateQueries({ queryKey: rrKeys.standings(id) });
     },
     onError: (err) => toast.error(err.response?.data?.message || "Failed to finalize tournament"),
   });
@@ -223,7 +226,7 @@ export const useGenerateGroups = () => {
   return useMutation({
     mutationFn: generateGroupsAPI,
     onSuccess: (_, tournamentId) => {
-      toast.success("Groups and matches generated");
+      toast.success("Groups generated");
       queryClient.invalidateQueries({ queryKey: rrKeys.tournament(tournamentId) });
       queryClient.invalidateQueries({ queryKey: rrKeys.groups(tournamentId) });
       queryClient.invalidateQueries({ queryKey: rrKeys.matches(tournamentId) });
@@ -238,7 +241,7 @@ export const useSaveGroups = () => {
   return useMutation({
     mutationFn: saveGroupsAPI,
     onSuccess: (_, { tournamentId }) => {
-      toast.success("Groups saved and matches generated");
+      toast.success("Groups saved");
       queryClient.invalidateQueries({ queryKey: rrKeys.groups(tournamentId) });
       queryClient.invalidateQueries({ queryKey: rrKeys.matches(tournamentId) });
     },

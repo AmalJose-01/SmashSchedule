@@ -13,6 +13,7 @@ const ensureEntry = (standings, playerId, name = "") => {
       matchesPlayed: 0,
       wins: 0,
       losses: 0,
+      draws: 0,
       pointsFor: 0,
       pointsAgainst: 0,
       pointsDiff: 0,
@@ -44,15 +45,20 @@ const rankStandings = (standings) => {
  * @param {Object} entry      - Standings entry (mutated in place)
  * @param {Number} ptsFor     - Points scored by this player's side
  * @param {Number} ptsAgainst - Points scored against this player's side
- * @param {Boolean} won       - true if this player's side won
+ * @param {"win"|"loss"|"draw"} result - Outcome for this player's side
  */
-const applyResult = (entry, ptsFor, ptsAgainst, won) => {
+const applyResult = (entry, ptsFor, ptsAgainst, result) => {
   entry.matchesPlayed += 1;
   entry.pointsFor += ptsFor;
   entry.pointsAgainst += ptsAgainst;
-  if (won) {
+  if (result === "win") {
     entry.wins += 1;
     entry.totalPoints += 2;
+  } else if (result === "draw") {
+    // Draws are only possible for an even-numbered Best of N (e.g. Best of 2)
+    // tied on both sets and total points. Worth half a win in the table.
+    entry.draws += 1;
+    entry.totalPoints += 1;
   } else {
     entry.losses += 1;
   }
@@ -85,8 +91,8 @@ const getId = (field) => {
 const updateStandings = async (match, sets, config = {}) => {
   const { winner } = determineWinner(sets, config);
   const { homeTotal, awayTotal } = getTotalPoints(sets);
-  const homeWon = winner === "home";
-  const awayWon = winner === "away";
+  const homeResult = winner === "home" ? "win" : winner === "draw" ? "draw" : "loss";
+  const awayResult = winner === "away" ? "win" : winner === "draw" ? "draw" : "loss";
 
   const isDoubles = !!match.player1PartnerId;
 
@@ -111,8 +117,8 @@ const updateStandings = async (match, sets, config = {}) => {
     const p1Entry = ensureEntry(groupA.standings, getId(match.player1Id), getName(match.player1Id));
     const p2Entry = ensureEntry(groupA.standings, getId(match.player2Id), getName(match.player2Id));
 
-    applyResult(p1Entry, homeTotal, awayTotal, homeWon);
-    applyResult(p2Entry, awayTotal, homeTotal, awayWon);
+    applyResult(p1Entry, homeTotal, awayTotal, homeResult);
+    applyResult(p2Entry, awayTotal, homeTotal, awayResult);
 
     rankStandings(groupA.standings);
     groupA.markModified("standings");
@@ -125,8 +131,8 @@ const updateStandings = async (match, sets, config = {}) => {
   const p1Entry  = ensureEntry(groupA.standings, getId(match.player1Id),        getName(match.player1Id));
   const p1pEntry = ensureEntry(groupA.standings, getId(match.player1PartnerId), getName(match.player1PartnerId));
 
-  applyResult(p1Entry,  homeTotal, awayTotal, homeWon);
-  applyResult(p1pEntry, homeTotal, awayTotal, homeWon);
+  applyResult(p1Entry,  homeTotal, awayTotal, homeResult);
+  applyResult(p1pEntry, homeTotal, awayTotal, homeResult);
 
   rankStandings(groupA.standings);
   groupA.markModified("standings");
@@ -137,8 +143,8 @@ const updateStandings = async (match, sets, config = {}) => {
     const p2Entry  = ensureEntry(groupB.standings, getId(match.player2Id),        getName(match.player2Id));
     const p2pEntry = ensureEntry(groupB.standings, getId(match.player2PartnerId), getName(match.player2PartnerId));
 
-    applyResult(p2Entry,  awayTotal, homeTotal, awayWon);
-    applyResult(p2pEntry, awayTotal, homeTotal, awayWon);
+    applyResult(p2Entry,  awayTotal, homeTotal, awayResult);
+    applyResult(p2pEntry, awayTotal, homeTotal, awayResult);
 
     rankStandings(groupB.standings);
     groupB.markModified("standings");
@@ -155,8 +161,8 @@ const updateStandings = async (match, sets, config = {}) => {
 const reverseStandings = async (match, sets, config = {}) => {
   const { winner } = determineWinner(sets, config);
   const { homeTotal, awayTotal } = getTotalPoints(sets);
-  const homeWon = winner === "home";
-  const awayWon = winner === "away";
+  const homeResult = winner === "home" ? "win" : winner === "draw" ? "draw" : "loss";
+  const awayResult = winner === "away" ? "win" : winner === "draw" ? "draw" : "loss";
 
   const isDoubles = !!match.player1PartnerId;
 
@@ -174,13 +180,16 @@ const reverseStandings = async (match, sets, config = {}) => {
 
   const getName = (field) => (field && typeof field === "object" ? field.name : "") ?? "";
 
-  const reverseResult = (entry, ptsFor, ptsAgainst, won) => {
+  const reverseResult = (entry, ptsFor, ptsAgainst, result) => {
     entry.matchesPlayed = Math.max(0, entry.matchesPlayed - 1);
     entry.pointsFor     = Math.max(0, entry.pointsFor     - ptsFor);
     entry.pointsAgainst = Math.max(0, entry.pointsAgainst - ptsAgainst);
-    if (won) {
+    if (result === "win") {
       entry.wins        = Math.max(0, entry.wins        - 1);
       entry.totalPoints = Math.max(0, entry.totalPoints - 2);
+    } else if (result === "draw") {
+      entry.draws       = Math.max(0, entry.draws       - 1);
+      entry.totalPoints = Math.max(0, entry.totalPoints - 1);
     } else {
       entry.losses      = Math.max(0, entry.losses      - 1);
     }
@@ -189,8 +198,8 @@ const reverseStandings = async (match, sets, config = {}) => {
   if (!isDoubles) {
     const p1Entry = ensureEntry(groupA.standings, getId(match.player1Id), getName(match.player1Id));
     const p2Entry = ensureEntry(groupA.standings, getId(match.player2Id), getName(match.player2Id));
-    reverseResult(p1Entry, homeTotal, awayTotal, homeWon);
-    reverseResult(p2Entry, awayTotal, homeTotal, awayWon);
+    reverseResult(p1Entry, homeTotal, awayTotal, homeResult);
+    reverseResult(p2Entry, awayTotal, homeTotal, awayResult);
     rankStandings(groupA.standings);
     groupA.markModified("standings");
     await groupA.save();
@@ -200,8 +209,8 @@ const reverseStandings = async (match, sets, config = {}) => {
   // Doubles — reverse Group A (home pair)
   const p1Entry  = ensureEntry(groupA.standings, getId(match.player1Id),        getName(match.player1Id));
   const p1pEntry = ensureEntry(groupA.standings, getId(match.player1PartnerId), getName(match.player1PartnerId));
-  reverseResult(p1Entry,  homeTotal, awayTotal, homeWon);
-  reverseResult(p1pEntry, homeTotal, awayTotal, homeWon);
+  reverseResult(p1Entry,  homeTotal, awayTotal, homeResult);
+  reverseResult(p1pEntry, homeTotal, awayTotal, homeResult);
   rankStandings(groupA.standings);
   groupA.markModified("standings");
   await groupA.save();
@@ -210,8 +219,8 @@ const reverseStandings = async (match, sets, config = {}) => {
   if (groupB) {
     const p2Entry  = ensureEntry(groupB.standings, getId(match.player2Id),        getName(match.player2Id));
     const p2pEntry = ensureEntry(groupB.standings, getId(match.player2PartnerId), getName(match.player2PartnerId));
-    reverseResult(p2Entry,  awayTotal, homeTotal, awayWon);
-    reverseResult(p2pEntry, awayTotal, homeTotal, awayWon);
+    reverseResult(p2Entry,  awayTotal, homeTotal, awayResult);
+    reverseResult(p2pEntry, awayTotal, homeTotal, awayResult);
     rankStandings(groupB.standings);
     groupB.markModified("standings");
     await groupB.save();

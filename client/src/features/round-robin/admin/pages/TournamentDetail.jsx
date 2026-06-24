@@ -272,6 +272,7 @@ const ConfigTab = ({ tournament, isFinalized }) => {
           <Field label="Number of Sets">
             <select value={form.numberOfSets} onChange={(e) => set("numberOfSets", e.target.value)} className={inputCls() + " bg-white"}>
               <option value={1}>Best of 1</option>
+              <option value={2}>Best of 2</option>
               <option value={3}>Best of 3</option>
               <option value={5}>Best of 5</option>
             </select>
@@ -735,7 +736,7 @@ const GroupsTab = ({ tournamentId, isFinalized }) => {
     <div className="space-y-4">
       <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
         <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-        Saving will delete all existing matches and regenerate them with the new arrangement.
+        Saving updates the group arrangement. The match schedule is created when you click Finalize, so you can keep rearranging until then.
       </div>
 
       <DndContext
@@ -817,7 +818,7 @@ const MatchesTab = ({ tournamentId, matchType, tournament }) => {
 
   if (isLoading) return <Spinner />;
   if (matches.length === 0)
-    return <Empty text="No matches yet. Generate groups to create matches automatically." />;
+    return <Empty text="No matches yet. Click 'Finalize & Schedule Matches' once your groups are set." />;
 
   // For doubles, group by fixture extracted from matchName ("Group A vs Group B - Match X")
   // For singles, group by the group document name
@@ -935,12 +936,13 @@ const StandingsTab = ({ tournamentId }) => {
       (acc, p) => ({
         wins:          acc.wins          + (p.wins          || 0),
         losses:        acc.losses        + (p.losses        || 0),
+        draws:         acc.draws         + (p.draws         || 0),
         matchesPlayed: acc.matchesPlayed + (p.matchesPlayed || 0),
         totalPoints:   acc.totalPoints   + (p.totalPoints   || 0),
         pointsFor:     acc.pointsFor     + (p.pointsFor     || 0),
         pointsAgainst: acc.pointsAgainst + (p.pointsAgainst || 0),
       }),
-      { wins: 0, losses: 0, matchesPlayed: 0, totalPoints: 0, pointsFor: 0, pointsAgainst: 0 }
+      { wins: 0, losses: 0, draws: 0, matchesPlayed: 0, totalPoints: 0, pointsFor: 0, pointsAgainst: 0 }
     );
     const divisor = players.length > 0 ? 2 : 1;
     return {
@@ -949,6 +951,7 @@ const StandingsTab = ({ tournamentId }) => {
       matchesPlayed: sum.matchesPlayed / divisor,
       wins:          sum.wins          / divisor,
       losses:        sum.losses        / divisor,
+      draws:         sum.draws         / divisor,
       totalPoints:   sum.totalPoints   / divisor,
       pointsDiff:    (sum.pointsFor - sum.pointsAgainst) / divisor,
     };
@@ -966,6 +969,7 @@ const StandingsTab = ({ tournamentId }) => {
             <th className="px-5 py-2 font-semibold">Group</th>
             <th className="px-4 py-2 font-semibold text-center">P</th>
             <th className="px-4 py-2 font-semibold text-center">W</th>
+            <th className="px-4 py-2 font-semibold text-center">D</th>
             <th className="px-4 py-2 font-semibold text-center">L</th>
             <th className="px-4 py-2 font-semibold text-center">+/-</th>
             <th className="px-4 py-2 font-semibold text-center">Pts</th>
@@ -978,6 +982,7 @@ const StandingsTab = ({ tournamentId }) => {
               <td className="px-5 py-2.5 font-medium text-gray-800">{g.groupName}</td>
               <td className="px-4 py-2.5 text-center text-gray-600">{g.matchesPlayed}</td>
               <td className="px-4 py-2.5 text-center text-green-600 font-semibold">{g.wins}</td>
+              <td className="px-4 py-2.5 text-center text-amber-500">{g.draws}</td>
               <td className="px-4 py-2.5 text-center text-red-400">{g.losses}</td>
               <td className={`px-4 py-2.5 text-center font-medium ${g.pointsDiff >= 0 ? "text-green-600" : "text-red-400"}`}>
                 {g.pointsDiff >= 0 ? "+" : ""}{g.pointsDiff}
@@ -1014,6 +1019,7 @@ const PlayerStandingsTab = ({ tournamentId }) => {
                 <th className="px-5 py-2 font-semibold">Player</th>
                 <th className="px-4 py-2 font-semibold text-center">P</th>
                 <th className="px-4 py-2 font-semibold text-center">W</th>
+                <th className="px-4 py-2 font-semibold text-center">D</th>
                 <th className="px-4 py-2 font-semibold text-center">L</th>
                 <th className="px-4 py-2 font-semibold text-center">PF</th>
                 <th className="px-4 py-2 font-semibold text-center">PA</th>
@@ -1028,6 +1034,7 @@ const PlayerStandingsTab = ({ tournamentId }) => {
                   <td className="px-5 py-2.5 font-medium text-gray-800">{s.name ?? s.playerId?.name ?? "—"}</td>
                   <td className="px-4 py-2.5 text-center text-gray-600">{s.matchesPlayed}</td>
                   <td className="px-4 py-2.5 text-center text-green-600 font-semibold">{s.wins}</td>
+                  <td className="px-4 py-2.5 text-center text-amber-500">{s.draws ?? 0}</td>
                   <td className="px-4 py-2.5 text-center text-red-400">{s.losses}</td>
                   <td className="px-4 py-2.5 text-center text-gray-600">{s.pointsFor}</td>
                   <td className="px-4 py-2.5 text-center text-gray-600">{s.pointsAgainst}</td>
@@ -1081,10 +1088,14 @@ const TournamentDetail = () => {
     </div>
   );
 
-  const canGenerate = ["Draft", "Active", "Scheduled"].includes(tournament.status);
-  const canFinalize = tournament.status === "Scheduled";
-  const isFinalized = ["Scheduled", "Finalized", "Ongoing", "Completed"].includes(tournament.status);
   const isPostFinalize = ["Finalized", "Ongoing", "Completed"].includes(tournament.status);
+  // Groups can be generated/regenerated freely any time before the tournament
+  // is finalized — generating groups no longer schedules matches or locks
+  // anything, so it doesn't need its own status gate beyond "not finalized yet".
+  const canGenerate = !isPostFinalize;
+  // Finalize is the step that actually schedules the matches, so it just
+  // needs groups to exist and the tournament to not already be finalized.
+  const canFinalize = !isPostFinalize && (tournament.groups?.length ?? 0) > 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
@@ -1127,7 +1138,7 @@ const TournamentDetail = () => {
               className="flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-teal-700 disabled:opacity-60 transition-colors"
             >
               {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-              {isGenerating ? "Generating..." : tournament.groups?.length > 0 ? "Regenerate Groups & Matches" : "Generate Groups & Matches"}
+              {isGenerating ? "Generating..." : tournament.groups?.length > 0 ? "Regenerate Groups" : "Generate Groups"}
             </button>
           ) : isPostFinalize && (
             <button
@@ -1135,7 +1146,7 @@ const TournamentDetail = () => {
               className="flex items-center gap-2 bg-gray-100 text-gray-400 px-4 py-2 rounded-xl text-sm font-semibold cursor-not-allowed"
             >
               <Lock className="w-4 h-4" />
-              Regenerate Groups & Matches
+              Regenerate Groups
             </button>
           )}
           {canFinalize ? (
@@ -1145,7 +1156,7 @@ const TournamentDetail = () => {
               className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-green-700 disabled:opacity-60 transition-colors"
             >
               <CheckCircle className="w-4 h-4" />
-              {isFinalizing ? "Finalizing..." : "Finalize Tournament"}
+              {isFinalizing ? "Scheduling matches..." : "Finalize & Schedule Matches"}
             </button>
           ) : isPostFinalize && (
             <button
@@ -1177,9 +1188,9 @@ const TournamentDetail = () => {
         </div>
 
         {/* Tab content */}
-        {tab === "config"    && <ConfigTab    tournament={tournament} isFinalized={isFinalized} />}
-        {tab === "players"   && <PlayersTab   tournamentId={tournamentId} isFinalized={isFinalized} tournament={tournament} />}
-        {tab === "groups"    && <GroupsTab    tournamentId={tournamentId} isFinalized={isFinalized} />}
+        {tab === "config"    && <ConfigTab    tournament={tournament} isFinalized={isPostFinalize} />}
+        {tab === "players"   && <PlayersTab   tournamentId={tournamentId} isFinalized={isPostFinalize} tournament={tournament} />}
+        {tab === "groups"    && <GroupsTab    tournamentId={tournamentId} isFinalized={isPostFinalize} />}
         {tab === "matches"   && <MatchesTab   tournamentId={tournamentId} matchType={tournament.matchType} tournament={tournament} />}
         {tab === "standings"       && <StandingsTab       tournamentId={tournamentId} />}
         {tab === "playerStandings" && <PlayerStandingsTab tournamentId={tournamentId} />}

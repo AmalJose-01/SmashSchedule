@@ -8,6 +8,7 @@ const StandingSchema = new Schema(
     matchesPlayed: { type: Number, default: 0 },
     wins: { type: Number, default: 0 },
     losses: { type: Number, default: 0 },
+    draws: { type: Number, default: 0 },
     pointsFor: { type: Number, default: 0 },
     pointsAgainst: { type: Number, default: 0 },
     pointsDiff: { type: Number, default: 0 },

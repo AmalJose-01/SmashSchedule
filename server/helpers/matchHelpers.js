@@ -50,7 +50,9 @@ const determineWinner = (sets, config = {}) => {
   const winPt      = config.setWinningPoint ?? 21;
   const gap        = config.winningPointGap  ?? 2;
   const maxSets    = config.numberOfSets     ?? sets.length;
-  const requiredWins = Math.ceil(maxSets / 2);
+  // True majority of sets — works for both odd (e.g. Best of 3 → 2) and
+  // even (e.g. Best of 2 → 2, Best of 4 → 3) set counts.
+  const requiredWins = Math.floor(maxSets / 2) + 1;
 
   let homeSetWins = 0;
   let awaySetWins = 0;
@@ -70,6 +72,18 @@ const determineWinner = (sets, config = {}) => {
     matchStatus = "finished";
   } else if (awaySetWins >= requiredWins) {
     winner      = "away";
+    matchStatus = "finished";
+  } else if (
+    maxSets % 2 === 0 &&
+    homeSetWins + awaySetWins === maxSets &&
+    homeSetWins === awaySetWins
+  ) {
+    // Even-numbered format (e.g. Best of 2) with all sets played and split
+    // evenly — no set-count majority is possible, so total points decide.
+    const { homeTotal, awayTotal } = getTotalPoints(sets);
+    if (homeTotal > awayTotal) winner = "home";
+    else if (awayTotal > homeTotal) winner = "away";
+    else winner = "draw";
     matchStatus = "finished";
   }
 
