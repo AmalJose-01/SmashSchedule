@@ -21,6 +21,7 @@ import {
   saveGroupsAPI,
   getGroupsAPI,
   getMatchesAPI,
+  downloadMatchSchedulePdfAPI,
   getStandingsAPI,
   recordMatchScoreAPI,
   updateMatchAPI,
@@ -264,6 +265,14 @@ export const useGetMatches = (tournamentId) =>
     queryFn: () => getMatchesAPI(tournamentId),
     enabled: !!tournamentId,
     staleTime: 1000 * 60,
+  });
+
+// Streams the match-schedule PDF as a blob — caller is responsible for
+// turning it into a download (createObjectURL + a clicked <a>).
+export const useDownloadMatchSchedulePdf = () =>
+  useMutation({
+    mutationFn: downloadMatchSchedulePdfAPI,
+    onError: () => toast.error("Failed to generate match schedule PDF"),
   });
 
 export const useGetStandings = (tournamentId) =>

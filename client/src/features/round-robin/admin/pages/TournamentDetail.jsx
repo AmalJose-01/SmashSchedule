@@ -3,7 +3,7 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   ArrowLeft, Users, Layers, Swords, RefreshCw, CheckCircle,
   ChevronDown, ChevronUp, Trophy, Loader2, GripVertical, AlertTriangle, CalendarDays,
-  Settings, Pencil, Lock, Search, UserPlus, CreditCard
+  Settings, Pencil, Lock, Search, UserPlus, CreditCard, Download
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -30,6 +30,7 @@ import {
   useGetPaymentStatus,
   useGetSquareStatus,
   useGetTournamentPayments,
+  useDownloadMatchSchedulePdf,
 } from "../services/roundRobin.queries.js";
 
 const STATUS_STYLES = {
@@ -815,6 +816,22 @@ const MatchesTab = ({ tournamentId, matchType, tournament }) => {
   const [expandedId, setExpandedId] = useState(null);
   const { data, isLoading } = useGetMatches(tournamentId);
   const matches = data?.data ?? [];
+  const { mutate: downloadPdf, isPending: isDownloadingPdf } = useDownloadMatchSchedulePdf();
+
+  const handleDownloadPdf = () => {
+    downloadPdf(tournamentId, {
+      onSuccess: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${(tournament?.tournamentName || "Match_Schedule").replace(/\s+/g, "_")}_Match_Schedule.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      },
+    });
+  };
 
   if (isLoading) return <Spinner />;
   if (matches.length === 0)
@@ -838,6 +855,16 @@ const MatchesTab = ({ tournamentId, matchType, tournament }) => {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <button
+          onClick={handleDownloadPdf}
+          disabled={isDownloadingPdf}
+          className="flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-xl font-semibold text-sm hover:bg-gray-900 disabled:opacity-60 transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          {isDownloadingPdf ? "Generating PDF..." : "Download Match Schedule (PDF)"}
+        </button>
+      </div>
       {Object.entries(byGroup).map(([groupName, groupMatches]) => (
         <div key={groupName}>
           <h3 className="font-semibold text-gray-700 mb-3 text-sm">{groupName}</h3>

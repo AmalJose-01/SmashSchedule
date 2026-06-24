@@ -1,8 +1,10 @@
 const mongoose = require("mongoose");
 const RoundRobinMatch = require("../models/RoundRobinMatch");
 const RoundRobinTournament = require("../models/RoundRobinTournament");
+const RoundRobinGroup = require("../models/RoundRobinGroup");
 const { determineWinner, isValidScore } = require("../../../../helpers/matchHelpers");
 const { updateStandings, reverseStandings } = require("../services/standingsService");
+const { generateMatchSchedulePdf } = require("../utils/matchSchedulePdf");
 
 const getTournamentConfig = async (tournamentId) => {
   const t = await RoundRobinTournament.findById(tournamentId).select("numberOfSets setWinningPoint winningPointGap");
@@ -166,12 +168,50 @@ const RoundRobinMatchController = {
         return res.status(400).json({ message: "Invalid tournament id" });
       }
 
-      const RoundRobinGroup = require("../models/RoundRobinGroup");
       const groups = await RoundRobinGroup.find({ tournamentId }).select("groupName standings");
 
       return res.status(200).json({ message: "Standings fetched", data: groups });
     } catch (error) {
       console.log("getStandings error:", error);
+      return res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+  },
+
+  downloadMatchSchedulePdf: async (req, res) => {
+    try {
+      const { id: tournamentId } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(tournamentId)) {
+        return res.status(400).json({ message: "Invalid tournament id" });
+      }
+
+      const tournament = await RoundRobinTournament.findOne({ _id: tournamentId, adminId: req.userId });
+      if (!tournament) {
+        return res.status(404).json({ message: "Tournament not found" });
+      }
+
+      const matches = await RoundRobinMatch.find({ tournamentId })
+        .populate("player1Id", "name")
+        .populate("player1PartnerId", "name")
+        .populate("player2Id", "name")
+        .populate("player2PartnerId", "name")
+        .populate("groupId", "groupName")
+        .sort({ createdAt: 1 });
+
+      if (matches.length === 0) {
+        return res.status(400).json({ message: "No matches to export yet — finalize the tournament first" });
+      }
+
+      const groups = await RoundRobinGroup.find({ tournamentId }).select("groupName");
+
+      const doc = generateMatchSchedulePdf({ tournament, groups, matches });
+
+      const safeName = tournament.tournamentName.replace(/[^a-z0-9]+/gi, "_");
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="${safeName}_Match_Schedule.pdf"`);
+      doc.pipe(res);
+      doc.end();
+    } catch (error) {
+      console.log("downloadMatchSchedulePdf error:", error);
       return res.status(500).json({ message: "Internal server error", error: error.message });
     }
   },
