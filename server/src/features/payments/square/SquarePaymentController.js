@@ -22,8 +22,8 @@ const SquarePaymentController = {
       if (error) return res.status(400).json({ message: error });
 
       const client = getClientForAdmin(admin.squareAccessToken);
-      // square SDK v37+ returns `{ data, rawResponse }`, not `{ locations }` directly.
-      const { locations } = (await client.locations.list()).data;
+      // The square SDK's default await resolves directly to the parsed body.
+      const { locations } = await client.locations.list();
 
       const devicesByLocation = {};
       for (const loc of locations || []) {
@@ -68,7 +68,7 @@ const SquarePaymentController = {
       }
 
       const client = getClientForAdmin(admin.squareAccessToken);
-      const { data } = await client.devices.codes.create({
+      const data = await client.devices.codes.create({
         idempotencyKey: randomUUID(),
         deviceCode: {
           name: name || `Terminal ${new Date().toISOString().slice(0, 10)}`,
@@ -100,7 +100,7 @@ const SquarePaymentController = {
       if (error) return res.status(400).json({ message: error });
 
       const client = getClientForAdmin(admin.squareAccessToken);
-      const { data } = await client.devices.codes.get({ id: req.params.id });
+      const data = await client.devices.codes.get({ id: req.params.id });
       const deviceCode = data.deviceCode;
 
       return res.status(200).json({
@@ -177,7 +177,7 @@ const SquarePaymentController = {
       const client = getClientForAdmin(admin.squareAccessToken);
       const amountCents = Math.round(entryFee * 100);
 
-      const { data: checkoutData } = await client.terminal.checkouts.create({
+      const checkoutData = await client.terminal.checkouts.create({
         idempotencyKey: randomUUID(),
         checkout: {
           amountMoney: { amount: BigInt(amountCents), currency: "AUD" },
@@ -257,7 +257,7 @@ const SquarePaymentController = {
           const { admin } = await requireConnectedAdmin(req.userId);
           if (admin) {
             const client = getClientForAdmin(admin.squareAccessToken);
-            const { checkout } = (await client.terminal.checkouts.get({ checkoutId: payment.squareCheckoutId })).data;
+            const { checkout } = await client.terminal.checkouts.get({ checkoutId: payment.squareCheckoutId });
             if (checkout?.status && checkout.status !== payment.status) {
               payment.status = checkout.status;
               if (checkout.paymentIds?.[0]) payment.squarePaymentId = checkout.paymentIds[0];

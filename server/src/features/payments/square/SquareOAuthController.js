@@ -163,9 +163,9 @@ const SquareOAuthController = {
 
       const clientSecret = decrypt(admin.squareApplicationSecretEnc);
 
-      // The `square` SDK (v37+) returns `{ data, rawResponse }` from every call,
-      // not the old `{ body }` shape — the token fields live under `data`.
-      const { data: tokenResponse } = await oauthClient.oAuth.obtainToken({
+      // The `square` SDK's default await resolves directly to the parsed
+      // response body — only `.withRawResponse()` returns `{ data, rawResponse }`.
+      const tokenResponse = await oauthClient.oAuth.obtainToken({
         clientId: admin.squareApplicationId,
         clientSecret,
         code,
