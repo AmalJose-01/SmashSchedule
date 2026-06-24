@@ -25,7 +25,11 @@ const ScoreEntry = ({ match, tournamentId, tournament, onScoreRecorded }) => {
   const maxSets = tournament?.numberOfSets    ?? 3;
   const winPt   = tournament?.setWinningPoint ?? 21;
   const gap     = tournament?.winningPointGap ?? 2;
-  const reqWins = Math.ceil(maxSets / 2);
+  // True majority of sets — matches the backend formula in matchHelpers.js.
+  // For an even count (e.g. Best of 2) winning every set still wins outright;
+  // an even split is decided by total points instead (see hint text below).
+  const reqWins = Math.floor(maxSets / 2) + 1;
+  const isEvenFormat = maxSets % 2 === 0;
 
   const [sets, setSets] = useState(
     Array.from({ length: maxSets }, () => ({ ...EMPTY_SET }))
@@ -97,6 +101,7 @@ const ScoreEntry = ({ match, tournamentId, tournament, onScoreRecorded }) => {
       {!isCompleted && (
         <p className="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2">
           Best of {maxSets} · Set won at {winPt} pts with {gap}-pt lead · First to {reqWins} set{reqWins !== 1 ? "s" : ""} wins
+          {isEvenFormat && " · if sets split evenly, total points decide (a tie goes to a draw)"}
         </p>
       )}
 
@@ -195,8 +200,12 @@ const ScoreEntry = ({ match, tournamentId, tournament, onScoreRecorded }) => {
         </button>
       ) : (
         <div className="space-y-2">
-          <div className="text-center text-sm text-green-600 font-semibold bg-green-50 py-2.5 rounded-xl">
-            Match completed — score locked
+          <div
+            className={`text-center text-sm font-semibold py-2.5 rounded-xl ${
+              match?.isDraw ? "text-amber-600 bg-amber-50" : "text-green-600 bg-green-50"
+            }`}
+          >
+            {match?.isDraw ? "Match completed — drawn on total points" : "Match completed — score locked"}
           </div>
           <button
             onClick={() => resetScore(match._id)}

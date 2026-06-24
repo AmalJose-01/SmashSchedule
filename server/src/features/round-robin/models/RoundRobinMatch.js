@@ -26,6 +26,11 @@ const RoundRobinMatchSchema = new Schema(
     sets: [SetSchema],
     winner: { type: Schema.Types.ObjectId, ref: "RoundRobinPlayer", default: null },
     loser: { type: Schema.Types.ObjectId, ref: "RoundRobinPlayer", default: null },
+    // True when a completed match ended in a draw (only possible for an
+    // even-numbered "Best of N" format, e.g. Best of 2, tied on sets and
+    // total points). Distinguishes a draw from a not-yet-decided match,
+    // since `winner`/`loser` are both null in either case.
+    isDraw: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

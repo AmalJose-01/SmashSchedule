@@ -3,7 +3,7 @@ const RoundRobinTournament = require("../models/RoundRobinTournament");
 const RoundRobinPlayer = require("../models/RoundRobinPlayer");
 const RoundRobinGroup = require("../models/RoundRobinGroup");
 const RoundRobinMatch = require("../models/RoundRobinMatch");
-const { groupPlayers, generateSinglesMatches, generateDoublesMatches } = require("../services/matchGenerationService");
+const { groupPlayers } = require("../services/matchGenerationService");
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -28,7 +28,11 @@ const RoundRobinGroupController = {
         return res.status(400).json({ message: `At least ${minPlayers} players are required to generate groups` });
       }
 
-      // Delete existing groups and matches for this tournament before regenerating
+      // Delete existing groups and matches for this tournament before regenerating.
+      // Matches are tied to a specific group composition, so any matches that
+      // existed (e.g. from a previous finalize) are no longer valid once the
+      // groups are regenerated — the admin will need to Finalize again to
+      // re-create the match schedule.
       await RoundRobinGroup.deleteMany({ tournamentId });
       await RoundRobinMatch.deleteMany({ tournamentId });
 
@@ -37,9 +41,9 @@ const RoundRobinGroupController = {
       const grouped = groupPlayers(players, numberOfGroups, strategy);
 
       const createdGroups = [];
-      let allMatches = [];
 
-      // ── Create all group documents first ────────────────────────────────────
+      // ── Create group documents only — matches are generated separately at
+      //    Finalize time, so groups can be freely rearranged until then. ─────
       for (let i = 0; i < grouped.length; i++) {
         const groupPlayers_ = grouped[i];
         if (groupPlayers_.length === 0) continue;
@@ -65,50 +69,15 @@ const RoundRobinGroupController = {
         createdGroups.push({ group, players: groupPlayers_ });
       }
 
-      // ── Generate matches ─────────────────────────────────────────────────────
-      if (isDoubles) {
-        // Inter-group: Group A vs Group B, random teams within each group
-        const allGroupData = createdGroups.map(({ group, players }) => ({
-          groupId: group._id,
-          groupName: group.groupName,
-          players: players.map((p) => ({ playerId: p._id, name: p.name })),
-        }));
-        const { matches } = generateDoublesMatches(
-          allGroupData,
-          tournamentId,
-          tournament.numberOfCourts,
-          tournament.numberOfMatchesPerMember
-        );
-        const savedMatches = await RoundRobinMatch.insertMany(matches);
-        allMatches = savedMatches;
-      } else {
-        // Intra-group: Singles round-robin within each group
-        let courtIndex = 0;
-        for (const { group, players } of createdGroups) {
-          const playerRefs = players.map((p) => ({ playerId: p._id, name: p.name }));
-          const { matches, nextCourtIndex } = generateSinglesMatches(
-            playerRefs,
-            tournamentId,
-            group._id,
-            group.groupName,
-            tournament.numberOfCourts,
-            courtIndex,
-            tournament.numberOfMatchesPerMember
-          );
-          courtIndex = nextCourtIndex;
-          const savedMatches = await RoundRobinMatch.insertMany(matches);
-          allMatches.push(...savedMatches);
-        }
-      }
-
-      // Update tournament with group references and status
+      // Attach the new group references. Status is left untouched here —
+      // it only moves to "Finalized" once the admin clicks Finalize, which
+      // is also when the match schedule is generated.
       tournament.groups = createdGroups.map(({ group }) => group._id);
-      tournament.status = "Scheduled";
       await tournament.save();
 
       return res.status(201).json({
-        message: "Groups and matches generated",
-        data: { groups: createdGroups.map(({ group }) => group), matches: allMatches },
+        message: "Groups generated",
+        data: { groups: createdGroups.map(({ group }) => group) },
       });
     } catch (error) {
       console.log("generateGroups error:", error);
@@ -133,14 +102,15 @@ const RoundRobinGroupController = {
         return res.status(404).json({ message: "Tournament not found" });
       }
 
-      // Delete existing groups and matches
+      // Delete existing groups and any matches (a previous match schedule, if
+      // any, no longer matches this new arrangement and must be regenerated
+      // via Finalize).
       await RoundRobinGroup.deleteMany({ tournamentId });
       await RoundRobinMatch.deleteMany({ tournamentId });
 
       const createdGroups = [];
-      let allMatches = [];
 
-      // ── Create group documents ───────────────────────────────────────────────
+      // ── Create group documents only — no match generation here. ─────────────
       for (let i = 0; i < groups.length; i++) {
         const { groupName, players: playerRefs } = groups[i];
         const group = await RoundRobinGroup.create({
@@ -163,46 +133,12 @@ const RoundRobinGroupController = {
         createdGroups.push({ group, playerRefs });
       }
 
-      // ── Generate matches ─────────────────────────────────────────────────────
-      if (tournament.matchType === "Doubles") {
-        const allGroupData = createdGroups.map(({ group, playerRefs }) => ({
-          groupId: group._id,
-          groupName: group.groupName,
-          players: playerRefs,
-        }));
-        const { matches } = generateDoublesMatches(
-          allGroupData,
-          tournamentId,
-          tournament.numberOfCourts,
-          tournament.numberOfMatchesPerMember
-        );
-        const savedMatches = await RoundRobinMatch.insertMany(matches);
-        allMatches = savedMatches;
-      } else {
-        let courtIndex = 0;
-        for (const { group, playerRefs } of createdGroups) {
-          const { matches, nextCourtIndex } = generateSinglesMatches(
-            playerRefs,
-            tournamentId,
-            group._id,
-            group.groupName,
-            tournament.numberOfCourts,
-            courtIndex,
-            tournament.numberOfMatchesPerMember
-          );
-          courtIndex = nextCourtIndex;
-          const savedMatches = await RoundRobinMatch.insertMany(matches);
-          allMatches.push(...savedMatches);
-        }
-      }
-
       tournament.groups = createdGroups.map(({ group }) => group._id);
-      tournament.status = "Scheduled";
       await tournament.save();
 
       return res.status(201).json({
-        message: "Groups saved and matches generated",
-        data: { groups: createdGroups.map(({ group }) => group), matches: allMatches },
+        message: "Groups saved",
+        data: { groups: createdGroups.map(({ group }) => group) },
       });
     } catch (error) {
       console.log("saveGroups error:", error);

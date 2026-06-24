@@ -202,6 +202,7 @@ const Step2 = ({ form, setForm, errors }) => (
             className={inputCls(errors.numberOfSets) + " bg-white"}
           >
             <option value={1}>Best of 1</option>
+            <option value={2}>Best of 2</option>
             <option value={3}>Best of 3</option>
             <option value={5}>Best of 5</option>
           </select>

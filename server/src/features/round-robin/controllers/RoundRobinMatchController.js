@@ -72,9 +72,15 @@ const RoundRobinMatchController = {
       match.sets = sets;
       match.status = matchStatus === "finished" ? "completed" : "ongoing";
 
-      if (matchStatus === "finished" && winner) {
-        match.winner = winner === "home" ? match.player1Id : match.player2Id;
-        match.loser  = winner === "home" ? match.player2Id : match.player1Id;
+      if (matchStatus === "finished" && winner === "draw") {
+        // Even set count (e.g. Best of 2) tied on both sets and total points.
+        match.winner  = null;
+        match.loser   = null;
+        match.isDraw  = true;
+      } else if (matchStatus === "finished" && winner) {
+        match.winner  = winner === "home" ? match.player1Id : match.player2Id;
+        match.loser   = winner === "home" ? match.player2Id : match.player1Id;
+        match.isDraw  = false;
       }
 
       await match.save();
@@ -142,6 +148,7 @@ const RoundRobinMatchController = {
       match.sets   = [];
       match.winner = null;
       match.loser  = null;
+      match.isDraw = false;
       match.status = "scheduled";
       await match.save();
 

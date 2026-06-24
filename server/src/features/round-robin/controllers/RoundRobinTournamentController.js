@@ -1,5 +1,8 @@
 const mongoose = require("mongoose");
 const RoundRobinTournament = require("../models/RoundRobinTournament");
+const RoundRobinGroup = require("../models/RoundRobinGroup");
+const RoundRobinMatch = require("../models/RoundRobinMatch");
+const { generateSinglesMatches, generateDoublesMatches } = require("../services/matchGenerationService");
 
 const RoundRobinTournamentController = {
   createTournament: async (req, res) => {
@@ -18,6 +21,9 @@ const RoundRobinTournamentController = {
         pointsForWin,
         pointsForLoss,
         entryFee,
+        numberOfSets,
+        setWinningPoint,
+        winningPointGap,
       } = req.body;
 
       if (!tournamentName || !matchType || !numberOfCourts || !numberOfGroups || !playersPerGroup) {
@@ -41,6 +47,9 @@ const RoundRobinTournamentController = {
         pointsForWin: pointsForWin ?? 2,
         pointsForLoss: pointsForLoss ?? 0,
         entryFee: entryFee ?? 0,
+        numberOfSets: numberOfSets ?? 3,
+        setWinningPoint: setWinningPoint ?? 21,
+        winningPointGap: winningPointGap ?? 2,
         status: "Draft",
       });
 
@@ -98,6 +107,7 @@ const RoundRobinTournamentController = {
         "tournamentName", "matchType", "description", "numberOfCourts",
         "numberOfGroups", "playersPerGroup", "numberOfMatchesPerMember", "startDate", "endDate",
         "groupingStrategy", "pointsForWin", "pointsForLoss", "status", "entryFee",
+        "numberOfSets", "setWinningPoint", "winningPointGap",
       ];
 
       allowedFields.forEach((field) => {
@@ -140,21 +150,66 @@ const RoundRobinTournamentController = {
         return res.status(400).json({ message: "Invalid tournament id" });
       }
 
-      const existing = await RoundRobinTournament.findOne({ _id: id, adminId: req.userId });
-      if (!existing) {
+      const tournament = await RoundRobinTournament.findOne({ _id: id, adminId: req.userId });
+      if (!tournament) {
         return res.status(404).json({ message: "Tournament not found" });
       }
-      if (existing.status !== "Scheduled") {
-        return res.status(400).json({ message: "Tournament must be Scheduled before it can be finalized" });
+      if (["Finalized", "Ongoing", "Completed"].includes(tournament.status)) {
+        return res.status(400).json({ message: "Tournament has already been finalized" });
       }
 
-      const tournament = await RoundRobinTournament.findOneAndUpdate(
-        { _id: id, adminId: req.userId },
-        { status: "Finalized" },
-        { new: true }
-      );
+      const groups = await RoundRobinGroup.find({ tournamentId: id });
+      if (groups.length === 0) {
+        return res.status(400).json({ message: "Generate groups before finalizing the tournament" });
+      }
 
-      return res.status(200).json({ message: "Tournament finalized", data: tournament });
+      // Finalizing is what schedules the matches — it (re)generates the
+      // match schedule from the current group arrangement, then locks the
+      // groups against further rearrangement.
+      await RoundRobinMatch.deleteMany({ tournamentId: id });
+
+      const isDoubles = tournament.matchType === "Doubles";
+      let allMatches = [];
+
+      if (isDoubles) {
+        const allGroupData = groups.map((group) => ({
+          groupId: group._id,
+          groupName: group.groupName,
+          players: group.players.map((p) => ({ playerId: p.playerId, name: p.name })),
+        }));
+        const { matches } = generateDoublesMatches(
+          allGroupData,
+          id,
+          tournament.numberOfCourts,
+          tournament.numberOfMatchesPerMember
+        );
+        allMatches = await RoundRobinMatch.insertMany(matches);
+      } else {
+        let courtIndex = 0;
+        for (const group of groups) {
+          const playerRefs = group.players.map((p) => ({ playerId: p.playerId, name: p.name }));
+          const { matches, nextCourtIndex } = generateSinglesMatches(
+            playerRefs,
+            id,
+            group._id,
+            group.groupName,
+            tournament.numberOfCourts,
+            courtIndex,
+            tournament.numberOfMatchesPerMember
+          );
+          courtIndex = nextCourtIndex;
+          const savedMatches = await RoundRobinMatch.insertMany(matches);
+          allMatches.push(...savedMatches);
+        }
+      }
+
+      tournament.status = "Finalized";
+      await tournament.save();
+
+      return res.status(200).json({
+        message: "Tournament finalized — matches scheduled",
+        data: { tournament, matches: allMatches },
+      });
     } catch (error) {
       console.log("finalizeTournament error:", error);
       return res.status(500).json({ message: "Internal server error", error: error.message });
