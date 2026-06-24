@@ -187,11 +187,18 @@ const SquareSettings = () => {
                 <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 mb-1.5">
                   <MapPin className="w-3.5 h-3.5" /> Location ID <span className="text-gray-300">(optional)</span>
                 </label>
+                {status?.locationId && (
+                  <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-xs text-gray-500 mb-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-teal-500 flex-shrink-0" />
+                    Currently saved: {status.locationId}
+                    {status.locationName ? ` (${status.locationName})` : ""}. Enter a new one below to replace it.
+                  </div>
+                )}
                 <input
                   type="text"
                   value={manualLocationId}
                   onChange={(e) => setManualLocationId(e.target.value)}
-                  placeholder="e.g. L9W5JG29DAG2Z"
+                  placeholder={status?.locationId ? "Enter to replace saved Location ID" : "e.g. L9W5JG29DAG2Z"}
                   autoComplete="off"
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300"
                 />
@@ -199,7 +206,7 @@ const SquareSettings = () => {
                   type="text"
                   value={manualLocationName}
                   onChange={(e) => setManualLocationName(e.target.value)}
-                  placeholder="Location name (e.g. Ballarat Masters Badminton Club)"
+                  placeholder={status?.locationName || "Location name (e.g. Ballarat Masters Badminton Club)"}
                   autoComplete="off"
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm mt-2 focus:outline-none focus:ring-2 focus:ring-teal-300"
                 />
@@ -212,7 +219,7 @@ const SquareSettings = () => {
                 {hasSignatureKey && (
                   <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-xs text-gray-500 mb-2">
                     <CheckCircle2 className="w-3.5 h-3.5 text-teal-500 flex-shrink-0" />
-                    A signature key is already saved. Enter a new one below to replace it.
+                    A signature key is already saved (hidden for security). Enter a new one below to replace it.
                   </div>
                 )}
                 <input
@@ -289,11 +296,18 @@ const SquareSettings = () => {
                 <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 mb-1.5">
                   <MapPin className="w-3.5 h-3.5" /> Location ID <span className="text-gray-300">(optional)</span>
                 </label>
+                {status?.locationId && (
+                  <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-xs text-gray-500 mb-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-teal-500 flex-shrink-0" />
+                    Currently saved: {status.locationId}
+                    {status.locationName ? ` (${status.locationName})` : ""}. Enter a new one below to replace it.
+                  </div>
+                )}
                 <input
                   type="text"
                   value={manualLocationId}
                   onChange={(e) => setManualLocationId(e.target.value)}
-                  placeholder="e.g. L9W5JG29DAG2Z"
+                  placeholder={status?.locationId ? "Enter to replace saved Location ID" : "e.g. L9W5JG29DAG2Z"}
                   autoComplete="off"
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300"
                 />
@@ -301,7 +315,7 @@ const SquareSettings = () => {
                   type="text"
                   value={manualLocationName}
                   onChange={(e) => setManualLocationName(e.target.value)}
-                  placeholder="Location name (e.g. Ballarat Masters Badminton Club)"
+                  placeholder={status?.locationName || "Location name (e.g. Ballarat Masters Badminton Club)"}
                   autoComplete="off"
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm mt-2 focus:outline-none focus:ring-2 focus:ring-teal-300"
                 />
@@ -318,7 +332,7 @@ const SquareSettings = () => {
                 {hasSignatureKey && (
                   <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-xs text-gray-500 mb-2">
                     <CheckCircle2 className="w-3.5 h-3.5 text-teal-500 flex-shrink-0" />
-                    A signature key is already saved. Enter a new one below to replace it.
+                    A signature key is already saved (hidden for security). Enter a new one below to replace it.
                   </div>
                 )}
                 <input
