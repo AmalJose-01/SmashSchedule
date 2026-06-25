@@ -1,4 +1,6 @@
 const RoundRobinMember = require("../models/RoundRobinMember");
+const RoundRobinMatch = require("../models/RoundRobinMatch");
+const RoundRobinTournament = require("../models/RoundRobinTournament");
 const {
   GRADE_DEFAULT_POINTS,
   POINTS_PER_WIN,
@@ -69,9 +71,36 @@ const getWinnerSideFromMatch = (match) => {
   return player1Id === winnerId ? "home" : "away";
 };
 
+// Counts how many matches a player (by RoundRobinPlayer id, in any of the
+// 4 player slots) is scheduled for within a tournament. This is the player's
+// fixed match allotment for that tournament/day — it doesn't change as
+// matches get played, so applying and later reversing points for the same
+// match always uses the same weight.
+const getPlayerMatchCount = async (tournamentId, playerId) => {
+  if (!tournamentId || !playerId) return 0;
+  return RoundRobinMatch.countDocuments({
+    tournamentId,
+    $or: [
+      { player1Id: playerId },
+      { player2Id: playerId },
+      { player1PartnerId: playerId },
+      { player2PartnerId: playerId },
+    ],
+  });
+};
+
 // direction: 1 to apply points for a newly-finished match, -1 to reverse
 // them (e.g. an admin resets a previously recorded score). Draws and
 // undecided matches never change points.
+//
+// Match generation can't always give every player the exact same number of
+// matches per day (odd-sized groups mean some players end up with one extra
+// match — see matchGenerationService). To keep that fair, each match's point
+// value is scaled by the player's own scheduled match count, so a player's
+// maximum possible gain for the day/tournament — numberOfMatchesPerMember *
+// POINTS_PER_WIN — is the same whether they actually played 2, 3, or 4
+// matches. E.g. with a target of 3: a 3-match player earns 0.5/win (3 * 0.5
+// = 1.5 max), a 2-match player earns 0.75/win (2 * 0.75 = 1.5 max too).
 const applyMatchPoints = async (match, winnerSide, direction = 1) => {
   if (winnerSide !== "home" && winnerSide !== "away") return;
 
@@ -79,11 +108,24 @@ const applyMatchPoints = async (match, winnerSide, direction = 1) => {
   const winningPlayers = winnerSide === "home" ? homePlayers : awayPlayers;
   const losingPlayers = winnerSide === "home" ? awayPlayers : homePlayers;
 
+  const tournament = await RoundRobinTournament.findById(match.tournamentId).select(
+    "numberOfMatchesPerMember"
+  );
+  const targetMatches = tournament?.numberOfMatchesPerMember || 3;
+  const targetWinPoints = targetMatches * POINTS_PER_WIN;
+  const targetLossPoints = targetMatches * POINTS_PER_LOSS;
+
   for (const player of winningPlayers) {
-    await adjustMemberPoints(player.memberId, POINTS_PER_WIN * direction);
+    const playerId = player._id || player;
+    const matchCount = await getPlayerMatchCount(match.tournamentId, playerId);
+    const perMatchValue = matchCount > 0 ? targetWinPoints / matchCount : POINTS_PER_WIN;
+    await adjustMemberPoints(player.memberId, perMatchValue * direction);
   }
   for (const player of losingPlayers) {
-    await adjustMemberPoints(player.memberId, -POINTS_PER_LOSS * direction);
+    const playerId = player._id || player;
+    const matchCount = await getPlayerMatchCount(match.tournamentId, playerId);
+    const perMatchValue = matchCount > 0 ? targetLossPoints / matchCount : POINTS_PER_LOSS;
+    await adjustMemberPoints(player.memberId, -perMatchValue * direction);
   }
 };
 
