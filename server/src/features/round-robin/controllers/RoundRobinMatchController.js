@@ -212,7 +212,7 @@ const RoundRobinMatchController = {
         return res.status(400).json({ message: "No matches to export yet — finalize the tournament first" });
       }
 
-      const groups = await RoundRobinGroup.find({ tournamentId }).select("groupName");
+      const groups = await RoundRobinGroup.find({ tournamentId }).select("groupName players");
 
       const doc = generateMatchSchedulePdf({ tournament, groups, matches });
 

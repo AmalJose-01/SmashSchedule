@@ -59,6 +59,33 @@ const generateMatchSchedulePdf = ({ tournament, groups, matches }) => {
   const leftMargin = doc.page.margins.left;
   const rightEdge = doc.page.width - doc.page.margins.right;
 
+  // ── Groups & Members ──────────────────────────────────────────────────────
+  if (groups.length > 0) {
+    doc.fontSize(14).fillColor("#0d9488").text("Groups", { underline: true });
+    doc.fillColor("#000");
+    doc.moveDown(0.3);
+
+    groups.forEach((g) => {
+      const memberNames = (g.players || []).map((p) => p.name).filter(Boolean);
+      const blockHeight = 30 + Math.ceil(memberNames.length / 4) * 12;
+      if (doc.y > pageBottom - blockHeight) doc.addPage();
+
+      doc.fontSize(11).fillColor("#000").text(g.groupName);
+      doc
+        .fontSize(9)
+        .fillColor("#444")
+        .text(memberNames.length ? memberNames.join(", ") : "No players assigned");
+      doc.fillColor("#000");
+      doc.moveDown(0.4);
+    });
+
+    doc.moveDown(0.3);
+    const dividerY = doc.y;
+    doc.moveTo(leftMargin, dividerY).lineTo(rightEdge, dividerY).strokeColor("#cbd5e1").stroke();
+    doc.strokeColor("#000");
+    doc.moveDown(0.8);
+  }
+
   Object.entries(byGroup).forEach(([groupName, groupMatches]) => {
     if (doc.y > pageBottom - 80) doc.addPage();
 
