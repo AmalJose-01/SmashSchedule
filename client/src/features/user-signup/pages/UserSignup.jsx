@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { User, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { FaUserShield } from "react-icons/fa";
 import { useUserSignup } from "../hooks/useUserSignup.js";
 import "./UserSignup.css";
 
@@ -9,6 +10,7 @@ const UserSignup = () => {
     showPassword,
     showConfirmPassword,
     isLoading,
+    isAdmin,
     setShowPassword,
     setShowConfirmPassword,
     handleInputChange,
@@ -20,9 +22,9 @@ const UserSignup = () => {
       <div className="signup-card">
         {/* Header */}
         <div className="signup-header">
-          <User size={64} color="#ffffff" />
-          <h2>Create Account</h2>
-          <p>Sign up to get started with Club Hero</p>
+          {isAdmin ? <FaUserShield size={64} color="#ffffff" /> : <User size={64} color="#ffffff" />}
+          <h2>{isAdmin ? "Create Admin Account" : "Create Account"}</h2>
+          <p>{isAdmin ? "Sign up to manage your club on Club Hero" : "Sign up to get started with Club Hero"}</p>
         </div>
 
         {/* Body */}
@@ -105,7 +107,7 @@ const UserSignup = () => {
 
           <div className="signup-footer">
             Already have an account?{" "}
-            <Link to="/user/login">Sign in</Link>
+            <Link to={isAdmin ? "/admin/login" : "/user/login"}>Sign in</Link>
           </div>
         </div>
       </div>

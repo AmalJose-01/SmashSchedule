@@ -9,7 +9,7 @@
  */
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { toast } from "sonner";
 import { loginUser } from "../../../redux/slices/userSlice.js";
@@ -18,6 +18,8 @@ import { useSignupUser } from "../services/userSignup.queries.js";
 export const useUserSignup = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const location = useLocation();
+  const isAdmin = location.pathname === "/admin/signup";
 
   const [formData, setFormData] = useState({
     email: "",
@@ -71,7 +73,12 @@ export const useUserSignup = () => {
     if (!validate()) return;
 
     signup(
-      { email: formData.email, password: formData.password, confirmPassword: formData.confirmPassword },
+      {
+        email: formData.email,
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
+        accountType: isAdmin ? "admin" : "user",
+      },
       {
         onSuccess: (data) => {
           const accountType = data.user?.accountType || "user";
@@ -101,6 +108,7 @@ export const useUserSignup = () => {
     showPassword,
     showConfirmPassword,
     isLoading,
+    isAdmin,
     setShowPassword,
     setShowConfirmPassword,
     handleInputChange,
