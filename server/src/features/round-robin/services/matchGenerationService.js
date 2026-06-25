@@ -204,6 +204,20 @@ const generateSinglesMatches = (
  * omitted, every round is played out, reproducing the old full round-robin
  * coverage (every pair of groups meets with every team combination once).
  *
+ * Two groups can end up facing each other again in a later fixture cycle
+ * (whenever more than one cycle is needed to hit the target). When that
+ * happens, the team-pairing chosen for that repeat meeting is checked against
+ * every pairing already used between that SAME pair of groups, and bumped
+ * forward until an unused one is found — otherwise a naive index-based
+ * rotation can land back on the exact same index it used the first time
+ * (this happened in practice: e.g. group size 4 with an even number of
+ * groups, where a group's local-round count advances by a multiple of its
+ * own rotation length every full cycle, re-selecting an identical team
+ * pairing against the same opponent and producing a literal duplicate
+ * match). Once every distinct pairing between that pair of groups has
+ * already been used, a further repeat meeting necessarily reuses one — that
+ * point is only reached once truly exhausted, not avoidably.
+ *
  * @param {Array} allGroups - Array of { groupId, groupName, players: [{ playerId, name }] }
  * @param {ObjectId} tournamentId
  * @param {Number} numberOfCourts
@@ -229,6 +243,24 @@ const generateDoublesMatches = (allGroups, tournamentId, numberOfCourts, matches
   // out of (group bye rounds).
   const groupLocalRound = new Array(numGroups).fill(0);
 
+  // Per group-pair bookkeeping for the duplicate-avoidance check described
+  // above: how far we've searched into the rotation for that pair so far
+  // (pairSearchOffset), and which exact team-vs-team pairings have already
+  // been used between that specific pair of groups (pairUsedPairings).
+  const pairSearchOffset = new Map();
+  const pairUsedPairings = new Map();
+
+  const pairingSignature = (teamsA, teamsB) => {
+    const pairCount = Math.min(teamsA.length, teamsB.length);
+    const parts = [];
+    for (let k = 0; k < pairCount; k++) {
+      const [a1, a2] = teamsA[k];
+      const [b1, b2] = teamsB[k];
+      parts.push([a1.playerId, a2.playerId, b1.playerId, b2.playerId].sort().join(","));
+    }
+    return parts.sort().join("|");
+  };
+
   const matches = [];
   let courtIndex = 0;
 
@@ -250,8 +282,25 @@ const generateDoublesMatches = (allGroups, tournamentId, numberOfCourts, matches
       const roundsB = groupPartnerRounds[idxB];
       if (!roundsA.length || !roundsB.length) continue;
 
-      const teamsA = roundsA[groupLocalRound[idxA] % roundsA.length];
-      const teamsB = roundsB[groupLocalRound[idxB] % roundsB.length];
+      const pairKey = idxA < idxB ? `${idxA}-${idxB}` : `${idxB}-${idxA}`;
+      const usedPairings = pairUsedPairings.get(pairKey) || new Set();
+      const maxAttempts = Math.max(roundsA.length, roundsB.length);
+
+      let searchOffset = pairSearchOffset.get(pairKey) || 0;
+      let teamsA, teamsB, signature;
+      let attempts = 0;
+      do {
+        teamsA = roundsA[(groupLocalRound[idxA] + searchOffset) % roundsA.length];
+        teamsB = roundsB[(groupLocalRound[idxB] + searchOffset) % roundsB.length];
+        signature = pairingSignature(teamsA, teamsB);
+        searchOffset++;
+        attempts++;
+      } while (usedPairings.has(signature) && attempts <= maxAttempts);
+
+      pairSearchOffset.set(pairKey, searchOffset);
+      usedPairings.add(signature);
+      pairUsedPairings.set(pairKey, usedPairings);
+
       groupLocalRound[idxA]++;
       groupLocalRound[idxB]++;
 
