@@ -25,7 +25,9 @@ const RoundRobinTournamentSchema = new Schema(
     },
     pointsForWin: { type: Number, default: 2 },
     pointsForLoss: { type: Number, default: 0 },
-    entryFee: { type: Number, default: 0 }, // in dollars; 0 = no payment required
+    entryFee: { type: Number, default: 0 }, // legacy single fee, kept for old records; superseded by the two fields below
+    entryFeeMember: { type: Number, default: 0 }, // in dollars; 0 = no payment required
+    entryFeeNonMember: { type: Number, default: 0 }, // in dollars; 0 = no payment required
     numberOfSets: { type: Number, default: 3 },
     setWinningPoint: { type: Number, default: 21 },
     winningPointGap: { type: Number, default: 2 },

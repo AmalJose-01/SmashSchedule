@@ -13,6 +13,7 @@ const RoundRobinPlayerSchema = new Schema(
     email: { type: String, required: true, lowercase: true, trim: true },
     contact: { type: String, default: "" },
     grade: { type: String, default: "Unrated" },
+    isMember: { type: Boolean, default: true },
   },
   { timestamps: true }
 );

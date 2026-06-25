@@ -96,20 +96,33 @@ const Step1 = ({ form, setForm, errors }) => (
         className={inputCls() + " resize-none"}
       />
     </Field>
-    <Field label="Entry Fee ($)">
-      <input
-        type="number"
-        min={0}
-        step="0.01"
-        value={form.entryFee}
-        onChange={(e) => setForm((f) => ({ ...f, entryFee: e.target.value }))}
-        placeholder="0 = free"
-        className={inputCls()}
-      />
-      <p className="text-xs text-gray-400 mt-1">
-        Leave at 0 for a free tournament. Set an amount to enable Square Terminal payment collection per player.
-      </p>
-    </Field>
+    <div className="grid grid-cols-2 gap-4">
+      <Field label="Entry Fee — Member ($)">
+        <input
+          type="number"
+          min={0}
+          step="0.01"
+          value={form.entryFeeMember}
+          onChange={(e) => setForm((f) => ({ ...f, entryFeeMember: e.target.value }))}
+          placeholder="0 = free"
+          className={inputCls()}
+        />
+      </Field>
+      <Field label="Entry Fee — Non-Member ($)">
+        <input
+          type="number"
+          min={0}
+          step="0.01"
+          value={form.entryFeeNonMember}
+          onChange={(e) => setForm((f) => ({ ...f, entryFeeNonMember: e.target.value }))}
+          placeholder="0 = free"
+          className={inputCls()}
+        />
+      </Field>
+    </div>
+    <p className="text-xs text-gray-400 -mt-2">
+      Leave at 0 for a free tournament. Set an amount to enable Square Terminal payment collection per player.
+    </p>
   </div>
 );
 
@@ -251,7 +264,8 @@ const Step3 = ({ form }) => (
         ["Sets", `Best of ${form.numberOfSets}`],
         ["Set Winning Point", form.setWinningPoint],
         ["Winning Gap", form.winningPointGap],
-        ["Entry Fee", form.entryFee > 0 ? `$${Number(form.entryFee).toFixed(2)}` : "Free"],
+        ["Entry Fee (Member)", form.entryFeeMember > 0 ? `$${Number(form.entryFeeMember).toFixed(2)}` : "Free"],
+        ["Entry Fee (Non-Member)", form.entryFeeNonMember > 0 ? `$${Number(form.entryFeeNonMember).toFixed(2)}` : "Free"],
         ["Start Date", form.startDate || "—"],
         ["End Date", form.endDate || "—"],
       ].map(([k, v]) => (
@@ -286,7 +300,8 @@ const INITIAL_FORM = {
   numberOfSets: 3,
   setWinningPoint: 21,
   winningPointGap: 2,
-  entryFee: 0,
+  entryFeeMember: 0,
+  entryFeeNonMember: 0,
 };
 
 const CreateTournamentRR = () => {
@@ -335,7 +350,8 @@ const CreateTournamentRR = () => {
         numberOfSets:     Number(form.numberOfSets),
         setWinningPoint:  Number(form.setWinningPoint),
         winningPointGap:  Number(form.winningPointGap),
-        entryFee:         Number(form.entryFee) || 0,
+        entryFeeMember:    Number(form.entryFeeMember) || 0,
+        entryFeeNonMember: Number(form.entryFeeNonMember) || 0,
       });
 
       const tournamentId = result.data._id;

@@ -4,6 +4,7 @@ const RoundRobinTournament = require("../models/RoundRobinTournament");
 const RoundRobinGroup = require("../models/RoundRobinGroup");
 const { determineWinner, isValidScore } = require("../../../../helpers/matchHelpers");
 const { updateStandings, reverseStandings } = require("../services/standingsService");
+const { applyMatchPoints, getWinnerSideFromMatch } = require("../services/memberPointsService");
 const { generateMatchSchedulePdf } = require("../utils/matchSchedulePdf");
 
 const getTournamentConfig = async (tournamentId) => {
@@ -52,10 +53,10 @@ const RoundRobinMatchController = {
 
       // Fetch match first to get tournamentId
       const match = await RoundRobinMatch.findById(matchId)
-        .populate("player1Id", "name")
-        .populate("player1PartnerId", "name")
-        .populate("player2Id", "name")
-        .populate("player2PartnerId", "name");
+        .populate("player1Id", "name memberId")
+        .populate("player1PartnerId", "name memberId")
+        .populate("player2Id", "name memberId")
+        .populate("player2PartnerId", "name memberId");
       if (!match) {
         return res.status(404).json({ message: "Match not found" });
       }
@@ -90,6 +91,10 @@ const RoundRobinMatchController = {
       let updatedStandings = null;
       if (matchStatus === "finished" && match.groupId) {
         updatedStandings = await updateStandings(match, sets, config);
+      }
+
+      if (matchStatus === "finished" && (winner === "home" || winner === "away")) {
+        await applyMatchPoints(match, winner, 1);
       }
 
       return res.status(200).json({
@@ -135,16 +140,22 @@ const RoundRobinMatchController = {
       }
 
       const match = await RoundRobinMatch.findById(matchId)
-        .populate("player1Id", "name")
-        .populate("player1PartnerId", "name")
-        .populate("player2Id", "name")
-        .populate("player2PartnerId", "name");
+        .populate("player1Id", "name memberId")
+        .populate("player1PartnerId", "name memberId")
+        .populate("player2Id", "name memberId")
+        .populate("player2PartnerId", "name memberId");
       if (!match) return res.status(404).json({ message: "Match not found" });
 
       // Reverse standings only if the match was completed
       if (match.status === "completed" && match.sets?.length > 0 && match.groupId) {
         const config = await getTournamentConfig(match.tournamentId);
         await reverseStandings(match, match.sets, config);
+      }
+
+      // Reverse any points awarded for this result before clearing it.
+      if (match.status === "completed") {
+        const winnerSide = getWinnerSideFromMatch(match);
+        await applyMatchPoints(match, winnerSide, -1);
       }
 
       match.sets   = [];

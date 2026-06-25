@@ -12,7 +12,7 @@ const GRADES = ["A", "B", "C", "D", "E", "F", "G", "H", "Unrated"];
 
 const EMPTY_FORM = {
   name: "", grade: "Unrated", email: "", contact: "",
-  nationalMemberId: "", dateOfBirth: "", gender: "",
+  nationalMemberId: "", dateOfBirth: "", gender: "", isMember: true,
 };
 
 // ── System field definitions & alias detection ────────────────────────────────
@@ -105,6 +105,7 @@ const ManualTab = ({ member, onClose }) => {
           nationalMemberId: member.nationalMemberId ?? "",
           dateOfBirth: member.dateOfBirth ? member.dateOfBirth.slice(0, 10) : "",
           gender: member.gender ?? "",
+          isMember: member.isMember ?? true,
         }
       : EMPTY_FORM
   );
@@ -133,6 +134,7 @@ const ManualTab = ({ member, onClose }) => {
       name: form.name,
       grade: form.grade,
       contact: form.contact,
+      isMember: form.isMember,
       nationalMemberId: form.nationalMemberId || undefined,
       dateOfBirth: form.dateOfBirth || undefined,
       gender: form.gender || undefined,
@@ -193,6 +195,19 @@ const ManualTab = ({ member, onClose }) => {
             className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 bg-white"
           >
             {GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
+          </select>
+        </div>
+
+        {/* Membership Status */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Membership</label>
+          <select
+            value={form.isMember ? "member" : "non-member"}
+            onChange={(e) => setForm((f) => ({ ...f, isMember: e.target.value === "member" }))}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 bg-white"
+          >
+            <option value="member">Member</option>
+            <option value="non-member">Non-Member</option>
           </select>
         </div>
 
@@ -383,6 +398,9 @@ const BulkImportTab = () => {
           <p className="text-xs text-gray-500">.csv · .txt · .xlsx · .xls</p>
           <p className="text-xs text-gray-400 mt-1">
             Required columns: <span className="font-medium">Name</span>, <span className="font-medium">Email</span> — all others are mapped in the next step
+          </p>
+          <p className="text-xs text-gray-400 mt-1">
+            Imported files don't carry membership status — new members are added as <span className="font-medium">Non-Member</span> by default. Edit a member afterwards to mark them as a Member.
           </p>
         </div>
 

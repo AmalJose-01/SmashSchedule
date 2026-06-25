@@ -10,6 +10,7 @@ const RoundRobinMemberSchema = new Schema(
       enum: ["A", "B", "C", "D", "E", "F", "G", "H", "Unrated"],
       default: "Unrated",
     },
+    points: { type: Number, default: 0 },
     email: { type: String, required: true, lowercase: true, trim: true },
     contact: { type: String, default: "" },
     nationalMemberId: { type: String, trim: true },

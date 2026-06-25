@@ -160,7 +160,9 @@ const SquarePaymentController = {
       const player = await RoundRobinPlayer.findOne({ _id: playerId, tournamentId });
       if (!player) return res.status(404).json({ message: "Player not found in this tournament" });
 
-      const entryFee = tournament.entryFee || 0;
+      const entryFee = player.isMember
+        ? tournament.entryFeeMember || 0
+        : tournament.entryFeeNonMember || 0;
       if (entryFee <= 0) {
         return res.status(400).json({ message: "This tournament has no entry fee configured." });
       }
