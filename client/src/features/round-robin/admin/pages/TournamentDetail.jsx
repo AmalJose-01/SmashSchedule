@@ -137,10 +137,12 @@ const ConfigTab = ({ tournament, isFinalized }) => {
   useEffect(() => {
     setForm({
       tournamentName: tournament.tournamentName ?? "",
+      matchType:      tournament.matchType ?? "Singles",
       description:    tournament.description    ?? "",
       startDate:      tournament.startDate ? new Date(tournament.startDate).toISOString().slice(0, 16) : "",
       endDate:        tournament.endDate   ? new Date(tournament.endDate).toISOString().slice(0, 16)   : "",
       numberOfCourts: tournament.numberOfCourts  ?? 1,
+      numberOfMatchesPerMember: tournament.numberOfMatchesPerMember ?? 3,
       entryFeeMember:    tournament.entryFeeMember    ?? 0,
       entryFeeNonMember: tournament.entryFeeNonMember ?? 0,
       pointsForWin:   tournament.pointsForWin    ?? 2,
@@ -160,6 +162,7 @@ const ConfigTab = ({ tournament, isFinalized }) => {
         data: {
           ...form,
           numberOfCourts:  Number(form.numberOfCourts),
+          numberOfMatchesPerMember: Number(form.numberOfMatchesPerMember),
           entryFeeMember:    Number(form.entryFeeMember),
           entryFeeNonMember: Number(form.entryFeeNonMember),
           pointsForWin:    Number(form.pointsForWin),
@@ -216,6 +219,7 @@ const ConfigTab = ({ tournament, isFinalized }) => {
           <div className="px-5 py-1">
             <ViewRow label="Groups"            value={tournament.numberOfGroups} />
             <ViewRow label="Players per Group" value={tournament.playersPerGroup} />
+            <ViewRow label="Matches per Member" value={tournament.numberOfMatchesPerMember} />
             <ViewRow label="Courts"            value={tournament.numberOfCourts} />
             <ViewRow label="Grouping Strategy" value={tournament.groupingStrategy} />
             <ViewRow label="Entry Fee (Member)" value={tournament.entryFeeMember > 0 ? `$${tournament.entryFeeMember.toFixed(2)}` : "Free"} />
@@ -259,6 +263,20 @@ const ConfigTab = ({ tournament, isFinalized }) => {
             <input type="datetime-local" value={form.endDate} onChange={(e) => set("endDate", e.target.value)} className={inputCls()} />
           </Field>
         </div>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Match Type">
+            <select value={form.matchType} onChange={(e) => set("matchType", e.target.value)} className={inputCls() + " bg-white"}>
+              <option value="Singles">Singles</option>
+              <option value="Doubles">Doubles</option>
+            </select>
+          </Field>
+          <Field label="Matches per Member">
+            <input type="number" min={1} value={form.numberOfMatchesPerMember} onChange={(e) => set("numberOfMatchesPerMember", e.target.value)} className={inputCls()} />
+          </Field>
+        </div>
+        <p className="text-xs text-gray-400">
+          Match Type and Matches per Member can only be changed before the schedule is generated — they lock once matches exist.
+        </p>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Number of Courts">
             <input type="number" min={1} value={form.numberOfCourts} onChange={(e) => set("numberOfCourts", e.target.value)} className={inputCls()} />
