@@ -171,7 +171,7 @@ const Login = () => {
                 <p className="text-sm text-muted-foreground">
                   Don't have an account?{" "}
                   <Link
-                    to="/user/signup"
+                    to={isAdmin ? "/admin/signup" : "/user/signup"}
                     className="text-primary hover:underline"
                   >
                     Sign up

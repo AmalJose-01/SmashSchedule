@@ -21,6 +21,8 @@ const RoundRobinTournamentController = {
         pointsForWin,
         pointsForLoss,
         entryFee,
+        entryFeeMember,
+        entryFeeNonMember,
         numberOfSets,
         setWinningPoint,
         winningPointGap,
@@ -47,6 +49,8 @@ const RoundRobinTournamentController = {
         pointsForWin: pointsForWin ?? 2,
         pointsForLoss: pointsForLoss ?? 0,
         entryFee: entryFee ?? 0,
+        entryFeeMember: entryFeeMember ?? 0,
+        entryFeeNonMember: entryFeeNonMember ?? 0,
         numberOfSets: numberOfSets ?? 3,
         setWinningPoint: setWinningPoint ?? 21,
         winningPointGap: winningPointGap ?? 2,
@@ -107,6 +111,7 @@ const RoundRobinTournamentController = {
         "tournamentName", "matchType", "description", "numberOfCourts",
         "numberOfGroups", "playersPerGroup", "numberOfMatchesPerMember", "startDate", "endDate",
         "groupingStrategy", "pointsForWin", "pointsForLoss", "status", "entryFee",
+        "entryFeeMember", "entryFeeNonMember",
         "numberOfSets", "setWinningPoint", "winningPointGap",
       ];
 

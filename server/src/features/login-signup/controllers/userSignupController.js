@@ -5,7 +5,7 @@ const AdminUser = require("../model/adminUser");
 const userSignupController = {
   signup: async (req, res) => {
     try {
-      const { email, password, confirmPassword } = req.body;
+      const { email, password, confirmPassword, accountType } = req.body;
 
       if (!email || !password || !confirmPassword) {
         return res.status(400).json({ message: "Email, password, and confirm password are required" });
@@ -14,6 +14,10 @@ const userSignupController = {
       if (password !== confirmPassword) {
         return res.status(400).json({ message: "Passwords do not match" });
       }
+
+      // Defaults to "user" — the admin signup page explicitly sends
+      // accountType: "admin" to create a club-admin account instead.
+      const resolvedAccountType = accountType === "admin" ? "admin" : "user";
 
       const existingUser = await AdminUser.findOne({ emailID: email });
       if (existingUser) {
@@ -24,7 +28,7 @@ const userSignupController = {
         firstName: email.split("@")[0],
         emailID: email,
         password,
-        accountType: "user",
+        accountType: resolvedAccountType,
       });
       console.log("user created:", user);
 

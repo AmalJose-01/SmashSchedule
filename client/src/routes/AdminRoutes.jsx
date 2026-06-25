@@ -22,6 +22,7 @@ import CreateTournamentRR from "../features/round-robin/admin/pages/CreateTourna
 import TournamentDetail from "../features/round-robin/admin/pages/TournamentDetail.jsx";
 import SquareSettings from "../features/round-robin/admin/pages/SquareSettings.jsx";
 import ErrorBoundary from "../components/ErrorBoundary.jsx";
+import UserSignup from "../features/user-signup/pages/UserSignup.jsx";
 
 const AdminRoutes = () => {
   const user = useSelector((state) => state.user.user);
@@ -141,6 +142,17 @@ const AdminRoutes = () => {
             <Login />
           ) : !user.isVerified ? (
             <Navigate to="/checkout" replace />
+          ) : (
+            <Navigate to="/dashboard" replace />
+          )
+        }
+      />
+
+      <Route
+        path="/admin/signup"
+        element={
+          !user || user.accountType !== "admin" ? (
+            <UserSignup />
           ) : (
             <Navigate to="/dashboard" replace />
           )

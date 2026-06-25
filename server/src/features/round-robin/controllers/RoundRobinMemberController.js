@@ -2,11 +2,12 @@ const mongoose = require("mongoose");
 const RoundRobinMember = require("../models/RoundRobinMember");
 const RoundRobinPlayer = require("../models/RoundRobinPlayer");
 const RoundRobinTournament = require("../models/RoundRobinTournament");
+const { GRADE_DEFAULT_POINTS } = require("../constants/grades");
 
 const RoundRobinMemberController = {
   createMember: async (req, res) => {
     try {
-      const { name, grade, email, contact, nationalMemberId, dateOfBirth, gender } = req.body;
+      const { name, grade, points, isMember, email, contact, nationalMemberId, dateOfBirth, gender } = req.body;
       if (!name || !email) {
         return res.status(400).json({ message: "name and email are required" });
       }
@@ -18,9 +19,12 @@ const RoundRobinMemberController = {
           return res.status(409).json({ message: "A member with this email already exists" });
         }
         // Previously removed member — reactivate instead of blocking re-creation.
+        // Points are preserved across reactivation unless explicitly provided.
         existing.isActive = true;
         existing.name = name;
         if (grade) existing.grade = grade;
+        if (points !== undefined) existing.points = points;
+        if (isMember !== undefined) existing.isMember = isMember;
         existing.contact = contact || "";
         if (nationalMemberId) existing.nationalMemberId = nationalMemberId;
         if (dateOfBirth) existing.dateOfBirth = dateOfBirth;
@@ -29,10 +33,13 @@ const RoundRobinMemberController = {
         return res.status(201).json({ message: "Member created", data: existing });
       }
 
+      const resolvedGrade = grade || "Unrated";
       const member = await RoundRobinMember.create({
         adminId: req.userId,
         name,
-        ...(grade && { grade }),
+        grade: resolvedGrade,
+        points: points !== undefined ? points : GRADE_DEFAULT_POINTS[resolvedGrade] ?? 0,
+        ...(isMember !== undefined && { isMember }),
         email: cleanEmail,
         contact: contact || "",
         ...(nationalMemberId && { nationalMemberId }),
@@ -88,9 +95,11 @@ const RoundRobinMemberController = {
         return res.status(404).json({ message: "Member not found" });
       }
 
-      const { name, grade, contact, nationalMemberId, dateOfBirth, gender } = req.body;
+      const { name, grade, points, isMember, contact, nationalMemberId, dateOfBirth, gender } = req.body;
       if (name !== undefined) member.name = name;
       if (grade !== undefined) member.grade = grade;
+      if (points !== undefined) member.points = points;
+      if (isMember !== undefined) member.isMember = isMember;
       if (contact !== undefined) member.contact = contact;
       if (nationalMemberId !== undefined) member.nationalMemberId = nationalMemberId;
       if (dateOfBirth !== undefined) member.dateOfBirth = dateOfBirth || null;
@@ -187,7 +196,9 @@ const RoundRobinMemberController = {
 
           const existing = await RoundRobinMember.findOne({ email: cleanEmail, adminId: req.userId });
           if (existing) {
-            // Update existing member instead of failing
+            // Update existing member instead of failing — points and
+            // membership status are left untouched so match-earned points
+            // and admin-set membership aren't wiped by a re-import.
             const wasInactive = !existing.isActive;
             Object.assign(existing, payload);
             existing.isActive = true; // revive soft-deleted members instead of leaving them hidden
@@ -198,7 +209,15 @@ const RoundRobinMemberController = {
               results.updated++;
             }
           } else {
-            await RoundRobinMember.create({ adminId: req.userId, email: cleanEmail, ...payload });
+            // Import files have no membership column, so new members are
+            // marked non-member by default — admins flip this via Edit.
+            await RoundRobinMember.create({
+              adminId: req.userId,
+              email: cleanEmail,
+              ...payload,
+              points: GRADE_DEFAULT_POINTS[cleanGrade] ?? 0,
+              isMember: false,
+            });
             results.success++;
           }
         } catch (err) {
@@ -245,6 +264,7 @@ const RoundRobinMemberController = {
             email: member.email,
             contact: member.contact,
             grade: member.grade,
+            isMember: member.isMember,
           });
           created.push(player);
         } catch (err) {

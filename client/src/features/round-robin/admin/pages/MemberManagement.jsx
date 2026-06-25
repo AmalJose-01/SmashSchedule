@@ -32,6 +32,8 @@ const GRADE_ORDER = ["A", "B", "C", "D", "E", "F", "G", "H", "Unrated"];
 const SORTABLE_COLUMNS = {
   name: { compare: (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }) },
   grade: { compare: (a, b) => GRADE_ORDER.indexOf(a.grade) - GRADE_ORDER.indexOf(b.grade) },
+  points: { compare: (a, b) => (a.points ?? 0) - (b.points ?? 0) },
+  isMember: { compare: (a, b) => Number(b.isMember) - Number(a.isMember) },
   gender: { compare: (a, b) => (a.gender || "").localeCompare(b.gender || "", undefined, { sensitivity: "base" }) },
   dateOfBirth: { compare: (a, b) => new Date(a.dateOfBirth || 0) - new Date(b.dateOfBirth || 0) },
   email: { compare: (a, b) => a.email.localeCompare(b.email, undefined, { sensitivity: "base" }) },
@@ -253,6 +255,8 @@ const MemberManagement = () => {
                   <th className="px-3 py-3 font-semibold whitespace-nowrap hidden md:table-cell">Nat. ID</th>
                   <SortHeader label="Name" sortKey="name" sort={sort} onSort={handleSort} />
                   <SortHeader label="Grade" sortKey="grade" sort={sort} onSort={handleSort} />
+                  <SortHeader label="Points" sortKey="points" sort={sort} onSort={handleSort} className="whitespace-nowrap" />
+                  <SortHeader label="Membership" sortKey="isMember" sort={sort} onSort={handleSort} className="whitespace-nowrap hidden sm:table-cell" />
                   <SortHeader label="Gender" sortKey="gender" sort={sort} onSort={handleSort} className="hidden sm:table-cell" />
                   <SortHeader label="Date of Birth" sortKey="dateOfBirth" sort={sort} onSort={handleSort} className="whitespace-nowrap hidden lg:table-cell" />
                   <SortHeader label="Email" sortKey="email" sort={sort} onSort={handleSort} className="hidden sm:table-cell" />
@@ -284,6 +288,12 @@ const MemberManagement = () => {
                       <td className="px-3 py-3">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${GRADE_COLORS[member.grade] ?? GRADE_COLORS.Unrated}`}>
                           {member.grade}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-gray-700 font-medium">{member.points ?? 0}</td>
+                      <td className="px-3 py-3 hidden sm:table-cell">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${member.isMember ? "bg-teal-100 text-teal-700" : "bg-gray-100 text-gray-600"}`}>
+                          {member.isMember ? "Member" : "Non-Member"}
                         </span>
                       </td>
                       <td className="px-3 py-3 text-gray-500 text-xs hidden sm:table-cell">{member.gender || "—"}</td>

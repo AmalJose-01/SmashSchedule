@@ -141,7 +141,8 @@ const ConfigTab = ({ tournament, isFinalized }) => {
       startDate:      tournament.startDate ? new Date(tournament.startDate).toISOString().slice(0, 16) : "",
       endDate:        tournament.endDate   ? new Date(tournament.endDate).toISOString().slice(0, 16)   : "",
       numberOfCourts: tournament.numberOfCourts  ?? 1,
-      entryFee:       tournament.entryFee        ?? 0,
+      entryFeeMember:    tournament.entryFeeMember    ?? 0,
+      entryFeeNonMember: tournament.entryFeeNonMember ?? 0,
       pointsForWin:   tournament.pointsForWin    ?? 2,
       pointsForLoss:  tournament.pointsForLoss   ?? 0,
       numberOfSets:   tournament.numberOfSets    ?? 3,
@@ -159,7 +160,8 @@ const ConfigTab = ({ tournament, isFinalized }) => {
         data: {
           ...form,
           numberOfCourts:  Number(form.numberOfCourts),
-          entryFee:        Number(form.entryFee),
+          entryFeeMember:    Number(form.entryFeeMember),
+          entryFeeNonMember: Number(form.entryFeeNonMember),
           pointsForWin:    Number(form.pointsForWin),
           pointsForLoss:   Number(form.pointsForLoss),
           numberOfSets:    Number(form.numberOfSets),
@@ -216,7 +218,8 @@ const ConfigTab = ({ tournament, isFinalized }) => {
             <ViewRow label="Players per Group" value={tournament.playersPerGroup} />
             <ViewRow label="Courts"            value={tournament.numberOfCourts} />
             <ViewRow label="Grouping Strategy" value={tournament.groupingStrategy} />
-            <ViewRow label="Entry Fee" value={tournament.entryFee > 0 ? `$${tournament.entryFee.toFixed(2)}` : "Free"} />
+            <ViewRow label="Entry Fee (Member)" value={tournament.entryFeeMember > 0 ? `$${tournament.entryFeeMember.toFixed(2)}` : "Free"} />
+            <ViewRow label="Entry Fee (Non-Member)" value={tournament.entryFeeNonMember > 0 ? `$${tournament.entryFeeNonMember.toFixed(2)}` : "Free"} />
           </div>
         </div>
 
@@ -260,8 +263,13 @@ const ConfigTab = ({ tournament, isFinalized }) => {
           <Field label="Number of Courts">
             <input type="number" min={1} value={form.numberOfCourts} onChange={(e) => set("numberOfCourts", e.target.value)} className={inputCls()} />
           </Field>
-          <Field label="Entry Fee ($)">
-            <input type="number" min={0} step="0.01" value={form.entryFee} onChange={(e) => set("entryFee", e.target.value)} className={inputCls()} placeholder="0 = free" />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Entry Fee — Member ($)">
+            <input type="number" min={0} step="0.01" value={form.entryFeeMember} onChange={(e) => set("entryFeeMember", e.target.value)} className={inputCls()} placeholder="0 = free" />
+          </Field>
+          <Field label="Entry Fee — Non-Member ($)">
+            <input type="number" min={0} step="0.01" value={form.entryFeeNonMember} onChange={(e) => set("entryFeeNonMember", e.target.value)} className={inputCls()} placeholder="0 = free" />
           </Field>
         </div>
       </div>
@@ -487,7 +495,7 @@ const PlayersTab = ({ tournamentId, isFinalized, tournament }) => {
   const { data, isLoading } = useGetTournamentPlayers(tournamentId);
   const { mutate: removePlayer, isPending } = useRemovePlayerFromTournament();
   const { data: squareStatusData } = useGetSquareStatus();
-  const hasEntryFee = (tournament?.entryFee ?? 0) > 0;
+  const hasEntryFee = (tournament?.entryFeeMember ?? 0) > 0 || (tournament?.entryFeeNonMember ?? 0) > 0;
   const { data: paymentsData } = useGetTournamentPayments(hasEntryFee ? tournamentId : null);
   const players = data?.data ?? [];
   const squareReady = !!squareStatusData?.data?.connected && !!squareStatusData?.data?.deviceId;
@@ -543,6 +551,7 @@ const PlayersTab = ({ tournamentId, isFinalized, tournament }) => {
             <tr>
               <th className="px-5 py-3 font-semibold">Name</th>
               <th className="px-5 py-3 font-semibold">Grade</th>
+              <th className="px-5 py-3 font-semibold">Membership</th>
               <th className="px-5 py-3 font-semibold">Email</th>
               <th className="px-5 py-3 font-semibold">Contact</th>
               {hasEntryFee && <th className="px-5 py-3 font-semibold">Payment</th>}
@@ -556,6 +565,11 @@ const PlayersTab = ({ tournamentId, isFinalized, tournament }) => {
                 <td className="px-5 py-3">
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${GRADE_COLORS[p.grade] ?? GRADE_COLORS.Unrated}`}>
                     {p.grade}
+                  </span>
+                </td>
+                <td className="px-5 py-3">
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${p.isMember ? "bg-teal-100 text-teal-700" : "bg-gray-100 text-gray-600"}`}>
+                    {p.isMember ? "Member" : "Non-Member"}
                   </span>
                 </td>
                 <td className="px-5 py-3 text-gray-500">{p.email}</td>
