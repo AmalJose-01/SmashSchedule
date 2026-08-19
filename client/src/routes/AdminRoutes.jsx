@@ -140,8 +140,6 @@ const AdminRoutes = () => {
         element={
           !user || user.accountType !== "admin" ? (
             <Login />
-          ) : !user.isVerified ? (
-            <Navigate to="/checkout" replace />
           ) : (
             <Navigate to="/dashboard" replace />
           )

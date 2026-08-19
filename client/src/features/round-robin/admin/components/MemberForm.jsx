@@ -10,8 +10,22 @@ import {
 
 const GRADES = ["A", "B", "C", "D", "E", "F", "G", "H", "Unrated"];
 
+// Kept in sync with server/src/features/round-robin/constants/grades.js —
+// default starting points for a member of each grade.
+const GRADE_DEFAULT_POINTS = {
+  A: 80,
+  B: 75,
+  C: 60,
+  D: 45,
+  E: 30,
+  F: 15,
+  G: 0,
+  H: 0,
+  Unrated: 0,
+};
+
 const EMPTY_FORM = {
-  name: "", grade: "Unrated", email: "", contact: "",
+  name: "", grade: "Unrated", points: GRADE_DEFAULT_POINTS.Unrated, email: "", contact: "",
   nationalMemberId: "", dateOfBirth: "", gender: "", isMember: true,
 };
 
@@ -100,6 +114,7 @@ const ManualTab = ({ member, onClose }) => {
       ? {
           name: member.name ?? "",
           grade: member.grade ?? "Unrated",
+          points: member.points ?? GRADE_DEFAULT_POINTS[member.grade ?? "Unrated"],
           email: member.email ?? "",
           contact: member.contact ?? "",
           nationalMemberId: member.nationalMemberId ?? "",
@@ -127,12 +142,20 @@ const ManualTab = ({ member, onClose }) => {
   const handleChange = (field) => (e) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
 
+  // Changing grade resets points to that grade's default — admin can still
+  // fine-tune the value afterwards before saving.
+  const handleGradeChange = (e) => {
+    const grade = e.target.value;
+    setForm((f) => ({ ...f, grade, points: GRADE_DEFAULT_POINTS[grade] ?? 0 }));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!validate()) return;
     const payload = {
       name: form.name,
       grade: form.grade,
+      points: Number(form.points),
       contact: form.contact,
       isMember: form.isMember,
       nationalMemberId: form.nationalMemberId || undefined,
@@ -191,11 +214,27 @@ const ManualTab = ({ member, onClose }) => {
           <label className="block text-sm font-medium text-gray-700 mb-1">Grade</label>
           <select
             value={form.grade}
-            onChange={handleChange("grade")}
+            onChange={handleGradeChange}
             className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 bg-white"
           >
             {GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
           </select>
+        </div>
+
+        {/* Points */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Points</label>
+          <input
+            type="number"
+            step="0.5"
+            min={0}
+            value={form.points}
+            onChange={handleChange("points")}
+            className={inputCls("points")}
+          />
+          <p className="text-gray-400 text-xs mt-1">
+            Defaults to {GRADE_DEFAULT_POINTS[form.grade] ?? 0} for grade {form.grade} — changing grade resets this.
+          </p>
         </div>
 
         {/* Membership Status */}

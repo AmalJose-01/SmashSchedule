@@ -28,6 +28,22 @@ const RoundRobinGroupController = {
         return res.status(400).json({ message: `At least ${minPlayers} players are required to generate groups` });
       }
 
+      // Capture each player's current group (by letter → index) before we
+      // wipe the existing groups, so the new arrangement can make sure every
+      // player actually moves to a different group instead of possibly (or,
+      // for the deterministic by-grade/balanced strategies, always) landing
+      // back where they started.
+      const existingGroups = await RoundRobinGroup.find({ tournamentId });
+      const previousGroupIndexByPlayerId = {};
+      existingGroups.forEach((g) => {
+        const letter = (g.groupName || "").replace("Group ", "").trim();
+        const groupIndex = alphabet.indexOf(letter);
+        if (groupIndex === -1) return;
+        (g.players || []).forEach((p) => {
+          if (p.playerId) previousGroupIndexByPlayerId[String(p.playerId)] = groupIndex;
+        });
+      });
+
       // Delete existing groups and matches for this tournament before regenerating.
       // Matches are tied to a specific group composition, so any matches that
       // existed (e.g. from a previous finalize) are no longer valid once the
@@ -38,7 +54,7 @@ const RoundRobinGroupController = {
 
       const strategy = tournament.groupingStrategy || "random";
       const numberOfGroups = tournament.numberOfGroups;
-      const grouped = groupPlayers(players, numberOfGroups, strategy);
+      const grouped = groupPlayers(players, numberOfGroups, strategy, previousGroupIndexByPlayerId);
 
       const createdGroups = [];
 

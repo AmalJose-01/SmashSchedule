@@ -1,46 +1,125 @@
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
+const shuffle = (arr) => {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+};
+
 /**
  * Distribute players into groups using the chosen strategy.
  * @param {Array} players - Array of RoundRobinPlayer docs
  * @param {Number} numberOfGroups
  * @param {String} strategy - "random" | "by-grade" | "balanced"
+ * @param {Object} [previousGroupIndexByPlayerId] - Map of playerId (string) →
+ *   the group index (0-based, matching "Group A" = 0, "Group B" = 1, ...)
+ *   they were in before this regeneration. When supplied, Regenerate makes a
+ *   best effort to move every player out of their previous group instead of
+ *   (by chance, or determinism for by-grade/balanced) leaving them where
+ *   they were.
  * @returns {Array[]} - Array of player arrays, one per group
  */
-const groupPlayers = (players, numberOfGroups, strategy) => {
-  let ordered = [...players];
+const groupPlayers = (players, numberOfGroups, strategy, previousGroupIndexByPlayerId = {}) => {
+  const gradeOrder = ["A", "B", "C", "D", "E", "F", "G", "H", "Unrated"];
+  const hasPrevious = previousGroupIndexByPlayerId && Object.keys(previousGroupIndexByPlayerId).length > 0;
 
-  if (strategy === "random") {
-    // Fisher-Yates shuffle
-    for (let i = ordered.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [ordered[i], ordered[j]] = [ordered[j], ordered[i]];
+  // Grade-based strategies sort deterministically, which means re-running
+  // Regenerate with the same players would rebuild the identical groups
+  // every time. Shuffling first (Array#sort is stable) randomizes the order
+  // of players who share a grade, so the grade tiers are preserved but the
+  // exact group each player lands in still varies between regenerations.
+  const buildOrdered = () => {
+    if (strategy === "by-grade" || strategy === "balanced") {
+      return shuffle(players).sort(
+        (a, b) => gradeOrder.indexOf(a.grade) - gradeOrder.indexOf(b.grade)
+      );
     }
-  } else if (strategy === "by-grade" || strategy === "balanced") {
-    const gradeOrder = ["A", "B", "C", "D", "E", "F", "G", "H", "Unrated"];
-    ordered.sort(
-      (a, b) => gradeOrder.indexOf(a.grade) - gradeOrder.indexOf(b.grade)
-    );
+    return shuffle(players);
+  };
+
+  const buildGroupsFromOrder = (ordered) => {
+    const groups = Array.from({ length: numberOfGroups }, () => []);
+    if (strategy === "balanced") {
+      // Snake draft: fill groups left-to-right then right-to-left
+      ordered.forEach((player, index) => {
+        const round = Math.floor(index / numberOfGroups);
+        const pos = index % numberOfGroups;
+        const groupIndex = round % 2 === 0 ? pos : numberOfGroups - 1 - pos;
+        groups[groupIndex].push(player);
+      });
+    } else {
+      // Sequential fill (random-shuffled or by-grade sequential)
+      ordered.forEach((player, index) => {
+        groups[index % numberOfGroups].push(player);
+      });
+    }
+    return groups;
+  };
+
+  const countConflicts = (groups) => {
+    if (!hasPrevious) return 0;
+    let conflicts = 0;
+    groups.forEach((group, groupIndex) => {
+      group.forEach((player) => {
+        if (previousGroupIndexByPlayerId[String(player._id)] === groupIndex) conflicts++;
+      });
+    });
+    return conflicts;
+  };
+
+  // Try a handful of shuffles and keep the one with the fewest players left
+  // in their previous group — with more than one group this almost always
+  // finds a perfect (zero-repeat) arrangement within a few attempts.
+  const canAvoidRepeats = numberOfGroups > 1 && hasPrevious;
+  const maxAttempts = canAvoidRepeats ? 200 : 1;
+
+  let bestGroups = null;
+  let bestConflicts = Infinity;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const candidate = buildGroupsFromOrder(buildOrdered());
+    const conflicts = countConflicts(candidate);
+    if (conflicts < bestConflicts) {
+      bestConflicts = conflicts;
+      bestGroups = candidate;
+    }
+    if (conflicts === 0) break;
   }
 
-  const groups = Array.from({ length: numberOfGroups }, () => []);
+  // Best-effort repair pass for any leftovers: swap a still-conflicting
+  // player with someone from a different group, as long as the swap doesn't
+  // just create a new conflict for the swap partner.
+  if (bestConflicts > 0 && canAvoidRepeats) {
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (let gi = 0; gi < bestGroups.length && !changed; gi++) {
+        const group = bestGroups[gi];
+        for (let ai = 0; ai < group.length && !changed; ai++) {
+          const player = group[ai];
+          if (previousGroupIndexByPlayerId[String(player._id)] !== gi) continue;
 
-  if (strategy === "balanced") {
-    // Snake draft: fill groups left-to-right then right-to-left
-    ordered.forEach((player, index) => {
-      const round = Math.floor(index / numberOfGroups);
-      const pos = index % numberOfGroups;
-      const groupIndex = round % 2 === 0 ? pos : numberOfGroups - 1 - pos;
-      groups[groupIndex].push(player);
-    });
-  } else {
-    // Sequential fill (random-shuffled or by-grade sequential)
-    ordered.forEach((player, index) => {
-      groups[index % numberOfGroups].push(player);
-    });
+          for (let gj = 0; gj < bestGroups.length && !changed; gj++) {
+            if (gj === gi) continue;
+            if (previousGroupIndexByPlayerId[String(player._id)] === gj) continue; // moving here would still conflict
+            const other = bestGroups[gj];
+            for (let aj = 0; aj < other.length; aj++) {
+              const partner = other[aj];
+              if (previousGroupIndexByPlayerId[String(partner._id)] === gi) continue; // would conflict for partner
+              group[ai] = partner;
+              other[aj] = player;
+              changed = true;
+              break;
+            }
+          }
+        }
+      }
+    }
   }
 
-  return groups;
+  return bestGroups;
 };
 
 /**
