@@ -16,10 +16,6 @@ import ViewTournamentDetail from "./pages/user/ViewTournamentDetail.jsx";
 import Login from "./pages/admin/Login.jsx";
 import LoginSelector from "./pages/common/LoginSelector.jsx";
 
-// Lazy-loaded: CheckoutPage pulls in Stripe.js, which would otherwise load
-// (and ping Stripe's telemetry endpoint) on every page in the app, even
-// tournament pages that only use Square. This way Stripe only loads when
-// someone actually navigates to /checkout.
 const CheckoutPage = lazy(() => import("./pages/admin/CheckoutPage.jsx"));
 
 function App() {
@@ -46,7 +42,6 @@ function App() {
             />
             <Route path="/knockoutResult" element={<KnockoutResult />} />
 
-            {/* Stripe Checkout Page — lazy-loaded so Stripe.js only loads here */}
             <Route
               path="/checkout"
               element={

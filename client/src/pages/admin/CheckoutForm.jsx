@@ -1,161 +1,18 @@
-import React, { useState, useEffect } from "react";
-import {
-  CardElement,
-  useStripe,
-  useElements,
-  PaymentRequestButtonElement,
-} from "@stripe/react-stripe-js";
-import { toast } from "sonner";
-import { useSubscription } from "../../hooks/useAccountSubscription";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Check } from "lucide-react";
-import { loadStripe } from "@stripe/stripe-js";
-import { stripe_Publishable_key } from "../../../utils/config";
-
-// const stripePromise = loadStripe(stripe_Publishable_key);
-
-const stripePromise = loadStripe(stripe_Publishable_key, {
-  locale: "en", 
-});
 
 export default function CheckoutForm() {
-  const stripe = useStripe();
-  const elements = useElements();
-  const { handleSubscription } = useSubscription();
+  const navigate = useNavigate();
 
-  const [paymentRequest, setPaymentRequest] = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  // -------------------------------
-  // GOOGLE PAY / APPLE PAY SETUP
-  // -------------------------------
-  useEffect(() => {
-    if (!stripe) return;
-
-    const pr = stripe.paymentRequest({
-      country: "AU",
-      currency: "aud",
-      total: { label: "Subscription", amount: 2900 }, // $29 AUD
-      requestPayerName: true,
-      requestPayerEmail: true,
-    });
-
-    pr.canMakePayment().then((result) => {
-      if (result) setPaymentRequest(pr);
-    });
-
-    pr.on("paymentmethod", async (ev) => {
-      try {
-        const clientSecret = await handleSubscription({
-          amount: 2900,
-          email: ev.payerEmail,
-          cardHolderName: ev.payerName,
-        });
-
-        const result = await stripe.confirmCardPayment(clientSecret, {
-          payment_method: ev.paymentMethod.id,
-        });
-
-        if (result.error) {
-          ev.complete("fail");
-          toast.error(result.error.message);
-        } else {
-          ev.complete("success");
-          toast.success("Payment successful!");
-        }
-      } catch (err) {
-        ev.complete("fail");
-        toast.error("Google Pay payment failed!");
-        console.error(err);
-      }
-    });
-  }, [stripe]);
-
-  // -------------------------------
-  // CARD PAYMENT
-  // -------------------------------
-  const handleCardPayment = async (amount) => {
-    if (!stripe || !elements) {
-      toast.error("Stripe not ready");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const clientSecret = await handleSubscription({
-        amount: amount * 100,
-        email: "amaljvv@gmail.com",
-        cardHolderName: "Amal Jose",
-      });
-
-      if (!clientSecret) {
-        toast.error("Payment failed: No client secret returned");
-        setLoading(false);
-        return;
-      }
-
-      const cardElement = elements.getElement(CardElement);
-
-      const result = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: { card: cardElement },
-      });
-
-      if (result.error) {
-        toast.error(result.error.message);
-      } else {
-        toast.success("Payment successful!");
-      }
-    } catch (e) {
-      toast.error("Payment failed!");
-      console.error(e);
-    }
-
-    setLoading(false);
+  // TODO: wire up new payment provider here.
+  // For now, selecting a plan goes straight to the dashboard.
+  const handleSelectPlan = () => {
+    navigate("/dashboard");
   };
-
-// -------------------------------
-// STRIPE CHECKOUT (Subscription Products)
-// -------------------------------
-const createCheckout = async (priceId) => {
-  try {
-    const response = await handleSubscription({
-      priceId,
-      email: "amaljvv@gmail.com",
-    });
-
-    console.log("Checkout response:", response);
-
-    if (!response?.url) {
-      throw new Error("Checkout URL not received");
-    }
-
-    
-
-    // 🔥 Redirect to Stripe Checkout
-    window.location.href = response.url;
-
-  } catch (error) {
-    console.error("Checkout error:", error);
-    toast.error(
-      error?.response?.data?.message ||
-      error?.message ||
-      "Checkout failed!"
-    );
-  }
-};
-
-
 
   return (
     <div className="w-full space-y-4 p-6 bg-white rounded shadow">
-      {/* Google / Apple Pay Button */}
-      {paymentRequest && (
-        <PaymentRequestButtonElement
-          options={{ paymentRequest }}
-          className="mb-6"
-        />
-      )}
-
       {/* PLANS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <PlanCard
@@ -168,7 +25,7 @@ const createCheckout = async (priceId) => {
             "Email support",
             "Basic analytics",
           ]}
-          onClick={() => createCheckout("price_123_basic")} // replace with your Price ID
+          onClick={handleSelectPlan}
         />
 
         <PlanCard
@@ -185,7 +42,7 @@ const createCheckout = async (priceId) => {
             "Team registration",
             "Automated notifications",
           ]}
-          onClick={() => handleCardPayment(79)}
+          onClick={handleSelectPlan}
         />
 
         <PlanCard
@@ -203,19 +60,7 @@ const createCheckout = async (priceId) => {
             "Custom integrations",
             "Enterprise security",
           ]}
-          onClick={() => handleCardPayment(199)}
-        />
-      </div>
-
-      {/* CARD ELEMENT */}
-      <div className="mt-6">
-        <CardElement
-          options={{
-            style: {
-              base: { fontSize: "16px", color: "#424770" },
-              invalid: { color: "#9e2146" },
-            },
-          }}
+          onClick={handleSelectPlan}
         />
       </div>
     </div>
@@ -258,7 +103,7 @@ const PlanCard = ({ title, price, billedAnnually, features, onClick }) => {
           disabled={loading}
           className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
         >
-          {loading ? "Processing..." : "Pay Now"}
+          {loading ? "Processing..." : "Choose Plan"}
         </button>
       </div>
     </div>

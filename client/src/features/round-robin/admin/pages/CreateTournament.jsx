@@ -69,24 +69,14 @@ const Step1 = ({ form, setForm, errors }) => (
         <option value="Doubles">Doubles</option>
       </select>
     </Field>
-    <div className="grid grid-cols-2 gap-4">
-      <Field label="Start Date & Time">
-        <input
-          type="datetime-local"
-          value={form.startDate}
-          onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
-          className={inputCls()}
-        />
-      </Field>
-      <Field label="End Date & Time">
-        <input
-          type="datetime-local"
-          value={form.endDate}
-          onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
-          className={inputCls()}
-        />
-      </Field>
-    </div>
+    <Field label="Start Date & Time">
+      <input
+        type="datetime-local"
+        value={form.startDate}
+        onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
+        className={inputCls()}
+      />
+    </Field>
     <Field label="Description">
       <textarea
         value={form.description}
@@ -96,33 +86,6 @@ const Step1 = ({ form, setForm, errors }) => (
         className={inputCls() + " resize-none"}
       />
     </Field>
-    <div className="grid grid-cols-2 gap-4">
-      <Field label="Entry Fee — Member ($)">
-        <input
-          type="number"
-          min={0}
-          step="0.01"
-          value={form.entryFeeMember}
-          onChange={(e) => setForm((f) => ({ ...f, entryFeeMember: e.target.value }))}
-          placeholder="0 = free"
-          className={inputCls()}
-        />
-      </Field>
-      <Field label="Entry Fee — Non-Member ($)">
-        <input
-          type="number"
-          min={0}
-          step="0.01"
-          value={form.entryFeeNonMember}
-          onChange={(e) => setForm((f) => ({ ...f, entryFeeNonMember: e.target.value }))}
-          placeholder="0 = free"
-          className={inputCls()}
-        />
-      </Field>
-    </div>
-    <p className="text-xs text-gray-400 -mt-2">
-      Leave at 0 for a free tournament. Set an amount to enable Square Terminal payment collection per player.
-    </p>
   </div>
 );
 
@@ -264,10 +227,7 @@ const Step3 = ({ form }) => (
         ["Sets", `Best of ${form.numberOfSets}`],
         ["Set Winning Point", form.setWinningPoint],
         ["Winning Gap", form.winningPointGap],
-        ["Entry Fee (Member)", form.entryFeeMember > 0 ? `$${Number(form.entryFeeMember).toFixed(2)}` : "Free"],
-        ["Entry Fee (Non-Member)", form.entryFeeNonMember > 0 ? `$${Number(form.entryFeeNonMember).toFixed(2)}` : "Free"],
         ["Start Date", form.startDate || "—"],
-        ["End Date", form.endDate || "—"],
       ].map(([k, v]) => (
         <div key={k} className="flex justify-between text-sm">
           <span className="text-gray-500">{k}</span>
@@ -288,7 +248,6 @@ const INITIAL_FORM = {
   tournamentName: "",
   matchType: "Singles",
   startDate: "",
-  endDate: "",
   description: "",
   numberOfGroups: 2,
   playersPerGroup: 4,
@@ -300,8 +259,6 @@ const INITIAL_FORM = {
   numberOfSets: 3,
   setWinningPoint: 21,
   winningPointGap: 2,
-  entryFeeMember: 0,
-  entryFeeNonMember: 0,
 };
 
 const CreateTournamentRR = () => {
@@ -350,8 +307,6 @@ const CreateTournamentRR = () => {
         numberOfSets:     Number(form.numberOfSets),
         setWinningPoint:  Number(form.setWinningPoint),
         winningPointGap:  Number(form.winningPointGap),
-        entryFeeMember:    Number(form.entryFeeMember) || 0,
-        entryFeeNonMember: Number(form.entryFeeNonMember) || 0,
       });
 
       const tournamentId = result.data._id;
