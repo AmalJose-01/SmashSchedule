@@ -1,4 +1,5 @@
 const RoundRobinGroup = require("../models/RoundRobinGroup");
+const RoundRobinMatch = require("../models/RoundRobinMatch");
 const { getTotalPoints, determineWinner } = require("../../../../helpers/matchHelpers");
 
 /**
@@ -27,15 +28,26 @@ const ensureEntry = (standings, playerId, name = "") => {
 
 /**
  * Re-sort standings by totalPoints → pointsDiff → pointsFor and assign ranks.
+ *
+ * pointsDiff must be recomputed BEFORE sorting, not after: applyResult /
+ * reverseResult only ever touch pointsFor/pointsAgainst, so an entry's
+ * pointsDiff field is still whatever it was left at at the END of the
+ * PREVIOUS call to this function — one result behind — until this refresh
+ * runs. Sorting first and refreshing after (the original order here) means
+ * every pointsDiff tie-break compares stale values, which most visibly
+ * breaks a fresh entry's very first tie-break (starts at the ensureEntry
+ * default of 0 for everyone, real or not).
  */
 const rankStandings = (standings) => {
+  standings.forEach((s) => {
+    s.pointsDiff = s.pointsFor - s.pointsAgainst;
+  });
   standings.sort((a, b) => {
     if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
     if (b.pointsDiff !== a.pointsDiff) return b.pointsDiff - a.pointsDiff;
     return b.pointsFor - a.pointsFor;
   });
   standings.forEach((s, idx) => {
-    s.pointsDiff = s.pointsFor - s.pointsAgainst;
     s.rank = idx + 1;
   });
 };
@@ -229,4 +241,111 @@ const reverseStandings = async (match, sets, config = {}) => {
   return { groupA: groupA.standings, groupB: groupB?.standings ?? null };
 };
 
-module.exports = { updateStandings, reverseStandings };
+/**
+ * Apply a BYE match's result straight to its group's standings — there's no
+ * real score (no opponent, nothing was "for" or "against" anyone), so only
+ * the win/matchesPlayed counters move, exactly the way `applyResult` moves
+ * them for a normal win, with pointsFor/pointsAgainst left at 0.
+ *
+ * @param {Object} match - a saved RoundRobinMatch doc with isBye: true (groupId, player1Id, player1PartnerId)
+ */
+const applyByeStanding = async (match) => {
+  if (!match.groupId) return null;
+
+  const group = await RoundRobinGroup.findById(match.groupId);
+  if (!group) return null;
+
+  const p1Entry = ensureEntry(group.standings, getId(match.player1Id));
+  applyResult(p1Entry, 0, 0, "win");
+
+  if (match.player1PartnerId) {
+    const p1pEntry = ensureEntry(group.standings, getId(match.player1PartnerId));
+    applyResult(p1pEntry, 0, 0, "win");
+  }
+
+  rankStandings(group.standings);
+  group.markModified("standings");
+  await group.save();
+
+  return group.standings;
+};
+
+/**
+ * Standings for a Graded Round Robin tournament, computed fresh from
+ * completed matches rather than an incrementally-updated document.
+ *
+ * A Graded tournament has no RoundRobinGroup documents at all — its grade
+ * groups are recomputed at finalize time straight from player grades (see
+ * gradedRoundRobinEngine.js) and each match just carries a
+ * `gradeGroupLabel` string instead of a `groupId` reference. Rather than
+ * bolt that onto the Balanced format's incremental update/reverse dance
+ * (which mutates a persisted `standings` array and would need its own
+ * "find the right document for this label" lookup on every score change),
+ * this recomputes the table on demand from whatever matches are currently
+ * completed. That trades a little query cost on read for zero standings
+ * drift risk — there's no separate state that could fall out of sync with
+ * the matches themselves.
+ *
+ * @param {ObjectId|String} tournamentId
+ * @returns {Array<{groupName:String, standings:Array}>} same shape as the
+ *   Balanced format's getStandings response, keyed by grade group label
+ *   instead of RoundRobinGroup name — so existing clients that just render
+ *   `data.map(g => ({ groupName: g.groupName, standings: g.standings }))`
+ *   need no changes to support Graded tournaments too.
+ */
+const computeGradedStandings = async (tournamentId) => {
+  const matches = await RoundRobinMatch.find({
+    tournamentId,
+    status: "completed",
+    isBye: { $ne: true }, // Graded matches are never byes, but guard anyway
+  })
+    .populate("player1Id", "name")
+    .populate("player1PartnerId", "name")
+    .populate("player2Id", "name")
+    .populate("player2PartnerId", "name")
+    .populate("winner", "name");
+
+  const getName = (field) => (field && typeof field === "object" ? field.name : "") ?? "";
+  const standingsByLabel = new Map();
+
+  matches.forEach((match) => {
+    if (!match.player1Id || !match.player2Id) return; // safety: skip anything without two real sides
+
+    const label = match.gradeGroupLabel || "Ungrouped";
+    if (!standingsByLabel.has(label)) standingsByLabel.set(label, []);
+    const standings = standingsByLabel.get(label);
+
+    const { homeTotal, awayTotal } = getTotalPoints(match.sets || []);
+    const homeResult = match.isDraw ? "draw" : getId(match.winner) === getId(match.player1Id) ? "win" : "loss";
+    const awayResult = match.isDraw ? "draw" : homeResult === "win" ? "loss" : "win";
+    const isDoubles = !!match.player1PartnerId;
+
+    applyResult(ensureEntry(standings, getId(match.player1Id), getName(match.player1Id)), homeTotal, awayTotal, homeResult);
+    if (isDoubles) {
+      applyResult(
+        ensureEntry(standings, getId(match.player1PartnerId), getName(match.player1PartnerId)),
+        homeTotal,
+        awayTotal,
+        homeResult
+      );
+    }
+    applyResult(ensureEntry(standings, getId(match.player2Id), getName(match.player2Id)), awayTotal, homeTotal, awayResult);
+    if (isDoubles) {
+      applyResult(
+        ensureEntry(standings, getId(match.player2PartnerId), getName(match.player2PartnerId)),
+        awayTotal,
+        homeTotal,
+        awayResult
+      );
+    }
+  });
+
+  const result = [];
+  standingsByLabel.forEach((standings, groupName) => {
+    rankStandings(standings);
+    result.push({ groupName, standings });
+  });
+  return result;
+};
+
+module.exports = { updateStandings, reverseStandings, applyByeStanding, computeGradedStandings };

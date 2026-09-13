@@ -3,7 +3,7 @@ const RoundRobinMatch = require("../models/RoundRobinMatch");
 const RoundRobinTournament = require("../models/RoundRobinTournament");
 const RoundRobinGroup = require("../models/RoundRobinGroup");
 const { determineWinner, isValidScore } = require("../../../../helpers/matchHelpers");
-const { updateStandings, reverseStandings } = require("../services/standingsService");
+const { updateStandings, reverseStandings, computeGradedStandings } = require("../services/standingsService");
 const { applyMatchPoints, getWinnerSideFromMatch } = require("../services/memberPointsService");
 const { generateMatchSchedulePdf } = require("../utils/matchSchedulePdf");
 
@@ -59,6 +59,9 @@ const RoundRobinMatchController = {
         .populate("player2PartnerId", "name memberId");
       if (!match) {
         return res.status(404).json({ message: "Match not found" });
+      }
+      if (match.isBye) {
+        return res.status(400).json({ message: "This is an automatic bye — there's no opponent to score against." });
       }
 
       // Load tournament scoring config
@@ -145,6 +148,9 @@ const RoundRobinMatchController = {
         .populate("player2Id", "name memberId")
         .populate("player2PartnerId", "name memberId");
       if (!match) return res.status(404).json({ message: "Match not found" });
+      if (match.isBye) {
+        return res.status(400).json({ message: "This is an automatic bye — it can't be reset like a scored match." });
+      }
 
       // Reverse standings only if the match was completed
       if (match.status === "completed" && match.sets?.length > 0 && match.groupId) {
@@ -177,6 +183,12 @@ const RoundRobinMatchController = {
       const { id: tournamentId } = req.params;
       if (!mongoose.Types.ObjectId.isValid(tournamentId)) {
         return res.status(400).json({ message: "Invalid tournament id" });
+      }
+
+      const tournament = await RoundRobinTournament.findById(tournamentId).select("format");
+      if (tournament?.format === "Graded") {
+        const data = await computeGradedStandings(tournamentId);
+        return res.status(200).json({ message: "Standings fetched", data });
       }
 
       const groups = await RoundRobinGroup.find({ tournamentId }).select("groupName standings");

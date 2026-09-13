@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Minus, Send, AlertCircle, RotateCcw } from "lucide-react";
+import { Plus, Minus, Send, AlertCircle, RotateCcw, Award } from "lucide-react";
 import { useRecordMatchScore, useResetMatchScore } from "../services/roundRobin.queries.js";
 
 const EMPTY_SET = { home: "", away: "" };
@@ -94,6 +94,38 @@ const ScoreEntry = ({ match, tournamentId, tournament, onScoreRecorded }) => {
   };
 
   const isCompleted = match?.status === "completed";
+  const isBye = !!match?.isBye;
+
+  // A bye has no live opponent and nothing to score — it's already resolved
+  // as a win the moment it's scheduled, so show that instead of the normal
+  // score form / "Edit Score" flow (which would just error against it).
+  if (isBye) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-4">
+          <div className="flex-1 text-center">
+            <p className="text-sm font-semibold text-gray-700 truncate">
+              {match?.player1Id?.name ?? "Player 1"}
+              {match?.player1PartnerId && (
+                <span className="text-gray-400"> / {match.player1PartnerId.name}</span>
+              )}
+            </p>
+            <p className="text-xs text-gray-400">(Home)</p>
+          </div>
+          <span className="text-gray-300 font-bold text-lg">vs</span>
+          <div className="flex-1 text-center">
+            <p className="text-sm font-semibold text-gray-400 truncate">BYE</p>
+            <p className="text-xs text-gray-400">(No opponent)</p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center gap-2 text-center text-sm font-semibold py-2.5 rounded-xl text-teal-700 bg-teal-50">
+          <Award className="w-4 h-4" />
+          Automatic bye — counted as a win
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
