@@ -31,11 +31,15 @@ const generateMatchSchedulePdf = ({ tournament, groups, matches }) => {
   };
 
   // Group matches the same way the admin UI does: by fixture (doubles) or
-  // by group document (singles).
+  // by group document (singles). Graded Round Robin tournaments have no
+  // group documents at all — their matches carry `gradeGroupLabel` instead
+  // (see gradedRoundRobinEngine.js), so that takes priority when present.
   const byGroup = {};
   matches.forEach((m) => {
     let key;
-    if (isDoubles) {
+    if (m.gradeGroupLabel) {
+      key = `Group ${m.gradeGroupLabel}`;
+    } else if (isDoubles) {
       const parts = m.matchName.split(" - Match ");
       key = parts.length > 1 ? parts[0] : (groupNameById[String(m.groupId?._id ?? m.groupId)] ?? "Doubles Matches");
     } else {

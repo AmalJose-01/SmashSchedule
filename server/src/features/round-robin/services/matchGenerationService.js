@@ -1,4 +1,11 @@
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+// Reused ONLY for judging how "fair" a catch-up makeup match is (see
+// generateMakeupMatches below) — the same scheduling-weight scale the
+// new queue-based engine (queueRoundRobinEngine.js) uses for its own
+// +/-2 court-balance rule. This has nothing to do with a player's real
+// win/loss points (memberPointsService.js / constants/grades.js
+// GRADE_DEFAULT_POINTS) — that scoring logic is untouched.
+const { DEFAULT_POINTS_BY_GRADE } = require("./queueRoundRobinEngine");
 
 const shuffle = (arr) => {
   const copy = [...arr];
@@ -161,15 +168,17 @@ const buildCircleMethodRounds = (players) => {
 /**
  * Generate round-robin match combinations for a single group.
  * Full round robin: n*(n-1)/2 matches (every player faces every other player once).
- * If matchesPerMember is set and is less than n-1, only the first N rounds of the
- * circle-method schedule are used, giving each player exactly N distinct matches.
+ * If matchesPerMember is set and is less than n-1, it is a HARD CAP — no player
+ * is ever scheduled for more than that many matches — with a best-effort
+ * minimum of the same number (a player can end up one match short, on an
+ * odd-sized group's rotating bye, but never over the cap).
  * @param {Array} players - Array of player objects { playerId, name }
  * @param {ObjectId} tournamentId
  * @param {ObjectId} groupId
  * @param {String} groupName
  * @param {Number} numberOfCourts
  * @param {Number} courtStartIndex - running court counter across groups
- * @param {Number} [matchesPerMember] - cap on distinct matches per player; falls back to full round robin if omitted or >= n-1
+ * @param {Number} [matchesPerMember] - hard cap on distinct matches per player; falls back to full round robin if omitted or >= n-1
  * @returns {{ matches: Array, nextCourtIndex: Number }}
  */
 const generateSinglesMatches = (
@@ -215,31 +224,29 @@ const generateSinglesMatches = (
       }
     }
   } else {
-    // For odd-sized groups, each round has exactly one player sitting out on
-    // a rotating basis, so naively slicing the first N rounds shorts whichever
-    // players happen to draw their bye within that window. Instead, keep
-    // adding rounds until every player has reached at least `matchesPerMember`
-    // matches — guaranteeing the minimum for everyone (a few unlucky players
-    // whose bye falls early may end up with one extra match, which is the
-    // correct trade-off vs. leaving them under the target).
+    // Hard cap: a player must never be scheduled for more than
+    // `matchesPerMember` matches. Walk the circle-method schedule round by
+    // round and only keep a pairing if BOTH players are still under the cap
+    // — skipping (not deferring) any pairing that would push someone over.
+    // For an even-sized group every round pairs every player at once, so
+    // this reaches an exact N-per-player result with zero skips needed. Only
+    // an odd-sized group's rotating bye can leave a handful of players one
+    // match short of the target — a capped player simply stops being
+    // scheduled, and everyone still under the cap keeps pairing off against
+    // each other in later rounds instead.
     const allRounds = buildCircleMethodRounds(players);
     const counts = new Map(players.map((p) => [String(p.playerId), 0]));
-    const selectedRounds = [];
 
     for (const round of allRounds) {
-      selectedRounds.push(round);
-      round.forEach(([p1, p2]) => {
-        counts.set(String(p1.playerId), (counts.get(String(p1.playerId)) || 0) + 1);
-        counts.set(String(p2.playerId), (counts.get(String(p2.playerId)) || 0) + 1);
-      });
-      const minCount = Math.min(...counts.values());
-      if (minCount >= matchesPerMember) break;
-    }
-
-    for (const round of selectedRounds) {
       for (const [p1, p2] of round) {
+        const c1 = counts.get(String(p1.playerId)) || 0;
+        const c2 = counts.get(String(p2.playerId)) || 0;
+        if (c1 >= matchesPerMember || c2 >= matchesPerMember) continue;
         pushMatch(p1, p2);
+        counts.set(String(p1.playerId), c1 + 1);
+        counts.set(String(p2.playerId), c2 + 1);
       }
+      if ([...counts.values()].every((c) => c >= matchesPerMember)) break;
     }
   }
 
@@ -276,12 +283,14 @@ const generateSinglesMatches = (
  * an even cadence (the same property the circle method guarantees for
  * players), so no single group/pairing is overused while others are skipped.
  *
- * If matchesPerMember is set, rounds keep getting added until every player has
- * reached at least that many matches (mirroring the singles fix above), then
- * stop — a few unlucky players may end up with one extra match rather than
- * one short, which is the correct trade-off for a *minimum* guarantee. If
- * omitted, every round is played out, reproducing the old full round-robin
- * coverage (every pair of groups meets with every team combination once).
+ * If matchesPerMember is set, it is a HARD CAP — no player is ever scheduled
+ * for more than that many matches, mirroring the singles fix above. A
+ * candidate 2v2 match is only kept if all four players involved are still
+ * under the cap; once a player hits it they simply stop being scheduled
+ * while everyone else keeps going, so a handful of players can end up one
+ * match short of the target (never over it). If omitted, every round is
+ * played out, reproducing the old full round-robin coverage (every pair of
+ * groups meets with every team combination once).
  *
  * Two groups can end up facing each other again in a later fixture cycle
  * (whenever more than one cycle is needed to hit the target). When that
@@ -346,8 +355,12 @@ const generateDoublesMatches = (allGroups, tournamentId, numberOfCourts, matches
   const target = matchesPerMember && matchesPerMember > 0 ? matchesPerMember : null;
   const maxPartnerLen = Math.max(...groupPartnerRounds.map((r) => r.length || 1), 1);
   // Generous upper bound so the loop can't run away if a cap is somehow
-  // unreachable (e.g. misconfigured target larger than feasible).
-  const hardCap = totalFixtureRounds * maxPartnerLen * 3 + totalFixtureRounds + 5;
+  // unreachable (e.g. misconfigured target larger than feasible). Bumped up
+  // from the old multiplier since the per-match hard-cap filter below can
+  // make a cycle add fewer matches than before, needing more cycles to
+  // reach the same target.
+  const hardCap = totalFixtureRounds * maxPartnerLen * 5 + totalFixtureRounds + 5;
+  let matchesAtLastCycle = 0;
 
   let round = 0;
   while (round < hardCap) {
@@ -388,6 +401,17 @@ const generateDoublesMatches = (allGroups, tournamentId, numberOfCourts, matches
       for (let k = 0; k < pairCount; k++) {
         const [a1, a2] = teamsA[k];
         const [b1, b2] = teamsB[k];
+
+        // Hard cap: skip this specific 2v2 pairing if any of the four
+        // players involved has already reached the target — never schedule
+        // a match that would push someone over it.
+        if (target !== null) {
+          const anyCapped = [a1, a2, b1, b2].some(
+            (p) => (counts.get(String(p.playerId)) || 0) >= target
+          );
+          if (anyCapped) continue;
+        }
+
         const courtNumber = (courtIndex % numberOfCourts) + 1;
         matches.push({
           tournamentId,
@@ -425,6 +449,12 @@ const generateDoublesMatches = (allGroups, tournamentId, numberOfCourts, matches
     if (target !== null) {
       const minCount = Math.min(...counts.values());
       if (minCount >= target) break;
+      // No new matches were addable this whole cycle (every remaining
+      // candidate pairing involves an already-capped player) — further
+      // cycles can't make progress either, so stop instead of spinning
+      // until hardCap.
+      if (matches.length === matchesAtLastCycle) break;
+      matchesAtLastCycle = matches.length;
     } else if (round >= totalFixtureRounds * maxPartnerLen) {
       // Uncapped: stop once every group's partner rotation has fully cycled
       // through every fixture round, i.e. full round-robin coverage reached.
@@ -446,4 +476,257 @@ const generateDoublesMatches = (allGroups, tournamentId, numberOfCourts, matches
   return { matches };
 };
 
-module.exports = { groupPlayers, generateSinglesMatches, generateDoublesMatches };
+/**
+ * Best-effort "catch-up" pass for players who are still short of the
+ * `target` match count after the normal group/fixture-based generation —
+ * an unavoidable outcome of odd-sized groups (singles) or the doubles
+ * partner+fixture rotation intersecting with the hard per-player cap (see
+ * the comments on generateSinglesMatches / generateDoublesMatches above).
+ *
+ * BUG FIX: this pass used to only pair a shortfall player against someone
+ * of their EXACT grade, and required at least 4 (doubles) / 2 (singles)
+ * shortfall players in that ONE grade before it would create anything.
+ * With shortfall players spread thinly across several grades — the normal
+ * case, since a group's shortfall is whoever happened to draw the group's
+ * rotating bye — almost no grade ever reached that threshold, so nearly
+ * everyone fell through untouched to generateByeMatches and the tournament
+ * ended up handing out a wall of individual BYEs instead of real games.
+ *
+ * Fixed by judging fairness the same way the rest of the app now does —
+ * a +/-2 point-balance cap on the same DEFAULT_POINTS_BY_GRADE scale the
+ * queue-based engine uses for its Rule 5 (see queueRoundRobinEngine.js) —
+ * instead of requiring an identical grade. The WHOLE shortfall pool
+ * (every grade together) is considered for every match: sorted by points
+ * and greedily grouped into the closest-in-points foursomes/pairs
+ * available, so a shortfall player is paired with whoever is nearest their
+ * own level tournament-wide, not stuck waiting for 3 more players of their
+ * own exact grade to also be short. A BYE is now only handed out when the
+ * shortfall pool has truly run dry (0 or 1 player left with nobody
+ * comparable to pair against) — the rare last resort the spec describes,
+ * not the common case.
+ *
+ * @param {Array} allPlayers - every player in the tournament: { playerId, name, grade }
+ * @param {Array} existingMatches - matches already generated (any groupId); used to compute current per-player counts and, for singles, to avoid an exact repeat pairing
+ * @param {Number} target - match count to top shortfall players up to
+ * @param {String} matchType - "Singles" | "Doubles"
+ * @param {ObjectId} tournamentId
+ * @param {Number} numberOfCourts
+ * @param {Number} [courtStartIndex] - running court counter to continue from
+ * @returns {{ matches: Array, stillShortPlayerIds: Array<String> }}
+ */
+const generateMakeupMatches = (
+  allPlayers,
+  existingMatches,
+  target,
+  matchType,
+  tournamentId,
+  numberOfCourts,
+  courtStartIndex = 0
+) => {
+  if (!target || target <= 0 || !allPlayers.length) return { matches: [], stillShortPlayerIds: [] };
+
+  const idOf = (p) => String(p.playerId ?? p._id ?? p);
+  // Same points-by-grade scale the main scheduling engine uses for court
+  // balance — used here ONLY to judge how fair a candidate makeup pairing
+  // is, never to change what a player actually earns for winning/losing.
+  const pointsOf = (p) => (typeof p.points === "number" ? p.points : DEFAULT_POINTS_BY_GRADE[p.grade] ?? 6);
+
+  const counts = new Map(allPlayers.map((p) => [idOf(p), 0]));
+  existingMatches.forEach((m) => {
+    [m.player1Id, m.player1PartnerId, m.player2Id, m.player2PartnerId]
+      .filter(Boolean)
+      .forEach((pid) => counts.set(String(pid), (counts.get(String(pid)) || 0) + 1));
+  });
+
+  // Every direct opponent pairing already used, so a singles makeup match
+  // doesn't just repeat a match that's already on the schedule.
+  const alreadyFaced = new Set();
+  existingMatches.forEach((m) => {
+    const side1 = [m.player1Id, m.player1PartnerId].filter(Boolean).map(String);
+    const side2 = [m.player2Id, m.player2PartnerId].filter(Boolean).map(String);
+    side1.forEach((a) => side2.forEach((b) => alreadyFaced.add([a, b].sort().join("|"))));
+  });
+
+  const matches = [];
+  let courtIndex = courtStartIndex;
+  let matchCounter = 1;
+
+  const pushMatch = (homeIds, awayIds) => {
+    const courtNumber = (courtIndex % numberOfCourts) + 1;
+    matches.push({
+      tournamentId,
+      groupId: null,
+      matchName: `Makeup - Match ${matchCounter}`,
+      player1Id: homeIds[0],
+      player1PartnerId: homeIds[1] || null,
+      player2Id: awayIds[0],
+      player2PartnerId: awayIds[1] || null,
+      court: `Court ${courtNumber}`,
+      status: "scheduled",
+      sets: [],
+      winner: null,
+      loser: null,
+    });
+    homeIds.concat(awayIds).forEach((pid) => {
+      const key = String(pid);
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+    courtIndex++;
+    matchCounter++;
+  };
+
+  const isShort = (p) => (counts.get(idOf(p)) || 0) < target;
+
+  if (matchType === "Doubles") {
+    // One balanced foursome per pass, pulled from the WHOLE shortfall pool
+    // (every grade together) rather than one grade's own bucket. Sorting
+    // by points first and always taking the current top 4 remaining
+    // shortfall players means each foursome is made of whoever is
+    // currently closest in skill among everyone still short — not
+    // artificially confined to a single grade — so a match keeps getting
+    // found as long as ANY 4 shortfall players remain, of any grade mix.
+    let progressed = true;
+    while (progressed) {
+      progressed = false;
+      const pool = allPlayers.filter(isShort).sort((a, b) => pointsOf(b) - pointsOf(a));
+      if (pool.length < 4) break;
+
+      const [a, b, c, d] = pool;
+      // All 3 ways to split 4 players into two teams of 2 — keep whichever
+      // keeps the two teams' combined points closest (mirrors the main
+      // engine's own best-partition search, at the scale of one match).
+      const partitions = [
+        [[a, b], [c, d]],
+        [[a, c], [b, d]],
+        [[a, d], [b, c]],
+      ];
+      let bestSplit = partitions[0];
+      let bestDiff = Infinity;
+      partitions.forEach(([teamA, teamB]) => {
+        const diff = Math.abs(
+          pointsOf(teamA[0]) + pointsOf(teamA[1]) - (pointsOf(teamB[0]) + pointsOf(teamB[1]))
+        );
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          bestSplit = [teamA, teamB];
+        }
+      });
+
+      const [teamA, teamB] = bestSplit;
+      pushMatch([idOf(teamA[0]), idOf(teamA[1])], [idOf(teamB[0]), idOf(teamB[1])]);
+      progressed = true;
+    }
+  } else {
+    // Singles: same whole-pool, points-sorted approach — pair off whoever
+    // is closest in points among everyone still short, skipping a pairing
+    // that would just repeat an opponent match already on the schedule
+    // when a different valid partner is available.
+    let progressed = true;
+    while (progressed) {
+      progressed = false;
+      const pool = allPlayers.filter(isShort).sort((a, b) => pointsOf(b) - pointsOf(a));
+      for (let i = 0; i < pool.length && !progressed; i++) {
+        for (let j = i + 1; j < pool.length; j++) {
+          const key = [idOf(pool[i]), idOf(pool[j])].sort().join("|");
+          if (alreadyFaced.has(key)) continue;
+          pushMatch([idOf(pool[i])], [idOf(pool[j])]);
+          alreadyFaced.add(key);
+          progressed = true;
+          break;
+        }
+      }
+    }
+  }
+
+  const stillShortPlayerIds = allPlayers.filter(isShort).map(idOf);
+  return { matches, stillShortPlayerIds };
+};
+
+/**
+ * Final guarantee pass, run after generateMakeupMatches: awards a BYE to
+ * anyone STILL short of `target` — typically an odd leftover with no
+ * same-grade shortfall partner left to pair against (see the comment on
+ * generateMakeupMatches). A bye has no live opponent and needs no score —
+ * it's pre-resolved as a win the moment it's created — so unlike the makeup
+ * pass, this one always fully closes the gap; there's no "still short" list
+ * coming back out.
+ *
+ * A bye is always SOLO — exactly one player per bye match, in both Singles
+ * and Doubles (partner slot left empty), rather than teaming two shortfall
+ * players up together. That keeps a bye's win credited to the one player it
+ * was actually for, instead of quietly handing a second player an extra win
+ * they didn't individually need.
+ *
+ * Each returned match is fully resolved: status "completed", winner set to
+ * player1Id, isBye: true, groupId set from `playerGroupIdMap` when known.
+ * The caller is expected to apply match points + standings for these
+ * immediately, exactly as it would for any other completed match.
+ *
+ * @param {Array} allPlayers - every player in the tournament: { playerId, name }
+ * @param {Array} existingMatches - matches already generated (any source); used to compute current per-player counts
+ * @param {Number} target - match count every player should end up with
+ * @param {String} matchType - "Singles" | "Doubles" (kept for signature parity with the other generators; a bye is solo either way)
+ * @param {ObjectId} tournamentId
+ * @param {Map<String,String>} [playerGroupIdMap] - playerId (string) → their groupId (string); used to attribute a bye to the right group's standings
+ * @returns {{ matches: Array }}
+ */
+const generateByeMatches = (
+  allPlayers,
+  existingMatches,
+  target,
+  matchType,
+  tournamentId,
+  playerGroupIdMap = new Map()
+) => {
+  if (!target || target <= 0 || !allPlayers.length) return { matches: [] };
+
+  const idOf = (p) => String(p.playerId ?? p._id ?? p);
+
+  const counts = new Map(allPlayers.map((p) => [idOf(p), 0]));
+  existingMatches.forEach((m) => {
+    [m.player1Id, m.player1PartnerId, m.player2Id, m.player2PartnerId]
+      .filter(Boolean)
+      .forEach((pid) => counts.set(String(pid), (counts.get(String(pid)) || 0) + 1));
+  });
+
+  const matches = [];
+
+  const pushBye = (p1) => {
+    matches.push({
+      tournamentId,
+      groupId: playerGroupIdMap.get(idOf(p1)) || null,
+      matchName: `BYE - ${p1.name}`,
+      player1Id: p1.playerId,
+      player1PartnerId: null,
+      player2Id: null,
+      player2PartnerId: null,
+      court: "BYE",
+      status: "completed",
+      sets: [],
+      winner: p1.playerId,
+      loser: null,
+      isBye: true,
+    });
+    const key = idOf(p1);
+    counts.set(key, (counts.get(key) || 0) + 1);
+  };
+
+  // Each pass always advances `first` toward the target (pushBye always
+  // credits p1), so the shortfall list is guaranteed to shrink every
+  // iteration and the loop terminates.
+  let stillShort = allPlayers.filter((p) => (counts.get(idOf(p)) || 0) < target);
+  while (stillShort.length > 0) {
+    pushBye(stillShort[0]);
+    stillShort = allPlayers.filter((p) => (counts.get(idOf(p)) || 0) < target);
+  }
+
+  return { matches };
+};
+
+module.exports = {
+  groupPlayers,
+  generateSinglesMatches,
+  generateDoublesMatches,
+  generateMakeupMatches,
+  generateByeMatches,
+};

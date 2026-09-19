@@ -911,7 +911,9 @@ const MatchesTab = ({ tournamentId, matchType, tournament }) => {
               const team1Name = m.player1PartnerId
                 ? `${m.player1Id?.name ?? "—"} / ${m.player1PartnerId?.name ?? "—"}`
                 : (m.player1Id?.name ?? "—");
-              const team2Name = m.player2PartnerId
+              const team2Name = m.isBye
+                ? "BYE"
+                : m.player2PartnerId
                 ? `${m.player2Id?.name ?? "—"} / ${m.player2PartnerId?.name ?? "—"}`
                 : (m.player2Id?.name ?? "—");
 

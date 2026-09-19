@@ -21,8 +21,7 @@ var corsOptions = {
       callback(new Error("Not allowed by CORS"));
     }
   }
-};git branch
- 
+};
 
 
 const PORT = process.env.PORT || 3000;
