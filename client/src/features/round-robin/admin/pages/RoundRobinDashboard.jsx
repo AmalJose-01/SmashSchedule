@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, ListChecks, Users, ArrowLeft, CreditCard } from "lucide-react";
+import { Plus, ListChecks, Users, ArrowLeft } from "lucide-react"; // CreditCard was only used by the now-hidden Square Payments tile below
 import { useGetRoundRobinTournaments, useGetRoundRobinMembers } from "../services/roundRobin.queries.js";
 import Logout from "../../../../components/Logout.jsx";
 
@@ -32,15 +32,19 @@ const actionCards = [
     description: "Maintain your global player bank. Add, edit, or bulk import members.",
     path: "/round-robin/members",
   },
-  {
-    icon: CreditCard,
-    color: "text-amber-600",
-    bg: "bg-amber-50",
-    border: "border-amber-200",
-    title: "Square Payments",
-    description: "Connect your Square account and Terminal device to collect entry fees.",
-    path: "/admin/square-settings",
-  },
+  // Square Payments tile hidden for now (not currently used) — the
+  // /admin/square-settings page and its route are left intact, so this
+  // can be re-added by just restoring this entry if Square payments come
+  // back into use later.
+  // {
+  //   icon: CreditCard,
+  //   color: "text-amber-600",
+  //   bg: "bg-amber-50",
+  //   border: "border-amber-200",
+  //   title: "Square Payments",
+  //   description: "Connect your Square account and Terminal device to collect entry fees.",
+  //   path: "/admin/square-settings",
+  // },
 ];
 
 const RoundRobinDashboard = () => {

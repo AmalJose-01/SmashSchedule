@@ -2,14 +2,18 @@ import React, { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useClubProfile } from "../hooks/useClubProfile";
 import AddressSearch from "../../../../components/AddressSearch";
-import { useGetSquareStatus } from "../../../round-robin/admin/services/roundRobin.queries.js";
+// Square Payments section hidden for now (not currently used) — see the
+// commented-out "SQUARE PAYMENTS" card below. useGetSquareStatus import and
+// call are commented out alongside it so nothing here fetches Square status
+// while the section is hidden.
+// import { useGetSquareStatus } from "../../../round-robin/admin/services/roundRobin.queries.js";
 import "./ClubProfile.css";
 
 const ClubProfile = () => {
   const navigate = useNavigate();
   const logoInputRef = useRef(null);
-  const { data: squareStatusData } = useGetSquareStatus();
-  const squareStatus = squareStatusData?.data;
+  // const { data: squareStatusData } = useGetSquareStatus();
+  // const squareStatus = squareStatusData?.data;
 
   const {
     club,
@@ -272,7 +276,11 @@ const ClubProfile = () => {
           )}
         </div>
 
-        {/* ===== SQUARE PAYMENTS ===== */}
+        {/* ===== SQUARE PAYMENTS =====
+        Hidden for now (not currently used) — the /admin/square-settings
+        page and its route are left intact, so this card (and the
+        useGetSquareStatus import/call above) can be restored later if
+        Square payments come back into use.
         <div className="cp-section-card">
           <h2 className="cp-section-title">💳 Square Payments</h2>
           <div className="cp-info-grid">
@@ -297,6 +305,7 @@ const ClubProfile = () => {
             Manage Square Payments →
           </button>
         </div>
+        ===== END SQUARE PAYMENTS ===== */}
       </div>
     </div>
   );

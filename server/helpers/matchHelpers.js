@@ -114,4 +114,120 @@ function determineKnockoutWinnerAndStatus(scores, teamsHome, teamsAway) {
   return { winner, status };
 }
 
-module.exports = { getTotalPoints, determineWinner, determineKnockoutWinnerAndStatus, isValidScore };
+/**
+ * Cross-group knockout Round 1 seeding.
+ *
+ * Replaces a pure random draw with the standard "avoid two teams from the
+ * same group meeting in the very first knockout round" seeding used by most
+ * bracket sports (e.g. a World Cup Round of 16 draw): groups are paired up
+ * in ADJACENT PAIRS, in group-name order (Group A + Group B, Group C +
+ * Group D, ...), and within each pair the WINNER of one group faces the
+ * RUNNER-UP of the other:
+ *   Group A winner  vs  Group B runner-up
+ *   Group B winner  vs  Group A runner-up
+ *   Group C winner  vs  Group D runner-up
+ *   Group D winner  vs  Group C runner-up
+ *   ... and so on for every further pair of groups.
+ *
+ * A team beyond rank 2 (a 3rd/4th-place team only pulled in to top the
+ * bracket up to a valid size — see the "remainingTeams" top-up logic in
+ * the knockout controllers) has no natural cross-group partner under this
+ * rule. Those are seeded by strength instead (best vs next-best, by
+ * totalPoints then pointsDiff), still preferring to avoid a same-group
+ * pairing when a different pairing is available — much fairer than a
+ * random draw, even though it isn't the winner/runner-up crossover rule.
+ *
+ * @param {Array<{teamId:String, name:String, groupName:String, rank:Number, totalPoints?:Number, pointsDiff?:Number}>} qualifiedTeams
+ *   `rank` is 1-based WITHIN the team's own group (1 = group winner, 2 =
+ *   runner-up, 3+ = lower placings pulled in only to fill the bracket).
+ * @returns {Array<[Object, Object|null]>} first-round pairs; the second
+ *   slot of the very last pair is `null` only in the (normally unreachable,
+ *   since bracket sizes are kept even) case of one truly unpaired leftover.
+ */
+const buildCrossGroupKnockoutPairs = (qualifiedTeams) => {
+  const byGroupNameAsc = (a, b) => (a.groupName || "").localeCompare(b.groupName || "");
+
+  const winners = qualifiedTeams.filter((t) => t.rank === 1).sort(byGroupNameAsc);
+  const runnersUp = qualifiedTeams.filter((t) => t.rank === 2).sort(byGroupNameAsc);
+  const leftovers = qualifiedTeams.filter((t) => t.rank > 2);
+
+  const pairs = [];
+  const usedRunnerUpIds = new Set();
+  const takeRunnerUpFor = (groupName) =>
+    runnersUp.find((r) => r.groupName === groupName && !usedRunnerUpIds.has(r.teamId));
+
+  for (let i = 0; i < winners.length; i += 2) {
+    const groupX = winners[i];
+    const groupY = winners[i + 1];
+
+    if (groupY) {
+      // Adjacent pair of groups: cross their winner against the OTHER
+      // group's runner-up.
+      const runnerUpForY = takeRunnerUpFor(groupY.groupName);
+      const runnerUpForX = takeRunnerUpFor(groupX.groupName);
+      if (runnerUpForY) {
+        pairs.push([groupX, runnerUpForY]);
+        usedRunnerUpIds.add(runnerUpForY.teamId);
+      }
+      if (runnerUpForX) {
+        pairs.push([groupY, runnerUpForX]);
+        usedRunnerUpIds.add(runnerUpForX.teamId);
+      }
+      if (!runnerUpForY && !runnerUpForX) {
+        // Neither group has a runner-up (e.g. only 1 qualifier/group) —
+        // nothing to cross, so the two group winners face each other.
+        pairs.push([groupX, groupY]);
+      }
+    } else {
+      // Odd number of groups: the last winner has no partner group to
+      // cross with — give it any leftover runner-up from a DIFFERENT
+      // group instead of leaving it unpaired.
+      const fallbackRunnerUp = runnersUp.find(
+        (r) => r.groupName !== groupX.groupName && !usedRunnerUpIds.has(r.teamId)
+      );
+      if (fallbackRunnerUp) {
+        pairs.push([groupX, fallbackRunnerUp]);
+        usedRunnerUpIds.add(fallbackRunnerUp.teamId);
+      } else {
+        leftovers.push(groupX); // no cross-group partner anywhere — seed it below instead
+      }
+    }
+  }
+
+  // Any runner-up the crossover above didn't use (odd group count, or a
+  // group missing its own winner) also falls through to the strength-seeded
+  // leftover pool rather than being silently dropped.
+  runnersUp.forEach((r) => {
+    if (!usedRunnerUpIds.has(r.teamId)) leftovers.push(r);
+  });
+
+  // Leftover / lower-placed teams: seed by strength (best vs next-best),
+  // preferring a cross-group pairing over a same-group one when a choice
+  // is available.
+  leftovers.sort(
+    (a, b) => (b.totalPoints ?? 0) - (a.totalPoints ?? 0) || (b.pointsDiff ?? 0) - (a.pointsDiff ?? 0)
+  );
+  while (leftovers.length >= 2) {
+    const top = leftovers.shift();
+    let partnerIndex = leftovers.findIndex((t) => t.groupName !== top.groupName);
+    if (partnerIndex === -1) partnerIndex = 0; // every remaining team is from the same group — no choice left
+    const [partner] = leftovers.splice(partnerIndex, 1);
+    pairs.push([top, partner]);
+  }
+  if (leftovers.length === 1) {
+    // One truly unpaired leftover — shouldn't normally happen since
+    // bracket sizes are kept even, but surface it as a real pair entry
+    // (partner: null) instead of silently dropping the team.
+    pairs.push([leftovers[0], null]);
+  }
+
+  return pairs;
+};
+
+module.exports = {
+  getTotalPoints,
+  determineWinner,
+  determineKnockoutWinnerAndStatus,
+  isValidScore,
+  buildCrossGroupKnockoutPairs,
+};
