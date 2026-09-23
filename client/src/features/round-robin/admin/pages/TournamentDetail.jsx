@@ -235,8 +235,9 @@ const ConfigTab = ({ tournament, isFinalized }) => {
             <ViewRow label="Number of Sets"  value={`Best of ${tournament.numberOfSets ?? 3}`} />
             <ViewRow label="Winning Point"   value={tournament.setWinningPoint ?? 21} />
             <ViewRow label="Winning Gap"     value={`${tournament.winningPointGap ?? 2} points`} />
-            <ViewRow label="Points for Win"  value={tournament.pointsForWin ?? 2} />
-            <ViewRow label="Points for Loss" value={tournament.pointsForLoss ?? 0} />
+            {/* Points for Win/Loss hidden — standings always score win=2,
+            draw=1, loss=0 (see applyResult in standingsService.js), so these
+            were never actually configurable in practice. */}
           </div>
         </div>
       </div>
@@ -314,6 +315,10 @@ const ConfigTab = ({ tournament, isFinalized }) => {
         <p className="text-xs text-gray-400">
           A set is won by reaching {form.setWinningPoint} points with a {form.winningPointGap}-point lead.
         </p>
+        {/* Points for Win/Loss removed from editing too — fixed at 2/0
+        (see the Scoring Rules view above). form.pointsForWin/pointsForLoss
+        still round-trip through the form state unchanged so the save below
+        keeps sending the tournament's existing values.
         <div className="grid grid-cols-2 gap-4">
           <Field label="Points for Win">
             <input type="number" min={0} value={form.pointsForWin} onChange={(e) => set("pointsForWin", e.target.value)} className={inputCls()} />
@@ -322,6 +327,7 @@ const ConfigTab = ({ tournament, isFinalized }) => {
             <input type="number" min={0} value={form.pointsForLoss} onChange={(e) => set("pointsForLoss", e.target.value)} className={inputCls()} />
           </Field>
         </div>
+        */}
       </div>
 
       {/* Actions */}

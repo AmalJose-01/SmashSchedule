@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Check, Trophy } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Trophy, ChevronDown } from "lucide-react";
 import Logout from "../../../../components/Logout.jsx";
 import { useCreateRoundRobinTournament } from "../services/roundRobin.queries.js";
 
@@ -69,9 +69,9 @@ const Step1 = ({ form, setForm, errors }) => (
         <option value="Doubles">Doubles</option>
       </select>
     </Field>
-    <Field label="Start Date & Time">
+    <Field label="Start Date">
       <input
-        type="datetime-local"
+        type="date"
         value={form.startDate}
         onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
         className={inputCls()}
@@ -89,8 +89,63 @@ const Step1 = ({ form, setForm, errors }) => (
   </div>
 );
 
-const Step2 = ({ form, setForm, errors }) => (
+// Fields that live inside the collapsible "Advanced Settings" section — used
+// to auto-expand it if validation ever flags one of them, so an error never
+// hides silently behind a collapsed section.
+const ADVANCED_FIELD_KEYS = [
+  "numberOfGroups",
+  "playersPerGroup",
+  "numberOfMatchesPerMember",
+  "setWinningPoint",
+  "winningPointGap",
+];
+
+const Step2 = ({ form, setForm, errors }) => {
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const hasAdvancedErrors = ADVANCED_FIELD_KEYS.some((key) => errors[key]);
+  const showAdvanced = advancedOpen || hasAdvancedErrors;
+
+  return (
   <div className="space-y-4">
+    {/* Grouping Strategy is the one setting shown directly on this step —
+    everything else keeps its INITIAL_FORM default unless the admin opens
+    Advanced Settings below. */}
+    <Field label="Grouping Strategy">
+      <select
+        value={form.groupingStrategy}
+        onChange={(e) => setForm((f) => ({ ...f, groupingStrategy: e.target.value }))}
+        className={inputCls() + " bg-white"}
+      >
+        <option value="random">Random — shuffle and distribute equally</option>
+        <option value="by-grade">By Grade — sort A→Unrated, fill sequentially</option>
+        <option value="balanced">Balanced — snake-draft to mix grades</option>
+      </select>
+    </Field>
+
+    <Field label="Number of Courts" error={errors.numberOfCourts}>
+      <input
+        type="number"
+        min={1}
+        value={form.numberOfCourts}
+        onChange={(e) => setForm((f) => ({ ...f, numberOfCourts: e.target.value }))}
+        className={inputCls(errors.numberOfCourts)}
+      />
+    </Field>
+
+    <div className="border-t border-gray-100 pt-4">
+      <button
+        type="button"
+        onClick={() => setAdvancedOpen((open) => !open)}
+        className="w-full flex items-center justify-between text-left"
+      >
+        <span className="text-sm font-semibold text-gray-700">Advanced Settings</span>
+        <ChevronDown
+          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${showAdvanced ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {showAdvanced && (
+        <div className="mt-4 space-y-4">
     <div className="grid grid-cols-2 gap-4">
       <Field label="Number of Groups" error={errors.numberOfGroups}>
         <input
@@ -114,15 +169,6 @@ const Step2 = ({ form, setForm, errors }) => (
         />
       </Field>
     </div>
-    <Field label="Number of Courts" error={errors.numberOfCourts}>
-      <input
-        type="number"
-        min={1}
-        value={form.numberOfCourts}
-        onChange={(e) => setForm((f) => ({ ...f, numberOfCourts: e.target.value }))}
-        className={inputCls(errors.numberOfCourts)}
-      />
-    </Field>
     <Field label="Number of Matches per Member" error={errors.numberOfMatchesPerMember}>
       <input
         type="number"
@@ -136,17 +182,12 @@ const Step2 = ({ form, setForm, errors }) => (
         higher for a full round robin.
       </p>
     </Field>
-    <Field label="Grouping Strategy">
-      <select
-        value={form.groupingStrategy}
-        onChange={(e) => setForm((f) => ({ ...f, groupingStrategy: e.target.value }))}
-        className={inputCls() + " bg-white"}
-      >
-        <option value="random">Random — shuffle and distribute equally</option>
-        <option value="by-grade">By Grade — sort A→Unrated, fill sequentially</option>
-        <option value="balanced">Balanced — snake-draft to mix grades</option>
-      </select>
-    </Field>
+    {/* Points for Win / Points for Loss are no longer admin-editable — the
+    standings table always scores win=2, draw=1, loss=0 (see applyResult in
+    standingsService.js), so exposing these as separate inputs implied a
+    choice that had no effect. form.pointsForWin/pointsForLoss stay fixed at
+    2/0 in INITIAL_FORM below and are still submitted with the tournament,
+    just no longer shown here.
     <div className="grid grid-cols-2 gap-4">
       <Field label="Points for Win">
         <input
@@ -167,6 +208,7 @@ const Step2 = ({ form, setForm, errors }) => (
         />
       </Field>
     </div>
+    */}
 
     <div className="border-t border-gray-100 pt-4">
       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Set Scoring Rules</p>
@@ -208,8 +250,12 @@ const Step2 = ({ form, setForm, errors }) => (
         A set is won by reaching {form.setWinningPoint || "?"} points with a {form.winningPointGap || "?"}-point lead.
       </p>
     </div>
+        </div>
+      )}
+    </div>
   </div>
-);
+  );
+};
 
 const Step3 = ({ form }) => (
   <div className="space-y-5">
@@ -223,7 +269,7 @@ const Step3 = ({ form }) => (
         ["Courts", form.numberOfCourts],
         ["Matches per Member", form.numberOfMatchesPerMember],
         ["Grouping Strategy", form.groupingStrategy],
-        ["Win / Loss Points", `${form.pointsForWin} / ${form.pointsForLoss}`],
+        // Win/Loss points removed from the review summary too — fixed at 2/0/1 (win/loss/draw), not admin-configurable.
         ["Sets", `Best of ${form.numberOfSets}`],
         ["Set Winning Point", form.setWinningPoint],
         ["Winning Gap", form.winningPointGap],
@@ -244,10 +290,19 @@ const Step3 = ({ form }) => (
 );
 
 // ── Main component ────────────────────────────────────────────────────────────
+// Defaults "Start Date" to today (in the browser's local time), formatted
+// for an <input type="date">, so the admin doesn't have to pick today's
+// date manually every time.
+const getDefaultStartDate = () => {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+};
+
 const INITIAL_FORM = {
   tournamentName: "",
-  matchType: "Singles",
-  startDate: "",
+  matchType: "Doubles",
+  startDate: getDefaultStartDate(),
   description: "",
   numberOfGroups: 2,
   playersPerGroup: 4,
