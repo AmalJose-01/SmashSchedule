@@ -42,11 +42,17 @@ const Dashboard = () => {
         <h1 className="text-2xl font-bold text-center mb-8 text-blue-800">
           Welcome to SmashSchedule Admin
         </h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+                {/* flex-wrap + justify-center instead of a fixed 4-column grid,
+        so the cards stay centered no matter how many tiles are active
+        (it dropped to 3 once Membership Management was hidden below; a
+        4-column grid would leave a lopsided empty slot on wide screens
+        instead of centering the row). Each card has a fixed width so
+        wrapping and spacing stay consistent at every count. */}
+        <div className="flex flex-wrap justify-center gap-6 max-w-6xl mx-auto">
 
           {/* Club Profile Module */}
           <div
-            className="bg-white rounded-3xl shadow-lg p-8 cursor-pointer hover:shadow-xl transition-shadow duration-300 border border-gray-200 relative"
+            className="w-full sm:w-72 bg-white rounded-3xl shadow-lg p-8 cursor-pointer hover:shadow-xl transition-shadow duration-300 border border-gray-200 relative"
             onClick={() => navigate("/admin/club-profile")}
           >
             {!isClubComplete && (
@@ -68,7 +74,7 @@ const Dashboard = () => {
 
           {/* Tournament Module */}
           <div
-            className="bg-white rounded-3xl shadow-lg p-8 cursor-pointer hover:shadow-xl transition-shadow duration-300 border border-gray-200"
+            className="w-full sm:w-72 bg-white rounded-3xl shadow-lg p-8 cursor-pointer hover:shadow-xl transition-shadow duration-300 border border-gray-200"
             onClick={() => isClubComplete ? navigate("/tournament-list") : navigate("/admin/club-profile")}
           >
             <div className="flex flex-col items-center text-center">

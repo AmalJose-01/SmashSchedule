@@ -92,12 +92,17 @@ const RoundRobinDashboard = () => {
           </div>
         </div>
 
-        {/* Action cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Action cards — flex-wrap + justify-center instead of a fixed
+        4-column grid, so the cards stay centered no matter how many tiles
+        actionCards has (it dropped to 3 once the Square Payments tile was
+        hidden above; a 4-column grid would leave a lopsided empty slot on
+        wide screens instead of centering the row). Each card gets a fixed
+        width so wrapping and spacing stay consistent at every count. */}
+        <div className="flex flex-wrap justify-center gap-6">
           {actionCards.map(({ icon: Icon, color, bg, border, title, description, path }) => (
             <div
               key={path}
-              className={`rounded-3xl shadow-lg p-8 cursor-pointer hover:shadow-xl transition-shadow duration-300 border ${border} ${bg}`}
+              className={`w-full sm:w-72 rounded-3xl shadow-lg p-8 cursor-pointer hover:shadow-xl transition-shadow duration-300 border ${border} ${bg}`}
               onClick={() => navigate(path)}
             >
               <div className="flex flex-col items-center text-center">

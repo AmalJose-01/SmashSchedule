@@ -7,7 +7,7 @@ const RoundRobinCard = ({ isClubComplete }) => {
 
   return (
     <div
-      className="bg-white rounded-3xl shadow-lg p-8 cursor-pointer hover:shadow-xl transition-shadow duration-300 border border-gray-200"
+      className="w-full sm:w-72 bg-white rounded-3xl shadow-lg p-8 cursor-pointer hover:shadow-xl transition-shadow duration-300 border border-gray-200"
       onClick={() =>
         isClubComplete
           ? navigate("/round-robin/dashboard")
