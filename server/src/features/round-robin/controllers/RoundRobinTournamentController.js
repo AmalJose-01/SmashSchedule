@@ -218,19 +218,33 @@ const RoundRobinTournamentController = {
         );
         rawMatches = matches;
       } else {
-        // Singles matches are only ever played within a group, so a group's
-        // size is a hard ceiling on how many distinct opponents its players
-        // can face (n players → at most n-1 matches each). Players don't
-        // divide evenly across groups every time (e.g. 7 players / 2 groups
-        // = 4 + 3), and generateSinglesMatches was previously called with
-        // the same requested numberOfMatchesPerMember for every group
-        // regardless of size — fine for the bigger group, but the smaller
-        // group would silently fall back to its own (lower) full-round-robin
-        // ceiling, leaving its players with fewer games than everyone else.
-        // Capping every group to whatever the SMALLEST group can support
-        // keeps the per-player match count equal tournament-wide instead of
-        // just within each group. Groups that are all the same size are
+        // Singles matches are only ever played within a group FOR THIS
+        // FIRST PASS, so a group's size is a hard ceiling on how many
+        // distinct opponents generateSinglesMatches can find within it (n
+        // players → at most n-1 matches each). Players don't divide evenly
+        // across groups every time (e.g. 7 players / 2 groups = 4 + 3), and
+        // generateSinglesMatches was previously called with the same
+        // requested numberOfMatchesPerMember for every group regardless of
+        // size — fine for the bigger group, but the smaller group would
+        // silently fall back to its own (lower) full-round-robin ceiling,
+        // leaving its players with fewer games than everyone else after
+        // this pass. Capping every group's FIRST-PASS call to whatever the
+        // SMALLEST group can support keeps that first pass balanced across
+        // groups instead of lopsided. Groups that are all the same size are
         // unaffected — the cap just matches what they'd already get.
+        //
+        // BUG FIX: `makeupTarget` must stay the admin's actual requested
+        // "Number of Matches per Member" (`requestedTarget`), NOT this
+        // group-size cap. The cap only exists because generateSinglesMatches
+        // is confined to one group's own players — the makeup pass right
+        // below is NOT confined that way (its matches are cross-group,
+        // groupId: null, by design), so it's fully able to top a small
+        // group's players up past their own group's ceiling by pairing them
+        // against shortfall players from OTHER groups. Reusing the capped
+        // value here defeated that entirely: every player in a small group
+        // (e.g. a 4-player group, ceiling 3) got stuck at the cap forever,
+        // no matter how high the admin actually set the target — exactly
+        // the "always 3, ignores my setting" bug this fixes.
         const groupSizes = groups.map((group) => group.players.length).filter((size) => size >= 2);
         const smallestGroupCap = groupSizes.length ? Math.min(...groupSizes) - 1 : 0;
         const requestedTarget = tournament.numberOfMatchesPerMember;
@@ -240,7 +254,9 @@ const RoundRobinTournamentController = {
               ? Math.min(requestedTarget, smallestGroupCap)
               : smallestGroupCap
             : requestedTarget;
-        makeupTarget = effectiveMatchesPerMember;
+        // makeupTarget was already initialized to tournament.numberOfMatchesPerMember
+        // above (shared with the Doubles branch) — intentionally left as the
+        // real requested target here, not reassigned to effectiveMatchesPerMember.
 
         let courtIndex = 0;
         for (const group of groups) {

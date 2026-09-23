@@ -5,6 +5,7 @@ const KnockoutMatch = require("../model/knockoutMatch.js");
 const Group = require("../model/groupTournament");
 const {
   determineKnockoutWinnerAndStatus,
+  buildCrossGroupKnockoutPairs,
 } = require("../helpers/matchHelpers.js");
 
 function getRoundNumber(numTeams) {
@@ -75,10 +76,7 @@ const knockoutController = {
       let remainingTeams = []; // store non-qualified teams to fill odd slots
 
       groups.forEach((group) => {
-        console.log("mergedStandings", group.teams);
-
-        // 1. Merge standings with team names
-
+        // Merge standings with team names.
         const mergedStandings = group.standings.map((standing) => {
           const team = group.teams.find(
             (t) => t.teamId.toString() === standing.teamId.toString()
@@ -92,22 +90,26 @@ const knockoutController = {
           };
         });
 
-        console.log("mergedStandings", mergedStandings);
-
         const sortedTeams = mergedStandings.slice().sort((a, b) => {
-          console.log("A: b: ", a.totalPoints, b.totalPoints);
-
           if (b.totalPoints !== a.totalPoints) {
             return b.totalPoints - a.totalPoints;
           }
           return b.pointsDiff - a.pointsDiff;
         });
-        // Pick top N teams from each group
+        // Pick top N teams from each group, tagging each with its GROUP
+        // and its 1-based RANK within that group (1 = winner, 2 = runner-up,
+        // ...) — buildCrossGroupKnockoutPairs below needs both to seed
+        // Round 1 as "Group A winner vs Group B runner-up" instead of a
+        // random draw.
         const topTeams = sortedTeams
           .slice(0, numberOfPlayersQualifiedToKnockout)
-          .map((team) => ({
+          .map((team, idx) => ({
             name: team.name,
             teamId: team.teamId,
+            groupName: group.groupName,
+            rank: idx + 1,
+            totalPoints: team.totalPoints,
+            pointsDiff: team.pointsDiff,
           }));
         qualifiedTeams.push(...topTeams);
 
@@ -117,6 +119,8 @@ const knockoutController = {
           remainingTeams.push({
             name: nextTeam.name,
             teamId: nextTeam.teamId,
+            groupName: group.groupName,
+            rank: numberOfPlayersQualifiedToKnockout + 1,
             totalPoints: nextTeam.totalPoints,
             pointsDiff: nextTeam.pointsDiff,
           });
@@ -147,6 +151,10 @@ const knockoutController = {
         qualifiedTeams.push({
           name: nextBest.name,
           teamId: nextBest.teamId,
+          groupName: nextBest.groupName,
+          rank: nextBest.rank,
+          totalPoints: nextBest.totalPoints,
+          pointsDiff: nextBest.pointsDiff,
         });
       }
 
@@ -174,24 +182,42 @@ const knockoutController = {
 
       const knockoutTeams = await Promise.all(knockoutTeamPromises);
 
-      console.log("Knockout Teams Created:", knockoutTeams);
+      // 4. Generate first round matches — cross-group seeding instead of a
+      // random draw: Group A winner vs Group B runner-up, Group B winner vs
+      // Group A runner-up (and so on for further groups). See
+      // buildCrossGroupKnockoutPairs in helpers/matchHelpers.js.
+      const qualifiedById = new Map(qualifiedTeams.map((t) => [String(t.teamId), t]));
+      const seedingInput = knockoutTeams.map((kt) => {
+        const meta = qualifiedById.get(String(kt.teamId)) || {};
+        return {
+          teamId: kt.teamId,
+          teamName: kt.teamName,
+          groupName: meta.groupName,
+          rank: meta.rank || 1,
+          totalPoints: meta.totalPoints,
+          pointsDiff: meta.pointsDiff,
+        };
+      });
+      const pairs = buildCrossGroupKnockoutPairs(seedingInput);
 
-      //
-      // 4. Generate first round matches (pair top teams)
-      const shuffled = [...knockoutTeams].sort(() => Math.random() - 0.5);
-      const knockoutMatches = [];
       let match = null;
-      for (let i = 0; i < shuffled.length; i += 2) {
+      for (const [home, away] of pairs) {
+        if (!home || !away) {
+          // One truly unpaired leftover (see buildCrossGroupKnockoutPairs) —
+          // shouldn't normally happen since bracket sizes are kept even;
+          // skip rather than create a match with a missing side.
+          continue;
+        }
         match = await KnockoutMatch.create({
           tournamentId,
           round: roundNumber,
           teamsHome: {
-            teamId: shuffled[i].teamId,
-            teamName: shuffled[i].teamName,
+            teamId: home.teamId,
+            teamName: home.teamName ?? home.name,
           },
           teamsAway: {
-            teamId: shuffled[i + 1].teamId,
-            teamName: shuffled[i + 1].teamName,
+            teamId: away.teamId,
+            teamName: away.teamName ?? away.name,
           },
           scores: [
             {
@@ -203,7 +229,6 @@ const knockoutController = {
           ],
           status: "scheduled",
         });
-        //    await knockoutMatches.create(match);
       }
 
       if (!match) {

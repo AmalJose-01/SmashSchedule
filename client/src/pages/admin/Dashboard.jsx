@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Trophy, Users, Building2 } from "lucide-react";
+import { Trophy, Building2 } from "lucide-react"; // Users was only used by the now-hidden Membership Management card below
 import { useGetMyClubProfile } from "../../features/club-profile/admin/services/clubProfile.queries.js";
 import Logout from "../../components/Logout";
 import RoundRobinCard from "../../features/round-robin/admin/components/RoundRobinCard.jsx";
@@ -90,7 +90,10 @@ const Dashboard = () => {
           {/* Round Robin Module */}
           <RoundRobinCard isClubComplete={isClubComplete} />
 
-          {/* Membership Module */}
+          {/* Membership Module — hidden for now (not currently used). The
+          /admin-membership route is left intact, so this card (and the
+          Users icon import above) can be restored later if membership
+          management comes back into use.
           <div
             className="bg-white rounded-3xl shadow-lg p-8 cursor-pointer hover:shadow-xl transition-shadow duration-300 border border-gray-200"
             onClick={() => isClubComplete ? navigate("/admin-membership") : navigate("/admin/club-profile")}
@@ -110,6 +113,7 @@ const Dashboard = () => {
               )}
             </div>
           </div>
+          */}
 
         </div>
       </div>
