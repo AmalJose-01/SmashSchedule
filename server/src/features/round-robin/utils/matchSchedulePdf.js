@@ -53,7 +53,7 @@ const generateMatchSchedulePdf = ({ tournament, matches }) => {
   const leftMargin = doc.page.margins.left;
   const rightEdge = () => doc.page.width - doc.page.margins.right;
 
-  // ── Page 1: cover page only ────────────────────────────────────────────
+  // ── Page 1: title + a flat list of every match and its court ──────────
   doc.fontSize(20).fillColor("#000").text(tournament.tournamentName, { align: "center" });
   doc.fontSize(12).fillColor("#666").text("Match Schedule", { align: "center" });
   doc
@@ -61,6 +61,41 @@ const generateMatchSchedulePdf = ({ tournament, matches }) => {
     .fillColor("#999")
     .text(`Best of ${numberOfSets} · generated ${new Date().toLocaleDateString()}`, { align: "center" });
   doc.fillColor("#000");
+  doc.moveDown(1.2);
+
+  if (playableMatches.length > 0) {
+    const availableWidth = rightEdge() - leftMargin;
+    const numColWidth = 30;
+    const courtColWidth = 80;
+    const teamsColWidth = availableWidth - numColWidth - courtColWidth;
+
+    const headerY = doc.y;
+    doc.fontSize(10).fillColor("#666");
+    doc.text("#", leftMargin, headerY, { width: numColWidth });
+    doc.text("Match", leftMargin + numColWidth, headerY, { width: teamsColWidth });
+    doc.text("Court", leftMargin + numColWidth + teamsColWidth, headerY, { width: courtColWidth, align: "right" });
+    doc.fillColor("#000");
+    doc.moveDown(0.5);
+    const ruleY = doc.y;
+    doc.moveTo(leftMargin, ruleY).lineTo(rightEdge(), ruleY).strokeColor("#cbd5e1").stroke();
+    doc.strokeColor("#000");
+    doc.moveDown(0.4);
+
+    playableMatches.forEach((m, idx) => {
+      const rowHeight = 20;
+      if (doc.y + rowHeight > pageBottom()) {
+        doc.addPage();
+      }
+      const rowY = doc.y;
+      doc.fontSize(10).fillColor("#000");
+      doc.text(String(idx + 1), leftMargin, rowY, { width: numColWidth });
+      doc.text(`${teamName(m, "home")}  vs  ${teamName(m, "away")}`, leftMargin + numColWidth, rowY, {
+        width: teamsColWidth,
+      });
+      doc.text(m.court, leftMargin + numColWidth + teamsColWidth, rowY, { width: courtColWidth, align: "right" });
+      doc.moveDown(0.6);
+    });
+  }
 
   // ── One fillable scoresheet block per match ────────────────────────────
   // Layout: [ Home team name ] [ Set 1 ] [ Set 2 ] ... [ Away team name ]
