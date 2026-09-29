@@ -256,7 +256,7 @@ const Step2 = ({ form, setForm, errors }) => {
             min={1}
             value={form.winningPointGap}
             onChange={(e) => setForm((f) => ({ ...f, winningPointGap: e.target.value }))}
-            placeholder="e.g. 2"
+            placeholder="e.g. 1"
             className={inputCls(errors.winningPointGap)}
           />
         </Field>
@@ -330,7 +330,7 @@ const INITIAL_FORM = {
   pointsForLoss: 0,
   numberOfSets: 3,
   setWinningPoint: 21,
-  winningPointGap: 2,
+  winningPointGap: 1,
 };
 
 const CreateTournamentRR = () => {

@@ -48,7 +48,7 @@ const RoundRobinTournamentSchema = new Schema(
     entryFeeNonMember: { type: Number, default: 0 }, // in dollars; 0 = no payment required
     numberOfSets: { type: Number, default: 3 },
     setWinningPoint: { type: Number, default: 21 },
-    winningPointGap: { type: Number, default: 2 },
+    winningPointGap: { type: Number, default: 1 },
     groups: [{ type: Schema.Types.ObjectId, ref: "RoundRobinGroup" }],
   },
   { timestamps: true }

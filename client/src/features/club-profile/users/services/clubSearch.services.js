@@ -15,3 +15,8 @@ export const getClubById = async (clubId) => {
   const response = await apiClient.get(`/club/${clubId}`);
   return response.data;
 };
+
+export const getClubByCode = async (code) => {
+  const response = await apiClient.get(`/club/code/${encodeURIComponent(code)}`);
+  return response.data;
+};

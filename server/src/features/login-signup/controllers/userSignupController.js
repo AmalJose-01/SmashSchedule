@@ -1,3 +1,5 @@
+const Club = require("../../../../model/club");
+const { ensureClubWithCode } = require("../../../../utils/clubCode");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const AdminUser = require("../model/adminUser");
@@ -31,6 +33,15 @@ const userSignupController = {
         accountType: resolvedAccountType,
       });
       console.log("user created:", user);
+
+      // New club admins get their club (and its unique 8-char key) up front.
+      if (resolvedAccountType === "admin") {
+        try {
+          await ensureClubWithCode(Club, user._id);
+        } catch (err) {
+          console.error("club key creation failed:", err); // they can generate it later from Club Profile
+        }
+      }
 
       const userPayload = {
         id: user._id,

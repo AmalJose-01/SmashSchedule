@@ -84,7 +84,7 @@ const RoundRobinTournamentController = {
         entryFeeNonMember: entryFeeNonMember ?? 0,
         numberOfSets: numberOfSets ?? 3,
         setWinningPoint: setWinningPoint ?? 21,
-        winningPointGap: winningPointGap ?? 2,
+        winningPointGap: winningPointGap ?? 1,
         status: "Draft",
       });
 

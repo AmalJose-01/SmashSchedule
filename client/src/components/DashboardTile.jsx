@@ -23,14 +23,21 @@ const DashboardTile = ({
   lockedText = "Complete club profile first",
   badge,
   dot = false,
-}) => (
+  variant = "admin",
+}) => {
+  const hover = variant === "user"
+    ? "hover:border-emerald-400/40 hover:shadow-emerald-500/10 focus-visible:ring-emerald-400"
+    : "hover:border-cyan-500/40 hover:shadow-cyan-500/10 focus-visible:ring-cyan-500";
+  const arrow = variant === "user" ? "group-hover:text-emerald-400" : "group-hover:text-cyan-400";
+  const openCls = variant === "user" ? "text-emerald-400" : "text-cyan-400";
+  return (
   <button
     type="button"
     onClick={onClick}
-    className={`group relative w-full sm:w-72 text-left overflow-hidden rounded-3xl p-7 border backdrop-blur-xl transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 ${
+    className={`group relative w-full sm:w-72 text-left overflow-hidden rounded-3xl p-7 border backdrop-blur-xl transition-all duration-300 focus:outline-none focus-visible:ring-2 ${
       locked
         ? "bg-slate-800/30 border-slate-700/40"
-        : "bg-slate-800/50 border-slate-700/50 hover:bg-slate-800/70 hover:border-cyan-500/40 hover:-translate-y-1 hover:shadow-2xl hover:shadow-cyan-500/10"
+        : `bg-slate-800/50 border-slate-700/50 hover:bg-slate-800/70 hover:-translate-y-1 hover:shadow-2xl ${hover}`
     }`}
   >
     {/* corner glow */}
@@ -69,13 +76,14 @@ const DashboardTile = ({
           {badge}
         </span>
       ) : (
-        <span className="text-xs font-semibold text-cyan-400">Open</span>
+        <span className={`text-xs font-semibold ${openCls}`}>Open</span>
       )}
       {!locked && (
-        <ArrowRight className="w-5 h-5 text-slate-500 group-hover:text-cyan-400 group-hover:translate-x-1 transition-all" />
+        <ArrowRight className={`w-5 h-5 text-slate-500 ${arrow} group-hover:translate-x-1 transition-all`} />
       )}
     </div>
   </button>
-);
+  );
+};
 
 export default DashboardTile;

@@ -12,6 +12,11 @@ import Login from "../pages/admin/Login";
 import MemberRegistration from "../features/membership/users/pages/MemberRegistration";
 import MemberProfile from "../features/membership/users/my-profile/pages/MemberProfile";
 import ClubSearch from "../features/club-profile/users/pages/ClubSearch";
+import UserProfile from "../features/user-profile/pages/UserProfile.jsx";
+import FindClub from "../features/find-club/pages/FindClub.jsx";
+import MyClubs from "../features/my-clubs/pages/MyClubs.jsx";
+import ClubEventsPage from "../features/my-clubs/pages/ClubEventsPage.jsx";
+import RoundRobinView from "../features/round-robin/player/pages/RoundRobinView.jsx";
 import UserMembershipHome from "../features/user-membership/pages/UserMembershipHome";
 import UserSignup from "../features/user-signup/pages/UserSignup";
 
@@ -69,6 +74,38 @@ const UserRoutes = () => {
         element={<SaveTeamRegistration />}
       />
       <Route
+        path="/user/my-clubs"
+        element={
+          <ProtectedRoute role="user">
+            <MyClubs />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/user/club/:clubId/events"
+        element={
+          <ProtectedRoute role="user">
+            <ClubEventsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/user/round-robin/:id"
+        element={
+          <ProtectedRoute role="user">
+            <RoundRobinView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/user/find-club"
+        element={
+          <ProtectedRoute role="user">
+            <FindClub />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/club-search"
         element={<ClubSearch />}
       />
@@ -88,7 +125,10 @@ const UserRoutes = () => {
         path="/user/profile"
         element={
           <ProtectedRoute role="user">
-            <MemberProfile />
+            {/* Personal details (UserDetail). The old membership-based
+                MemberProfile page is no longer routed here — players don't
+                register memberships for now. */}
+            <UserProfile />
           </ProtectedRoute>
         }
       />

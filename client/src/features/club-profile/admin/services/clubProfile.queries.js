@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { getMyClubProfile, upsertClubProfile, uploadClubLogo } from "./clubProfile.services.js";
+import { getMyClubProfile, upsertClubProfile, uploadClubLogo, generateClubCode } from "./clubProfile.services.js";
 import { getAccessToken } from "../../../../../utils/storageHandler.js";
 
 export const clubProfileQueryKeys = {
@@ -42,6 +42,20 @@ export const useUploadClubLogo = () => {
     },
     onError: (error) => {
       toast.error(error.response?.data?.message || "Logo upload failed");
+    },
+  });
+};
+
+export const useGenerateClubCode = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: generateClubCode,
+    onSuccess: () => {
+      toast.success("Club key generated!");
+      queryClient.invalidateQueries({ queryKey: clubProfileQueryKeys.mine() });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Could not generate club key");
     },
   });
 };

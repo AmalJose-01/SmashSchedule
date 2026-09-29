@@ -17,6 +17,7 @@ const ClubSearch = () => {
     handleLocateMe,
     handleClearLocation,
     handleSelectClub,
+    codeFromLink,
   } = useClubSearch();
 
   return (
@@ -24,7 +25,7 @@ const ClubSearch = () => {
       <div className="cs-wrapper">
         <div className="cs-header">
           <h1>Find Your Club</h1>
-          <p>Search by club name or use your location to find clubs near you</p>
+          <p>Search by club name, enter your club key, or use your location to find clubs near you</p>
         </div>
 
         {selectedClubId && selectedClubName && (
@@ -44,7 +45,7 @@ const ClubSearch = () => {
             <input
               className="cs-search-input"
               type="text"
-              placeholder="Search by club name or city..."
+              placeholder="Search by club name, city or 8-character club key..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               autoFocus
@@ -67,6 +68,14 @@ const ClubSearch = () => {
             </div>
           )}
         </div>
+
+        {codeFromLink && searchTerm.toUpperCase() === codeFromLink && !isLoading && (
+          <p className="cs-results-label">
+            {clubs.length === 1 && clubs[0].clubCode === codeFromLink
+              ? `Club found for key ${codeFromLink} — tap Join to continue.`
+              : `No club found for key ${codeFromLink}. Check the key or search by name.`}
+          </p>
+        )}
 
         <p className="cs-results-label">
           {isLoading

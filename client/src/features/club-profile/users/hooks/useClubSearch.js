@@ -1,12 +1,16 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useSearchClubs } from "../services/clubSearch.queries.js";
 
 export const useClubSearch = () => {
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedTerm, setDebouncedTerm] = useState("");
+  // A shared QR/link opens /club-search?code=XXXXXXXX — start with that key
+  // already in the search box (the server matches an exact 8-char key).
+  const [searchParams] = useSearchParams();
+  const codeFromLink = (searchParams.get("code") || "").trim().toUpperCase();
+  const [searchTerm, setSearchTerm] = useState(codeFromLink);
+  const [debouncedTerm, setDebouncedTerm] = useState(codeFromLink);
   const [userLocation, setUserLocation] = useState(null); // { lat, lng }
   const [isLocating, setIsLocating] = useState(false);
   const debounceRef = useRef(null);
@@ -65,5 +69,6 @@ export const useClubSearch = () => {
     handleLocateMe,
     handleClearLocation,
     handleSelectClub,
+    codeFromLink,
   };
 };
