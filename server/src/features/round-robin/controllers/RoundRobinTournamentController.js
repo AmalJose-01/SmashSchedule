@@ -22,6 +22,7 @@ const RoundRobinTournamentController = {
         format,
         description,
         numberOfCourts,
+        numberOfSlots,
         numberOfGroups,
         playersPerGroup,
         numberOfMatchesPerMember,
@@ -46,6 +47,12 @@ const RoundRobinTournamentController = {
           message: "tournamentName, matchType, and numberOfCourts are required",
         });
       }
+      const slots = Number(numberOfSlots);
+      if (numberOfSlots === undefined || numberOfSlots === null || numberOfSlots === "" || !Number.isInteger(slots) || slots < 1) {
+        return res.status(400).json({
+          message: "numberOfSlots is required and must be a whole number of at least 1",
+        });
+      }
       // Balanced format needs its groups sized up front; Graded groups
       // players by grade automatically at finalize time instead, so it
       // doesn't ask for these at all.
@@ -62,6 +69,7 @@ const RoundRobinTournamentController = {
         format: isGraded ? "Graded" : "Balanced",
         description,
         numberOfCourts,
+        numberOfSlots: slots,
         numberOfGroups: isGraded ? undefined : numberOfGroups,
         playersPerGroup: isGraded ? undefined : playersPerGroup,
         numberOfMatchesPerMember: numberOfMatchesPerMember ?? 3,
@@ -131,12 +139,25 @@ const RoundRobinTournamentController = {
       }
 
       const allowedFields = [
-        "tournamentName", "matchType", "format", "description", "numberOfCourts",
+        "tournamentName", "matchType", "format", "description", "numberOfCourts", "numberOfSlots",
         "numberOfGroups", "playersPerGroup", "numberOfMatchesPerMember", "startDate", "endDate",
         "groupingStrategy", "gradeOrder", "pointsForWin", "pointsForLoss", "status", "entryFee",
         "entryFeeMember", "entryFeeNonMember",
         "numberOfSets", "setWinningPoint", "winningPointGap",
       ];
+
+      if (req.body.numberOfSlots !== undefined) {
+        const slots = Number(req.body.numberOfSlots);
+        if (!Number.isInteger(slots) || slots < 1) {
+          return res.status(400).json({ message: "numberOfSlots must be a whole number of at least 1" });
+        }
+        const playerCount = await RoundRobinPlayer.countDocuments({ tournamentId: id });
+        if (slots < playerCount) {
+          return res.status(400).json({
+            message: `Number of slots can't be lower than the ${playerCount} players already added`,
+          });
+        }
+      }
 
       allowedFields.forEach((field) => {
         if (req.body[field] !== undefined) {

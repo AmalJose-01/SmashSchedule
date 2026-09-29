@@ -252,6 +252,23 @@ const RoundRobinMemberController = {
 
       const members = await RoundRobinMember.find({ _id: { $in: memberIds }, isActive: true });
 
+      // Enforce player capacity (numberOfSlots). Members already in the
+      // tournament don't consume a new slot, so only count genuinely new ones.
+      if (tournament.numberOfSlots) {
+        const existingPlayers = await RoundRobinPlayer.find({ tournamentId }).select("memberId");
+        const existingIds = new Set(existingPlayers.map((p) => String(p.memberId)));
+        const newCount = members.filter((m) => !existingIds.has(String(m._id))).length;
+        const remaining = tournament.numberOfSlots - existingPlayers.length;
+        if (newCount > remaining) {
+          return res.status(400).json({
+            message:
+              remaining > 0
+                ? `Only ${remaining} slot${remaining === 1 ? "" : "s"} left (${tournament.numberOfSlots} total). Remove some selections or increase the number of slots.`
+                : `Tournament is full (${tournament.numberOfSlots} slots). Increase the number of slots to add more players.`,
+          });
+        }
+      }
+
       const created = [];
       const skipped = [];
 

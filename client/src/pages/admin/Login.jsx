@@ -1,188 +1,213 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import TextField from "../../components/TextField";
+import { Link, useLocation } from "react-router-dom";
 import validationSchema from "../../../utils/validationSchemas";
-import { set, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
 import { useState } from "react";
 import { useLogin } from "../../hooks/useLogin";
 import { useGoogleLogin } from "../../hooks/useGoogleLogin";
-import { X, LogIn, User, Lock, Shield } from "lucide-react";
-import ButtonWithIcon from "../../components/ButtonWithIcon";
-import { FaUserShield } from "react-icons/fa";
+import { Lock, Mail, Eye, EyeOff, Shield, User } from "lucide-react";
+import AppBackground from "../../components/AppBackground";
+
+const inputCls = (hasError) =>
+  `w-full pl-12 py-3 bg-slate-900/50 border rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all ${
+    hasError ? "border-red-500" : "border-slate-600"
+  }`;
+
+const Spinner = ({ className = "" }) => (
+  <svg className={`animate-spin h-5 w-5 ${className}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+  </svg>
+);
 
 const Login = () => {
-  // 1. Define Yup schema for validation
   const schema = validationSchema.pick(["email", "password"]);
-  const { handleLogin, isLoading, isError, error } = useLogin();
-  const [selectedTab, setSelectedTab] = useState("Trade"); // 👈 track tab value
-  const { handleLoginWithGoogle, isLoading: isGoogleLoading } =
-    useGoogleLogin();
+  const { handleLogin, isLoading } = useLogin();
+  const { handleLoginWithGoogle, isLoading: isGoogleLoading } = useGoogleLogin();
+  const [showPassword, setShowPassword] = useState(false);
 
   const location = useLocation();
-  const navigate = useNavigate();
+  // Same page serves both /admin/login and /user/login.
   const isAdmin = location.pathname === "/admin/login";
+  const accountType = isAdmin ? "admin" : "user";
 
-  // 2. Initialize react-hook-form with Yup resolver
   const {
     register,
     handleSubmit,
-    formState: { errors, isValid, isSubmitting },
+    formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+    defaultValues: { email: "", password: "" },
   });
 
   const onClickLoginWithGoogle = async (credentialResponse) => {
     try {
       const decoded = jwtDecode(credentialResponse.credential);
-      console.log("Decoded Google user:", decoded);
-
-      const accountType = isAdmin ? "admin" : "user";
-
-      const inputData = {
+      handleLoginWithGoogle({
         email: decoded.email,
         firstName: decoded.given_name,
         lastName: decoded.family_name,
         googleId: decoded.sub,
         accountType,
-      };
-
-      handleLoginWithGoogle(inputData);
+      });
     } catch (error) {
       console.log("Login", error);
-
       alert(error.response?.data?.message || "Login failed");
     }
   };
 
   const onSubmit = (data) => {
-    const accountType = isAdmin ? "admin" : "user";
-    const loginData = { ...data, accountType };
-    handleLogin(loginData);
+    handleLogin({ ...data, accountType });
   };
 
-  const handleTabSelect = (tab) => {
-    console.log("Selected Tab:", tab);
-    setSelectedTab(tab);
-  };
+  const HeaderIcon = isAdmin ? Shield : User;
 
   return (
-    <>
-      <div className="flex w-full min-h-screen justify-center items-center bg-gray-400">
-       
-       
-       
-        <div className="card w-full max-w-md mx-auto shadow-lg rounded-lg bg-blue-600">
-          <div className="card-body rounded-lg ">
-            <div className="flex flex-col items-center justify-center text-center p-4">
-              {isAdmin ? (
-                <FaUserShield className="w-24 h-24 text-white" />
+    <AppBackground className="flex items-center justify-center p-4 py-12">
+      <div className="w-full max-w-md">
+        {/* Logo/Header Section */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-500 mb-4 shadow-lg shadow-cyan-500/50">
+            <HeaderIcon className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-3xl font-semibold text-white mb-2" style={{ fontFamily: "Outfit, sans-serif" }}>
+            {isAdmin ? "Admin Portal" : "Player Portal"}
+          </h1>
+          <p className="text-slate-400">Sign in to access your dashboard</p>
+        </div>
+
+        {/* Login Card */}
+        <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 p-8">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
+            {/* Email Field */}
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-slate-300">
+                Email Address
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Mail className="w-5 h-5 text-slate-400" />
+                </div>
+                <input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  {...register("email")}
+                  className={inputCls(errors.email) + " pr-4"}
+                  placeholder={isAdmin ? "admin@example.com" : "you@example.com"}
+                />
+              </div>
+              {errors.email && <p className="text-red-400 text-sm">{errors.email.message}</p>}
+            </div>
+
+            {/* Password Field */}
+            <div className="space-y-2">
+              <label htmlFor="password" className="block text-slate-300">
+                Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Lock className="w-5 h-5 text-slate-400" />
+                </div>
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  {...register("password")}
+                  className={inputCls(errors.password) + " pr-12"}
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-300 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              {errors.password && <p className="text-red-400 text-sm">{errors.password.message}</p>}
+            </div>
+
+            {/* Remember Me & Forgot Password */}
+            <div className="flex items-center justify-between">
+              <label className="flex items-center cursor-pointer group">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 rounded border-slate-600 bg-slate-900/50 text-cyan-500 focus:ring-2 focus:ring-cyan-500 focus:ring-offset-0 cursor-pointer"
+                />
+                <span className="ml-2 text-slate-300 group-hover:text-white transition-colors">Remember me</span>
+              </label>
+              <Link to="/forgot-password" className="text-cyan-400 hover:text-cyan-300 transition-colors">
+                Forgot password?
+              </Link>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            >
+              {isLoading ? (
+                <span className="flex items-center justify-center">
+                  <Spinner className="-ml-1 mr-3 text-white" />
+                  Signing in...
+                </span>
               ) : (
-                <User className="w-24 h-24 text-white" />
+                "Sign In"
               )}
-              <h2 className="text-2xl font-bold text-white card-title-text">
-                Welcome back
-              </h2>
-              <h4 className="text-white">
-                Enter your credentials to access your account
-              </h4>
-            </div>
-            <div className="text-center p-4 bg-white rounded-b-lg">
-              <form
-                className="mt-4 flex flex-col gap-2 bg"
-                onSubmit={handleSubmit(onSubmit)}
+            </button>
+          </form>
+
+          {/* Divider */}
+          <div className="flex items-center gap-4 my-6">
+            <div className="flex-1 border-t border-slate-700/50" />
+            <span className="text-slate-400">Or continue with</span>
+            <div className="flex-1 border-t border-slate-700/50" />
+          </div>
+
+          {/* Google Login — uses the real Google Identity button (required
+              to get a credential), styled to match the white pill in the design. */}
+          <div className="flex justify-center">
+            {isGoogleLoading ? (
+              <div className="w-full py-3 px-4 bg-white text-slate-900 rounded-xl flex items-center justify-center gap-3">
+                <Spinner className="text-slate-900" />
+                <span>Signing in with Google...</span>
+              </div>
+            ) : (
+              <GoogleLogin
+                onSuccess={onClickLoginWithGoogle}
+                onError={() => console.log("Login Failed")}
+                theme="outline"
+                size="large"
+                shape="pill"
+                text="continue_with"
+                width="320"
+              />
+            )}
+          </div>
+
+          {/* Sign up */}
+          <div className="mt-6 pt-6 border-t border-slate-700/50">
+            <p className="text-center text-slate-400">
+              Don&apos;t have an account?{" "}
+              <Link
+                to={isAdmin ? "/admin/signup" : "/user/signup"}
+                className="text-cyan-400 hover:text-cyan-300 transition-colors"
               >
-                <div className="flex items-center gap-2 text-gray-700 mb-2 ">
-                  <User className="w-4 h-4" />
-                  <div>Username/Email</div>
-                </div>
-
-                <TextField
-                  register={register}
-                  name="email"
-                  error={errors.email}
-                  placeholder="Enter your email"
-                  type={"email"}
-                />
-
-                <div className="flex items-center gap-2 text-gray-700 mb-2 ">
-                  <Lock className="w-4 h-4" />
-                  <div>Password</div>
-                </div>
-
-                <TextField
-                  register={register}
-                  name="password"
-                  error={errors.password}
-                  placeholder="Enter your password"
-                  type={"password"}
-                />
-
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input type="checkbox" className="rounded border-border" />
-                    <span className="text-sm">Remember me</span>
-                  </label>
-
-                  <Link
-                    to="/forgot-password" // Use 'to' prop for the destination path
-                    className="text-primary hover:underline text-blue-500"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
-
-                <ButtonWithIcon
-                  type="submit"
-                  title="Sign In"
-                  icon="login"
-                  buttonBGColor="bg-blue-600"
-                  textColor="text-white"
-                />
-              </form>
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-gray-500">OR</span>
-                </div>
-              </div>
-              <div className="w-full ">
-                <div className="w-full ">
-                  <GoogleLogin
-                    onSuccess={(credentialResponse) => {
-                      onClickLoginWithGoogle(credentialResponse);
-                    }}
-                    onError={() => {
-                      console.log("Login Failed");
-                    }}
-                    className="w-full"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6 text-center">
-                <p className="text-sm text-muted-foreground">
-                  Don't have an account?{" "}
-                  <Link
-                    to={isAdmin ? "/admin/signup" : "/user/signup"}
-                    className="text-primary hover:underline"
-                  >
-                    Sign up
-                  </Link>
-                </p>
-              </div>
-            </div>
+                Sign up
+              </Link>
+            </p>
           </div>
         </div>
+
+        {/* Footer Note */}
+        <p className="text-center text-slate-500 mt-6">Protected by enterprise-grade security</p>
       </div>
-    </>
+    </AppBackground>
   );
 };
 

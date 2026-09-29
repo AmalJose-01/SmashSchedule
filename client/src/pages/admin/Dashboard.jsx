@@ -1,8 +1,10 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Trophy, Building2 } from "lucide-react"; // Users was only used by the now-hidden Membership Management card below
+import { Trophy, Building2, AlertTriangle } from "lucide-react"; // Users was only used by the now-hidden Membership Management card below
 import { useGetMyClubProfile } from "../../features/club-profile/admin/services/clubProfile.queries.js";
-import Logout from "../../components/Logout";
+import AppBackground from "../../components/AppBackground";
+import PageHeader from "../../components/PageHeader";
+import DashboardTile from "../../components/DashboardTile";
 import RoundRobinCard from "../../features/round-robin/admin/components/RoundRobinCard.jsx";
 
 const Dashboard = () => {
@@ -11,89 +13,62 @@ const Dashboard = () => {
   const isClubComplete = clubData?.isProfileComplete || clubData?.club?.isProfileComplete || false;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      {/* HEADER */}
-      <div className="flex justify-between items-center bg-white p-4 shadow-lg sticky top-0">
-        <div className="flex items-center gap-4">
-          <h2 className="text-xl font-semibold text-blue-800">Dashboard</h2>
+    <AppBackground>
+      <PageHeader title="Dashboard" subtitle="Admin control centre" />
+
+      <div className="px-4 sm:px-6 py-10 max-w-6xl mx-auto">
+        {/* Hero */}
+        <div className="text-center mb-10">
+          <h1 className="text-3xl sm:text-4xl font-semibold text-white mb-3" style={{ fontFamily: "Outfit, sans-serif" }}>
+            Welcome to SmashSchedule Admin
+          </h1>
+          <div className="h-1 w-24 bg-gradient-to-r from-cyan-500 to-emerald-500 mx-auto rounded-full mb-4" />
+          <p className="text-slate-400">
+            {clubData?.club?.name ? `Managing ${clubData.club.name}` : "Pick a module to get started."}
+          </p>
         </div>
-        <Logout />
-      </div>
 
-      {/* Club Profile Incomplete Banner */}
-      {!isClubComplete && (
-        <div
-          className="mx-6 mt-4 flex items-center gap-3 bg-amber-50 border border-amber-300 rounded-2xl px-5 py-4 cursor-pointer hover:bg-amber-100 transition-colors"
-          onClick={() => navigate("/admin/club-profile")}
-        >
-          <span className="text-2xl">⚠️</span>
-          <div className="flex-1">
-            <p className="font-semibold text-amber-800 text-sm">Club profile is incomplete</p>
-            <p className="text-amber-700 text-xs mt-0.5">
-              Complete your club profile before creating tournaments or membership types.
-            </p>
-          </div>
-          <span className="text-amber-600 font-semibold text-sm whitespace-nowrap">Set up →</span>
-        </div>
-      )}
-
-      {/* Dashboard Content */}
-      <div className="p-6">
-        <h1 className="text-2xl font-bold text-center mb-8 text-blue-800">
-          Welcome to SmashSchedule Admin
-        </h1>
-                {/* flex-wrap + justify-center instead of a fixed 4-column grid,
-        so the cards stay centered no matter how many tiles are active
-        (it dropped to 3 once Membership Management was hidden below; a
-        4-column grid would leave a lopsided empty slot on wide screens
-        instead of centering the row). Each card has a fixed width so
-        wrapping and spacing stay consistent at every count. */}
-        <div className="flex flex-wrap justify-center gap-6 max-w-6xl mx-auto">
-
-          {/* Club Profile Module */}
-          <div
-            className="w-full sm:w-72 bg-white rounded-3xl shadow-lg p-8 cursor-pointer hover:shadow-xl transition-shadow duration-300 border border-gray-200 relative"
+        {/* Club Profile Incomplete Banner */}
+        {!isClubComplete && (
+          <button
+            type="button"
+            className="w-full max-w-3xl mx-auto mb-10 flex items-center gap-4 text-left bg-amber-500/10 border border-amber-500/30 backdrop-blur-xl rounded-2xl px-5 py-4 hover:bg-amber-500/15 transition-colors"
             onClick={() => navigate("/admin/club-profile")}
           >
-            {!isClubComplete && (
-              <span className="absolute top-4 right-4 w-3 h-3 bg-amber-400 rounded-full" />
-            )}
-            <div className="flex flex-col items-center text-center">
-              <Building2 className="w-16 h-16 text-purple-600 mb-4" />
-              <h3 className="text-xl font-semibold text-purple-800 mb-2">Club Profile</h3>
-              <p className="text-gray-600">
-                Set up your club details — name, logo, location, and registration info.
+            <span className="flex-shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-xl bg-amber-500/20">
+              <AlertTriangle className="w-5 h-5 text-amber-300" />
+            </span>
+            <div className="flex-1">
+              <p className="font-semibold text-amber-200 text-sm">Club profile is incomplete</p>
+              <p className="text-amber-300/80 text-xs mt-0.5">
+                Complete your club profile before creating tournaments or membership types.
               </p>
-              {!isClubComplete && (
-                <span className="mt-3 text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
-                  Setup required
-                </span>
-              )}
             </div>
-          </div>
+            <span className="text-amber-300 font-semibold text-sm whitespace-nowrap">Set up →</span>
+          </button>
+        )}
 
-          {/* Tournament Module */}
-          <div
-            className="w-full sm:w-72 bg-white rounded-3xl shadow-lg p-8 cursor-pointer hover:shadow-xl transition-shadow duration-300 border border-gray-200"
-            onClick={() => isClubComplete ? navigate("/tournament-list") : navigate("/admin/club-profile")}
-          >
-            <div className="flex flex-col items-center text-center">
-              <Trophy className={`w-16 h-16 mb-4 ${isClubComplete ? "text-blue-600" : "text-gray-400"}`} />
-              <h3 className={`text-xl font-semibold mb-2 ${isClubComplete ? "text-blue-800" : "text-gray-500"}`}>
-                Tournament Management
-              </h3>
-              <p className="text-gray-600">
-                Create, manage, and oversee tournaments. Set up teams, fixtures, and track results.
-              </p>
-              {!isClubComplete && (
-                <span className="mt-3 text-xs font-semibold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                  Complete club profile first
-                </span>
-              )}
-            </div>
-          </div>
+        {/* Cards stay centred however many modules are active. */}
+        <div className="flex flex-wrap justify-center gap-6">
+          <DashboardTile
+            icon={Building2}
+            gradient="from-purple-400 to-indigo-500"
+            title="Club Profile"
+            description="Set up your club details — name, logo, location, and registration info."
+            dot={!isClubComplete}
+            badge={!isClubComplete ? "Setup required" : undefined}
+            onClick={() => navigate("/admin/club-profile")}
+          />
 
-          {/* Round Robin Module */}
+          <DashboardTile
+            icon={Trophy}
+            gradient="from-cyan-400 to-blue-500"
+            title="Tournament Management"
+            description="Create, manage, and oversee tournaments. Set up teams, fixtures, and track results."
+            locked={!isClubComplete}
+            onClick={() => (isClubComplete ? navigate("/tournament-list") : navigate("/admin/club-profile"))}
+          />
+
           <RoundRobinCard isClubComplete={isClubComplete} />
 
           {/* Membership Module — hidden for now (not currently used). The
@@ -120,10 +95,9 @@ const Dashboard = () => {
             </div>
           </div>
           */}
-
         </div>
       </div>
-    </div>
+    </AppBackground>
   );
 };
 

@@ -7,6 +7,8 @@ import AddressSearch from "../../../../components/AddressSearch";
 // call are commented out alongside it so nothing here fetches Square status
 // while the section is hidden.
 // import { useGetSquareStatus } from "../../../round-robin/admin/services/roundRobin.queries.js";
+import AppBackground from "../../../../components/AppBackground.jsx";
+import PageHeader from "../../../../components/PageHeader.jsx";
 import "./ClubProfile.css";
 
 const ClubProfile = () => {
@@ -34,10 +36,10 @@ const ClubProfile = () => {
 
   if (isLoading) {
     return (
-      <div className="cp-loading">
+      <AppBackground className="cp-loading">
         <div className="cp-spinner" />
         <p>Loading club profile...</p>
-      </div>
+      </AppBackground>
     );
   }
 
@@ -45,11 +47,14 @@ const ClubProfile = () => {
   const initials = (club?.name || formData.name || "?")[0].toUpperCase();
 
   return (
-    <div className="cp-container">
+    <AppBackground>
+      <PageHeader
+        title="Club Profile"
+        subtitle="Your club's details and location"
+        onBack={() => navigate("/dashboard")}
+      />
+      <div className="cp-container">
       <div className="cp-wrapper">
-        <button className="btn-back" onClick={() => navigate("/dashboard")}>
-          ← Back to Dashboard
-        </button>
 
         {!isProfileComplete && (
           <div className="cp-incomplete-banner">
@@ -237,7 +242,7 @@ const ClubProfile = () => {
                   />
                 </div>
               </div>
-              <p style={{ fontSize: 12, color: "#888", margin: 0 }}>
+              <p className="cp-hint">
                 💡 Your GPS coordinates will be captured automatically when you save (if you allow location access).
               </p>
 
@@ -307,7 +312,8 @@ const ClubProfile = () => {
         </div>
         ===== END SQUARE PAYMENTS ===== */}
       </div>
-    </div>
+      </div>
+    </AppBackground>
   );
 };
 
