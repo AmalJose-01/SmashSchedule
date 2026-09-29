@@ -1,16 +1,17 @@
 import React, { useState, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
-  ArrowLeft, Swords, Trophy,
+  Swords, Trophy,
   Loader2, CheckCircle, Clock, ChevronDown, ChevronUp
 } from "lucide-react";
-import Logout from "../../../../components/Logout.jsx";
 import ScoreEntry from "../components/ScoreEntry.jsx";
 import {
   useGetMatches,
   useGetStandings,
   useGetRoundRobinTournament,
 } from "../services/roundRobin.queries.js";
+import AppBackground from "../../../../components/AppBackground.jsx";
+import PageHeader from "../../../../components/PageHeader.jsx";
 
 const STATUS_STYLES = {
   scheduled:  { cls: "bg-gray-100 text-gray-600",   icon: Clock },
@@ -108,24 +109,24 @@ const MatchManagement = () => {
 
   if (matchesLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <AppBackground className="flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
-      </div>
+      </AppBackground>
     );
   }
 
   if (!match) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-gray-400">
-        <Swords className="w-12 h-12 text-gray-300" />
+      <AppBackground className="flex flex-col items-center justify-center gap-4 text-white/60">
+        <Swords className="w-12 h-12 text-white/30" />
         <p>Match not found.</p>
         <button
           onClick={() => navigate(-1)}
-          className="text-teal-600 font-medium text-sm hover:underline"
+          className="text-cyan-400 font-medium text-sm hover:underline"
         >
           Go back
         </button>
-      </div>
+      </AppBackground>
     );
   }
 
@@ -133,37 +134,22 @@ const MatchManagement = () => {
   const StatusIcon = statusInfo.icon;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
-      {/* Header */}
-      <div className="flex justify-between items-center bg-white p-4 shadow-lg sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate(`/round-robin/tournament/${tournamentId}`, { state: { tab: "matches" } })}
-            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
-          </button>
-          <div>
-            <h2 className="text-lg font-semibold text-teal-800 leading-tight">
-              {match.matchName}
-            </h2>
-            {tournament && (
-              <p className="text-xs text-gray-400">{tournament.tournamentName}</p>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full ${statusInfo.cls}`}>
+    <AppBackground>
+      <PageHeader
+        title={match.matchName}
+        subtitle={tournament?.tournamentName}
+        onBack={() => navigate(`/round-robin/tournament/${tournamentId}`, { state: { tab: "matches" } })}
+        actions={
+          <span className={`hidden sm:flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full ${statusInfo.cls}`}>
             {StatusIcon && <StatusIcon className="w-3.5 h-3.5" />}
             {match.status}
           </span>
-          <Logout />
-        </div>
-      </div>
+        }
+      />
 
       {/* ── Sticky standings (always visible below header) ────────────────────── */}
       {(groupStandings || doublesGroupStandings) && (
-        <div className="sticky top-[64px] z-[5] bg-white shadow border-b border-gray-100 overflow-hidden">
+        <div className="sticky top-[65px] z-[5] bg-white shadow border-b border-gray-100 overflow-hidden">
           <div className="px-5 py-2 bg-teal-50 border-b border-teal-100 flex items-center gap-2">
             <Trophy className="w-4 h-4 text-teal-600" />
             <h3 className="font-semibold text-teal-800 text-sm">
@@ -279,7 +265,7 @@ const MatchManagement = () => {
           tournament={tournament}
         />
       </div>
-    </div>
+    </AppBackground>
   );
 };
 

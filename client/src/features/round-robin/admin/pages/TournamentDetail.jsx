@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
-  ArrowLeft, Users, Layers, Swords, RefreshCw, CheckCircle,
+  Users, Layers, Swords, RefreshCw, CheckCircle,
   ChevronDown, ChevronUp, Trophy, Loader2, GripVertical, AlertTriangle, CalendarDays,
   Settings, Pencil, Lock, Search, UserPlus, CreditCard, Download
 } from "lucide-react";
@@ -11,7 +11,6 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import Logout from "../../../../components/Logout.jsx";
 import ScoreEntry from "../components/ScoreEntry.jsx";
 import {
   useGetRoundRobinTournament,
@@ -32,6 +31,8 @@ import {
   useGetTournamentPayments,
   useDownloadMatchSchedulePdf,
 } from "../services/roundRobin.queries.js";
+import AppBackground from "../../../../components/AppBackground.jsx";
+import PageHeader from "../../../../components/PageHeader.jsx";
 
 const STATUS_STYLES = {
   Draft:     "bg-gray-100 text-gray-600",
@@ -142,6 +143,7 @@ const ConfigTab = ({ tournament, isFinalized }) => {
       startDate:      tournament.startDate ? new Date(tournament.startDate).toISOString().slice(0, 16) : "",
       endDate:        tournament.endDate   ? new Date(tournament.endDate).toISOString().slice(0, 16)   : "",
       numberOfCourts: tournament.numberOfCourts  ?? 1,
+      numberOfSlots:  tournament.numberOfSlots ?? "",
       numberOfMatchesPerMember: tournament.numberOfMatchesPerMember ?? 3,
       entryFeeMember:    tournament.entryFeeMember    ?? 0,
       entryFeeNonMember: tournament.entryFeeNonMember ?? 0,
@@ -162,6 +164,7 @@ const ConfigTab = ({ tournament, isFinalized }) => {
         data: {
           ...form,
           numberOfCourts:  Number(form.numberOfCourts),
+          ...(form.numberOfSlots !== "" && { numberOfSlots: Number(form.numberOfSlots) }),
           numberOfMatchesPerMember: Number(form.numberOfMatchesPerMember),
           entryFeeMember:    Number(form.entryFeeMember),
           entryFeeNonMember: Number(form.entryFeeNonMember),
@@ -221,6 +224,7 @@ const ConfigTab = ({ tournament, isFinalized }) => {
             <ViewRow label="Players per Group" value={tournament.playersPerGroup} />
             <ViewRow label="Matches per Member" value={tournament.numberOfMatchesPerMember} />
             <ViewRow label="Courts"            value={tournament.numberOfCourts} />
+            <ViewRow label="Player Slots"      value={tournament.numberOfSlots ?? "—"} />
             <ViewRow label="Grouping Strategy" value={tournament.groupingStrategy} />
             <ViewRow label="Entry Fee (Member)" value={tournament.entryFeeMember > 0 ? `$${tournament.entryFeeMember.toFixed(2)}` : "Free"} />
             <ViewRow label="Entry Fee (Non-Member)" value={tournament.entryFeeNonMember > 0 ? `$${tournament.entryFeeNonMember.toFixed(2)}` : "Free"} />
@@ -281,6 +285,9 @@ const ConfigTab = ({ tournament, isFinalized }) => {
         <div className="grid grid-cols-2 gap-4">
           <Field label="Number of Courts">
             <input type="number" min={1} value={form.numberOfCourts} onChange={(e) => set("numberOfCourts", e.target.value)} className={inputCls()} />
+          </Field>
+          <Field label="Number of Slots">
+            <input type="number" min={1} value={form.numberOfSlots} onChange={(e) => set("numberOfSlots", e.target.value)} className={inputCls()} />
           </Field>
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -535,9 +542,9 @@ const PlayersTab = ({ tournamentId, isFinalized, tournament }) => {
       <div className="space-y-4">
         {isFinalized ? (
           <div className="text-center py-14">
-            <Users className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-400 text-sm">No players registered yet.</p>
-            <p className="text-xs text-gray-400 mt-1">Players can no longer be added once matches are scheduled.</p>
+            <Users className="w-10 h-10 text-white/30 mx-auto mb-3" />
+            <p className="text-white/70 text-sm">No players registered yet.</p>
+            <p className="text-xs text-white/60 mt-1">Players can no longer be added once matches are scheduled.</p>
           </div>
         ) : (
           <AddPlayersPanel tournamentId={tournamentId} existingPlayers={players} defaultOpen />
@@ -905,7 +912,7 @@ const MatchesTab = ({ tournamentId, matchType, tournament }) => {
       </div>
       {Object.entries(byGroup).map(([groupName, groupMatches]) => (
         <div key={groupName}>
-          <h3 className="font-semibold text-gray-700 mb-3 text-sm">{groupName}</h3>
+          <h3 className="font-semibold text-white mb-3 text-sm">{groupName}</h3>
           <div className="space-y-2">
             {groupMatches.map((m) => {
               const isCompleted = m.status === "completed";
@@ -1127,7 +1134,7 @@ const Spinner = () => (
 );
 
 const Empty = ({ text }) => (
-  <div className="text-center py-14 text-gray-400 text-sm">{text}</div>
+  <div className="text-center py-14 text-white/60 text-sm">{text}</div>
 );
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -1144,15 +1151,15 @@ const TournamentDetail = () => {
   const tournament = tData?.data;
 
   if (tLoading) return (
-    <div className="min-h-screen flex items-center justify-center">
+    <AppBackground className="flex items-center justify-center">
       <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
-    </div>
+    </AppBackground>
   );
 
   if (!tournament) return (
-    <div className="min-h-screen flex items-center justify-center text-gray-400">
+    <AppBackground className="flex items-center justify-center text-white/60">
       Tournament not found.
-    </div>
+    </AppBackground>
   );
 
   const isPostFinalize = ["Finalized", "Ongoing", "Completed"].includes(tournament.status);
@@ -1165,35 +1172,28 @@ const TournamentDetail = () => {
   const canFinalize = !isPostFinalize && (tournament.groups?.length ?? 0) > 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
-      {/* Header */}
-      <div className="flex justify-between items-center bg-white p-4 shadow-lg sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate("/round-robin/tournaments")}
-            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
-          </button>
-          <div>
-            <h2 className="text-lg font-semibold text-teal-800 leading-tight">{tournament.tournamentName}</h2>
-            <p className="text-xs text-gray-400">{tournament.matchType} · {tournament.numberOfGroups} groups · {tournament.numberOfCourts} courts</p>
+    <AppBackground>
+      <PageHeader
+        title={tournament.tournamentName}
+        onBack={() => navigate("/round-robin/tournaments")}
+        subtitle={
+          <>
+            <p>{tournament.matchType} · {tournament.numberOfGroups} groups · {tournament.numberOfCourts} courts</p>
             {(tournament.startDate || tournament.endDate) && (
-              <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+              <p className="flex items-center gap-1 mt-0.5">
                 <CalendarDays className="w-3 h-3" />
                 {tournament.startDate ? new Date(tournament.startDate).toLocaleString("en-AU", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
                 {tournament.endDate && <> → {new Date(tournament.endDate).toLocaleString("en-AU", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</>}
               </p>
             )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className={`text-xs font-semibold px-3 py-1 rounded-full ${STATUS_STYLES[tournament.status] ?? ""}`}>
+          </>
+        }
+        actions={
+          <span className={`hidden sm:inline-block text-xs font-semibold px-3 py-1 rounded-full ${STATUS_STYLES[tournament.status] ?? ""}`}>
             {tournament.status}
           </span>
-          <Logout />
-        </div>
-      </div>
+        }
+      />
 
       <div className="px-[10px] py-6 w-full">
         {/* Action buttons */}
@@ -1237,15 +1237,15 @@ const TournamentDetail = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 border-b border-gray-200 mb-6">
+        <div className="flex gap-1 border-b border-white/20 mb-6 overflow-x-auto">
           {TABS.map(({ key, label, icon: Icon }) => (
             <button
               key={key}
               onClick={() => setTab(key)}
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
                 tab === key
-                  ? "border-teal-600 text-teal-700"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
+                  ? "border-cyan-400 text-white"
+                  : "border-transparent text-white/60 hover:text-white"
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -1262,7 +1262,7 @@ const TournamentDetail = () => {
         {tab === "standings"       && <StandingsTab       tournamentId={tournamentId} />}
         {tab === "playerStandings" && <PlayerStandingsTab tournamentId={tournamentId} />}
       </div>
-    </div>
+    </AppBackground>
   );
 };
 

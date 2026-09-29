@@ -23,6 +23,10 @@ const RoundRobinTournamentSchema = new Schema(
     format: { type: String, enum: ["Balanced", "Graded"], default: "Balanced" },
     description: { type: String, default: "" },
     numberOfCourts: { type: Number, required: true },
+    // Max players who can join (player capacity). Required on create via the
+    // controller; not schema-required so tournaments created before this
+    // field existed still save without it.
+    numberOfSlots: { type: Number, min: 1 },
     numberOfGroups: { type: Number, required: function () { return this.format !== "Graded"; } },
     playersPerGroup: { type: Number, required: function () { return this.format !== "Graded"; } },
     numberOfMatchesPerMember: { type: Number, default: 3 },

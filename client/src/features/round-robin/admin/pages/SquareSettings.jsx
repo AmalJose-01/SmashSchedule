@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, CreditCard, CheckCircle2, XCircle, Smartphone, MapPin, KeyRound, ShieldCheck } from "lucide-react";
+import { CreditCard, CheckCircle2, XCircle, Smartphone, MapPin, KeyRound, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import Logout from "../../../../components/Logout.jsx";
 import {
   useGetSquareStatus,
   useSaveSquareCredentials,
@@ -13,6 +12,8 @@ import {
   useCreateSquareDeviceCode,
   useSquareDeviceCodeStatus,
 } from "../services/roundRobin.queries.js";
+import AppBackground from "../../../../components/AppBackground.jsx";
+import PageHeader from "../../../../components/PageHeader.jsx";
 
 const SquareSettings = () => {
   const navigate = useNavigate();
@@ -133,14 +134,13 @@ const SquareSettings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
-      <div className="flex justify-between items-center bg-white p-4 shadow-lg sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-gray-100 transition-colors">
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
-          </button>
-          <h2 className="text-xl font-semibold text-teal-800">Square Payments</h2>
-          {!statusLoading && (
+    <AppBackground>
+      <PageHeader
+        title="Square Payments"
+        subtitle="Collect entry fees online"
+        onBack={() => navigate(-1)}
+        badge={
+          !statusLoading && (
             <span
               className={`text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full ${
                 isLive ? "bg-red-50 text-red-600 border border-red-100" : "bg-amber-50 text-amber-600 border border-amber-100"
@@ -148,10 +148,9 @@ const SquareSettings = () => {
             >
               {isLive ? "Live" : "Sandbox"}
             </span>
-          )}
-        </div>
-        <Logout />
-      </div>
+          )
+        }
+      />
 
       <div className="p-6 max-w-2xl mx-auto space-y-6">
         {/* Square Application credentials — each admin brings their own Square
@@ -507,7 +506,7 @@ const SquareSettings = () => {
           </div>
         )}
       </div>
-    </div>
+    </AppBackground>
   );
 };
 

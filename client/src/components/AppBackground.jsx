@@ -1,0 +1,37 @@
+// AppBackground.jsx
+// Shared dark gradient background (glowing blobs + subtle grid), matching the
+// Business Directory home page. Wrap a page with it:
+//
+//   <AppBackground>
+//     ...page content...
+//   </AppBackground>
+//
+// The decorative layers are `fixed`, so they stay put while long pages
+// scroll. The root deliberately avoids `overflow-hidden` — that would turn it
+// into a scroll container and break the `sticky` page headers inside it.
+const AppBackground = ({ children, className = "" }) => (
+  <div className={`relative isolate min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 ${className}`}>
+    {/* Animated background blobs */}
+    <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden opacity-30">
+      <div className="absolute top-20 left-10 w-72 h-72 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse" />
+      <div
+        className="absolute top-40 right-10 w-72 h-72 bg-emerald-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"
+        style={{ animationDelay: "2s" }}
+      />
+      <div
+        className="absolute -bottom-8 left-1/3 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"
+        style={{ animationDelay: "4s" }}
+      />
+    </div>
+
+    {/* Grid pattern overlay */}
+    <div
+      aria-hidden="true"
+      className="pointer-events-none fixed inset-0 -z-10 bg-[linear-gradient(rgba(255,255,255,.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.02)_1px,transparent_1px)] bg-[size:100px_100px]"
+    />
+
+    {children}
+  </div>
+);
+
+export default AppBackground;

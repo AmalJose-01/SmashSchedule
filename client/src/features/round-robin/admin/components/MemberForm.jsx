@@ -9,6 +9,7 @@ import {
 } from "../services/roundRobin.queries.js";
 
 const GRADES = ["A", "B", "C", "D", "E", "F", "G", "H", "Unrated"];
+const GENDERS = ["Male", "Female", "Other", "Prefer not to say"];
 
 // Kept in sync with server/src/features/round-robin/constants/grades.js —
 // default starting points for a member of each grade.
@@ -170,8 +171,8 @@ const ManualTab = ({ member, onClose }) => {
   };
 
   const inputCls = (field) =>
-    `w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 ${
-      errors[field] ? "border-red-400" : "border-gray-200"
+    `w-full bg-slate-900/50 border rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-500 [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all ${
+      errors[field] ? "border-red-500" : "border-slate-600"
     }`;
 
   return (
@@ -179,7 +180,7 @@ const ManualTab = ({ member, onClose }) => {
       <div className="grid grid-cols-2 gap-3">
         {/* Name */}
         <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">
             Name <span className="text-red-400">*</span>
           </label>
           <input
@@ -189,12 +190,12 @@ const ManualTab = ({ member, onClose }) => {
             placeholder="Player name"
             className={inputCls("name")}
           />
-          {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+          {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
         </div>
 
         {/* Email */}
         <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">
             Email <span className="text-red-400">*</span>
           </label>
           <input
@@ -203,19 +204,19 @@ const ManualTab = ({ member, onClose }) => {
             onChange={handleChange("email")}
             placeholder="player@email.com"
             disabled={!!member}
-            className={`${inputCls("email")} ${member ? "bg-gray-50 text-gray-400 cursor-not-allowed" : ""}`}
+            className={`${inputCls("email")} ${member ? "!bg-slate-900/30 !text-slate-500 cursor-not-allowed" : ""}`}
           />
-          {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-          {member && <p className="text-gray-400 text-xs mt-1">Email cannot be changed</p>}
+          {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
+          {member && <p className="text-slate-500 text-xs mt-1">Email cannot be changed</p>}
         </div>
 
         {/* Grade */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Grade</label>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">Grade</label>
           <select
             value={form.grade}
             onChange={handleGradeChange}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 bg-white"
+            className="w-full bg-slate-900/50 border border-slate-600 rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-500 [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
           >
             {GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
           </select>
@@ -223,7 +224,7 @@ const ManualTab = ({ member, onClose }) => {
 
         {/* Points */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Points</label>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">Points</label>
           <input
             type="number"
             step="0.5"
@@ -232,18 +233,18 @@ const ManualTab = ({ member, onClose }) => {
             onChange={handleChange("points")}
             className={inputCls("points")}
           />
-          <p className="text-gray-400 text-xs mt-1">
+          <p className="text-slate-500 text-xs mt-1">
             Defaults to {GRADE_DEFAULT_POINTS[form.grade] ?? 0} for grade {form.grade} — changing grade resets this.
           </p>
         </div>
 
         {/* Membership Status */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Membership</label>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">Membership</label>
           <select
             value={form.isMember ? "member" : "non-member"}
             onChange={(e) => setForm((f) => ({ ...f, isMember: e.target.value === "member" }))}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 bg-white"
+            className="w-full bg-slate-900/50 border border-slate-600 rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-500 [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
           >
             <option value="member">Member</option>
             <option value="non-member">Non-Member</option>
@@ -252,19 +253,25 @@ const ManualTab = ({ member, onClose }) => {
 
         {/* Gender */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-          <input
-            type="text"
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">Gender</label>
+          <select
             value={form.gender}
             onChange={handleChange("gender")}
-            placeholder="e.g. Male, Female"
             className={inputCls("gender")}
-          />
+          >
+            <option value="">Select gender</option>
+            {GENDERS.map((g) => <option key={g} value={g}>{g}</option>)}
+            {/* Keep a legacy/imported value (e.g. "M") selectable so editing
+                a member doesn't silently blank it out. */}
+            {form.gender && !GENDERS.includes(form.gender) && (
+              <option value={form.gender}>{form.gender}</option>
+            )}
+          </select>
         </div>
 
         {/* Contact */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Contact</label>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">Contact</label>
           <input
             type="text"
             value={form.contact}
@@ -276,7 +283,7 @@ const ManualTab = ({ member, onClose }) => {
 
         {/* DOB */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">Date of Birth</label>
           <input
             type="date"
             value={form.dateOfBirth}
@@ -287,7 +294,7 @@ const ManualTab = ({ member, onClose }) => {
 
         {/* National Member ID */}
         <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">National Member ID</label>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">National Member ID</label>
           <input
             type="text"
             value={form.nationalMemberId}
@@ -301,7 +308,7 @@ const ManualTab = ({ member, onClose }) => {
       <button
         type="submit"
         disabled={isPending}
-        className="w-full bg-purple-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-purple-700 disabled:opacity-60 transition-colors mt-2"
+        className="w-full py-3 rounded-xl font-semibold text-sm mt-2 hover:scale-[1.01] disabled:opacity-50 disabled:hover:scale-100 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all"
       >
         {isPending
           ? member ? "Saving..." : "Adding..."
@@ -411,12 +418,12 @@ const BulkImportTab = () => {
     return (
       <div className="space-y-4">
         {importResult && (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-            <div className="flex items-center gap-2 text-green-700 font-semibold text-sm mb-1">
+          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3">
+            <div className="flex items-center gap-2 text-emerald-300 font-semibold text-sm mb-1">
               <CheckCircle2 className="w-4 h-4" />
               Import complete
             </div>
-            <p className="text-xs text-green-600">
+            <p className="text-xs text-emerald-400">
               {importResult.success} added
               {importResult.reactivated > 0 && ` · ${importResult.reactivated} restored`}
               {importResult.updated > 0 && ` · ${importResult.updated} updated`}
@@ -425,25 +432,25 @@ const BulkImportTab = () => {
             {importResult.errors?.length > 0 && (
               <ul className="mt-2 space-y-0.5 max-h-24 overflow-y-auto">
                 {importResult.errors.map((e, i) => (
-                  <li key={i} className="text-xs text-red-500">{e.email}: {e.reason}</li>
+                  <li key={i} className="text-xs text-red-400">{e.email}: {e.reason}</li>
                 ))}
               </ul>
             )}
           </div>
         )}
 
-        <div className="bg-gray-50 rounded-xl p-3 border border-dashed border-gray-300">
-          <p className="text-xs text-gray-500 font-medium mb-1">Accepted formats</p>
-          <p className="text-xs text-gray-500">.csv · .txt · .xlsx · .xls</p>
-          <p className="text-xs text-gray-400 mt-1">
+        <div className="bg-slate-900/40 rounded-xl p-3 border border-dashed border-slate-600">
+          <p className="text-xs text-slate-300 font-medium mb-1">Accepted formats</p>
+          <p className="text-xs text-slate-400">.csv · .txt · .xlsx · .xls</p>
+          <p className="text-xs text-slate-500 mt-1">
             Required columns: <span className="font-medium">Name</span>, <span className="font-medium">Email</span> — all others are mapped in the next step
           </p>
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Imported files don't carry membership status — new members are added as <span className="font-medium">Non-Member</span> by default. Edit a member afterwards to mark them as a Member.
           </p>
         </div>
 
-        <label className="flex items-center gap-2 cursor-pointer text-sm text-purple-600 font-medium hover:text-purple-700">
+        <label className="flex items-center justify-center gap-2 cursor-pointer text-sm text-cyan-400 font-medium hover:text-cyan-300 border border-cyan-500/30 bg-cyan-500/5 hover:bg-cyan-500/10 rounded-xl py-3 transition-all">
           <Upload className="w-4 h-4" />
           Upload CSV or Excel file
           <input
@@ -455,18 +462,18 @@ const BulkImportTab = () => {
           />
         </label>
 
-        <p className="text-xs text-gray-400 text-center">— or paste CSV text below —</p>
+        <p className="text-xs text-slate-500 text-center">— or paste CSV text below —</p>
 
         <textarea
           value={csvText}
           onChange={(e) => { setCsvText(e.target.value); setParseError(""); setImportResult(null); }}
           placeholder="Paste CSV data here..."
           rows={5}
-          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 font-mono resize-none"
+          className="w-full bg-slate-900/50 border border-slate-600 rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-500 [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all font-mono resize-none"
         />
 
         {parseError && (
-          <div className="flex items-center gap-2 text-red-500 text-xs">
+          <div className="flex items-center gap-2 text-red-400 text-xs">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             {parseError}
           </div>
@@ -476,7 +483,7 @@ const BulkImportTab = () => {
           <button
             type="button"
             onClick={handlePastePreview}
-            className="w-full border border-purple-400 text-purple-700 py-2.5 rounded-xl font-semibold text-sm hover:bg-purple-50 transition-colors flex items-center justify-center gap-2"
+            className="w-full border border-cyan-500/50 text-cyan-300 py-3 rounded-xl font-semibold text-sm hover:bg-cyan-500/10 transition-colors flex items-center justify-center gap-2"
           >
             Parse & Map Fields <ChevronRight className="w-4 h-4" />
           </button>
@@ -489,26 +496,26 @@ const BulkImportTab = () => {
   if (step === "mapping") {
     return (
       <div className="space-y-4">
-        <p className="text-sm text-gray-600">
-          <span className="font-semibold text-purple-700">{rawRows.length}</span> rows found.
+        <p className="text-sm text-slate-300">
+          <span className="font-semibold text-cyan-300">{rawRows.length}</span> rows found.
           Map each CSV column to a system field.
         </p>
 
-        <div className="border border-gray-100 rounded-xl overflow-hidden">
-          <div className="grid grid-cols-2 bg-gray-50 px-4 py-2 text-xs font-semibold text-gray-500 border-b border-gray-100">
+        <div className="border border-slate-700/50 rounded-xl overflow-hidden">
+          <div className="grid grid-cols-2 bg-slate-900/60 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-700/50">
             <span>CSV Column</span>
             <span>Maps to</span>
           </div>
-          <div className="divide-y divide-gray-50 max-h-56 overflow-y-auto">
+          <div className="divide-y divide-slate-700/50 max-h-56 overflow-y-auto">
             {rawHeaders.map((h) => (
               <div key={h} className="grid grid-cols-2 items-center px-4 py-2.5 gap-2">
-                <span className="text-sm font-mono text-gray-600 truncate">{h}</span>
+                <span className="text-sm font-mono text-slate-300 truncate">{h}</span>
                 <select
                   value={fieldMap[h] ?? "skip"}
                   onChange={(e) =>
                     setFieldMap((prev) => ({ ...prev, [h]: e.target.value }))
                   }
-                  className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-300"
+                  className="bg-slate-900/50 border border-slate-600 rounded-lg px-2 py-2 text-xs text-white [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 >
                   <option value="skip">— Skip —</option>
                   {SYSTEM_FIELDS.map((f) => (
@@ -523,7 +530,7 @@ const BulkImportTab = () => {
         </div>
 
         {mapError && (
-          <div className="flex items-center gap-2 text-red-500 text-xs">
+          <div className="flex items-center gap-2 text-red-400 text-xs">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             {mapError}
           </div>
@@ -533,14 +540,14 @@ const BulkImportTab = () => {
           <button
             type="button"
             onClick={reset}
-            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 border border-gray-200 rounded-xl px-3 py-2"
+            className="flex items-center gap-1.5 text-sm rounded-xl px-3 py-2 border border-slate-600 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white transition-all"
           >
             <ChevronLeft className="w-4 h-4" /> Back
           </button>
           <button
             type="button"
             onClick={handleProceedToPreview}
-            className="flex-1 bg-purple-600 text-white py-2 rounded-xl font-semibold text-sm hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+            className="flex-1 py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all"
           >
             Preview <ChevronRight className="w-4 h-4" />
           </button>
@@ -556,26 +563,26 @@ const BulkImportTab = () => {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-gray-600">
-        <span className="font-semibold text-purple-700">{preview.length}</span> members ready to import
+      <p className="text-sm text-slate-300">
+        <span className="font-semibold text-cyan-300">{preview.length}</span> members ready to import
       </p>
 
-      <div className="overflow-auto max-h-52 rounded-xl border border-gray-200">
+      <div className="overflow-auto max-h-52 rounded-xl border border-slate-700/50">
         <table className="w-full text-xs">
-          <thead className="bg-gray-50 sticky top-0">
+          <thead className="bg-slate-900 sticky top-0">
             <tr>
               {previewCols.map((f) => (
-                <th key={f.key} className="px-3 py-2 text-left text-gray-600 font-semibold whitespace-nowrap">
+                <th key={f.key} className="px-3 py-2 text-left text-slate-400 font-semibold whitespace-nowrap">
                   {f.label}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-slate-700/50">
             {preview.map((row, i) => (
-              <tr key={i} className="hover:bg-gray-50">
+              <tr key={i} className="hover:bg-white/5">
                 {previewCols.map((f) => (
-                  <td key={f.key} className="px-3 py-2 max-w-[130px] truncate">
+                  <td key={f.key} className="px-3 py-2 max-w-[130px] truncate text-slate-200">
                     {row[f.key] || "—"}
                   </td>
                 ))}
@@ -589,7 +596,7 @@ const BulkImportTab = () => {
         <button
           type="button"
           onClick={() => setStep("mapping")}
-          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 border border-gray-200 rounded-xl px-3 py-2"
+          className="flex items-center gap-1.5 text-sm rounded-xl px-3 py-2 border border-slate-600 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white transition-all"
         >
           <ChevronLeft className="w-4 h-4" /> Back
         </button>
@@ -597,7 +604,7 @@ const BulkImportTab = () => {
           type="button"
           onClick={handleImport}
           disabled={isPending}
-          className="flex-1 bg-purple-600 text-white py-2 rounded-xl font-semibold text-sm hover:bg-purple-700 disabled:opacity-60 transition-colors"
+          className="flex-1 py-2.5 rounded-xl font-semibold text-sm disabled:opacity-50 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all"
         >
           {isPending ? "Importing..." : `Import ${preview.length} members`}
         </button>
@@ -612,19 +619,19 @@ const MemberForm = ({ member, onClose }) => {
   const isEditMode = !!member;
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-800">
+    <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-slate-800/90 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50">
+          <h2 className="text-lg font-semibold text-white">
             {isEditMode ? "Edit Member" : "Add Member"}
           </h2>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100 transition-colors">
-            <X className="w-5 h-5 text-gray-500" />
+          <button onClick={onClose} className="p-2 rounded-xl text-slate-400 hover:bg-white/10 hover:text-white transition-colors">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {!isEditMode && (
-          <div className="flex border-b border-gray-100">
+          <div className="flex border-b border-slate-700/50">
             {[
               { key: "manual", label: "Manual Entry", icon: UserPlus },
               { key: "bulk",   label: "Bulk Import",  icon: Upload   },
@@ -634,8 +641,8 @@ const MemberForm = ({ member, onClose }) => {
                 onClick={() => setTab(key)}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
                   tab === key
-                    ? "text-purple-700 border-b-2 border-purple-600"
-                    : "text-gray-500 hover:text-gray-700"
+                    ? "text-white border-b-2 border-cyan-400"
+                    : "text-slate-400 hover:text-white"
                 }`}
               >
                 <Icon className="w-4 h-4" />

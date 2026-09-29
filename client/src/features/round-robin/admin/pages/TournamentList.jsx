@@ -1,15 +1,16 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Trophy, Trash2, ChevronRight, CalendarDays } from "lucide-react";
+import { Plus, Trophy, Trash2, ChevronRight, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import Logout from "../../../../components/Logout.jsx";
 import {
   useGetRoundRobinTournaments,
   useDeleteRoundRobinTournament,
   rrKeys,
 } from "../services/roundRobin.queries.js";
 import { deleteRoundRobinTournamentAPI } from "../services/roundRobin.services.js";
+import AppBackground from "../../../../components/AppBackground.jsx";
+import PageHeader from "../../../../components/PageHeader.jsx";
 
 const STATUS_STYLES = {
   Draft:      "bg-gray-100 text-gray-600",
@@ -79,29 +80,21 @@ const TournamentList = () => {
     d ? new Date(d).toLocaleString("en-AU", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
-      {/* Header */}
-      <div className="flex justify-between items-center bg-white p-4 shadow-lg sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate("/round-robin/dashboard")}
-            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
-          </button>
-          <h2 className="text-xl font-semibold text-teal-800">Round Robin Tournaments</h2>
-        </div>
-        <div className="flex items-center gap-3">
+    <AppBackground>
+      <PageHeader
+        title="Round Robin Tournaments"
+        subtitle="All your tournaments in one place"
+        onBack={() => navigate("/round-robin/dashboard")}
+        actions={
           <button
             onClick={() => navigate("/round-robin/create-tournament")}
-            className="flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-xl font-semibold text-sm hover:bg-teal-700 transition-colors"
+            className="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white px-4 h-10 rounded-xl font-semibold text-sm shadow-lg shadow-cyan-500/30 transition-all"
           >
             <Plus className="w-4 h-4" />
-            New Tournament
+            <span className="hidden sm:inline">New Tournament</span>
           </button>
-          <Logout />
-        </div>
-      </div>
+        }
+      />
 
       <div className="p-6 max-w-5xl mx-auto">
         {/* Count + select all row */}
@@ -113,7 +106,7 @@ const TournamentList = () => {
               onChange={toggleAll}
               className="w-4 h-4 rounded accent-teal-600 cursor-pointer"
             />
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-white/70">
               {tournaments.length} tournament{tournaments.length !== 1 ? "s" : ""}
             </p>
           </div>
@@ -145,11 +138,11 @@ const TournamentList = () => {
         )}
 
         {isLoading ? (
-          <div className="text-center py-16 text-gray-400">Loading tournaments...</div>
+          <div className="text-center py-16 text-white/60">Loading tournaments...</div>
         ) : tournaments.length === 0 ? (
           <div className="text-center py-20">
-            <Trophy className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-400 font-medium mb-4">No tournaments yet.</p>
+            <Trophy className="w-12 h-12 text-white/30 mx-auto mb-3" />
+            <p className="text-white/60 font-medium mb-4">No tournaments yet.</p>
             <button
               onClick={() => navigate("/round-robin/create-tournament")}
               className="inline-flex items-center gap-2 bg-teal-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-teal-700 transition-colors"
@@ -272,7 +265,7 @@ const TournamentList = () => {
           </div>
         </div>
       )}
-    </div>
+    </AppBackground>
   );
 };
 

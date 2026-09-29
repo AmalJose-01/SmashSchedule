@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Search, Pencil, Trash2, Users, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Users, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import Logout from "../../../../components/Logout.jsx";
 import MemberForm from "../components/MemberForm.jsx";
 import {
   useGetRoundRobinMembers,
@@ -11,14 +10,16 @@ import {
   rrKeys,
 } from "../services/roundRobin.queries.js";
 import { deleteRoundRobinMemberAPI } from "../services/roundRobin.services.js";
+import AppBackground from "../../../../components/AppBackground.jsx";
+import PageHeader from "../../../../components/PageHeader.jsx";
 
 const GRADE_COLORS = {
-  A: "bg-green-100 text-green-700",
-  B: "bg-blue-100 text-blue-700",
-  C: "bg-purple-100 text-purple-700",
-  D: "bg-sky-100 text-sky-700",
-  E: "bg-pink-100 text-pink-700",
-  Unrated: "bg-gray-100 text-gray-600",
+  A: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30",
+  B: "bg-blue-500/15 text-blue-300 border border-blue-500/30",
+  C: "bg-purple-500/15 text-purple-300 border border-purple-500/30",
+  D: "bg-sky-500/15 text-sky-300 border border-sky-500/30",
+  E: "bg-pink-500/15 text-pink-300 border border-pink-500/30",
+  Unrated: "bg-slate-500/15 text-slate-300 border border-slate-500/30",
 };
 
 const formatDob = (dob) => {
@@ -47,10 +48,10 @@ const SortHeader = ({ label, sortKey, sort, onSort, className = "" }) => {
       <button
         type="button"
         onClick={() => onSort(sortKey)}
-        className={`flex items-center gap-1 hover:text-purple-900 transition-colors ${isActive ? "text-purple-900" : ""}`}
+        className={`flex items-center gap-1 hover:text-white transition-colors ${isActive ? "text-cyan-300" : ""}`}
       >
         {label}
-        <Icon className={`w-3.5 h-3.5 ${isActive ? "" : "text-gray-300"}`} />
+        <Icon className={`w-3.5 h-3.5 ${isActive ? "" : "text-slate-600"}`} />
       </button>
     </th>
   );
@@ -159,33 +160,25 @@ const MemberManagement = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
-      {/* Header */}
-      <div className="flex justify-between items-center bg-white p-4 shadow-lg sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate("/round-robin/dashboard")}
-            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
-          </button>
-          <h2 className="text-xl font-semibold text-purple-800">Member Bank</h2>
-        </div>
-        <Logout />
-      </div>
+    <AppBackground>
+      <PageHeader
+        title="Member Bank"
+        subtitle="Your global player list"
+        onBack={() => navigate("/round-robin/dashboard")}
+      />
 
       <div className="px-[10px] py-6 w-full">
         {/* Title + Add button */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-purple-800">Members</h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <h1 className="text-2xl font-bold text-white">Members</h1>
+            <p className="text-sm text-white/70 mt-1">
               {members.length} member{members.length !== 1 ? "s" : ""} in the global bank
             </p>
           </div>
           <button
             onClick={() => setFormOpen(true)}
-            className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-xl font-semibold hover:bg-purple-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm hover:scale-[1.02] bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all"
           >
             <Plus className="w-4 h-4" />
             Add Member
@@ -194,26 +187,26 @@ const MemberManagement = () => {
 
         {/* Search */}
         <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input
             type="text"
             placeholder="Search by name, email, grade, or member ID..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
+            className="w-full pl-12 pr-4 py-3 bg-slate-900/50 backdrop-blur-xl border border-slate-600 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
           />
         </div>
 
         {/* Bulk action bar */}
         {someSelected && (
-          <div className="flex items-center justify-between bg-purple-50 border border-purple-200 rounded-xl px-4 py-2.5 mb-4">
-            <span className="text-sm font-medium text-purple-700">
+          <div className="flex items-center justify-between bg-cyan-500/10 border border-cyan-500/30 backdrop-blur-xl rounded-xl px-4 py-2.5 mb-4">
+            <span className="text-sm font-medium text-cyan-300">
               {selected.size} selected
             </span>
             <div className="flex items-center gap-2">
               <button
                 onClick={clearSelection}
-                className="text-sm text-gray-500 hover:text-gray-700 px-3 py-1.5 rounded-lg hover:bg-white transition-colors"
+                className="text-sm text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors"
               >
                 Deselect all
               </button>
@@ -231,25 +224,25 @@ const MemberManagement = () => {
 
         {/* Table */}
         {isLoading ? (
-          <div className="text-center py-16 text-gray-400">Loading members...</div>
+          <div className="text-center py-16 text-white/60">Loading members...</div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16">
-            <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-400 font-medium">
+            <Users className="w-12 h-12 text-white/30 mx-auto mb-3" />
+            <p className="text-white/60 font-medium">
               {members.length === 0 ? "No members yet. Add your first player." : "No members match your search."}
             </p>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow border border-gray-100 overflow-x-auto">
+          <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 overflow-x-auto">
             <table className="w-full text-sm min-w-[640px]">
-              <thead className="bg-purple-50 text-purple-700 text-left">
+              <thead className="bg-slate-900/60 text-slate-400 text-left text-xs uppercase tracking-wider border-b border-slate-700/50">
                 <tr>
                   <th className="px-3 py-3 w-8">
                     <input
                       type="checkbox"
                       checked={allFilteredSelected}
                       onChange={toggleAll}
-                      className="w-4 h-4 rounded accent-purple-600 cursor-pointer"
+                      className="w-4 h-4 rounded accent-cyan-500 cursor-pointer"
                     />
                   </th>
                   <th className="px-3 py-3 font-semibold whitespace-nowrap hidden md:table-cell">Nat. ID</th>
@@ -264,53 +257,53 @@ const MemberManagement = () => {
                   <th className="px-3 py-3 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-slate-700/50">
                 {sorted.map((member) => {
                   const isSelected = selected.has(member._id);
                   return (
                     <tr
                       key={member._id}
                       onClick={() => toggleOne(member._id)}
-                      className={`cursor-pointer transition-colors ${isSelected ? "bg-purple-50" : "hover:bg-gray-50"}`}
+                      className={`cursor-pointer transition-colors ${isSelected ? "bg-cyan-500/10" : "hover:bg-white/5"}`}
                     >
                       <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => toggleOne(member._id)}
-                          className="w-4 h-4 rounded accent-purple-600 cursor-pointer"
+                          className="w-4 h-4 rounded accent-cyan-500 cursor-pointer"
                         />
                       </td>
-                      <td className="px-3 py-3 text-gray-400 text-xs font-mono hidden md:table-cell">
+                      <td className="px-3 py-3 text-slate-500 text-xs font-mono hidden md:table-cell">
                         {member.nationalMemberId || "—"}
                       </td>
-                      <td className="px-3 py-3 font-medium text-gray-800">{member.name}</td>
+                      <td className="px-3 py-3 font-medium text-white">{member.name}</td>
                       <td className="px-3 py-3">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${GRADE_COLORS[member.grade] ?? GRADE_COLORS.Unrated}`}>
                           {member.grade}
                         </span>
                       </td>
-                      <td className="px-3 py-3 text-gray-700 font-medium">{member.points ?? 0}</td>
+                      <td className="px-3 py-3 text-cyan-300 font-semibold">{member.points ?? 0}</td>
                       <td className="px-3 py-3 hidden sm:table-cell">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${member.isMember ? "bg-teal-100 text-teal-700" : "bg-gray-100 text-gray-600"}`}>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${member.isMember ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30" : "bg-slate-500/15 text-slate-400 border border-slate-500/30"}`}>
                           {member.isMember ? "Member" : "Non-Member"}
                         </span>
                       </td>
-                      <td className="px-3 py-3 text-gray-500 text-xs hidden sm:table-cell">{member.gender || "—"}</td>
-                      <td className="px-3 py-3 text-gray-500 text-xs whitespace-nowrap hidden lg:table-cell">{formatDob(member.dateOfBirth)}</td>
-                      <td className="px-3 py-3 text-gray-500 hidden sm:table-cell">{member.email}</td>
-                      <td className="px-3 py-3 text-gray-500 hidden lg:table-cell">{member.contact || "—"}</td>
+                      <td className="px-3 py-3 text-slate-400 text-xs hidden sm:table-cell">{member.gender || "—"}</td>
+                      <td className="px-3 py-3 text-slate-400 text-xs whitespace-nowrap hidden lg:table-cell">{formatDob(member.dateOfBirth)}</td>
+                      <td className="px-3 py-3 text-slate-300 hidden sm:table-cell">{member.email}</td>
+                      <td className="px-3 py-3 text-slate-300 hidden lg:table-cell">{member.contact || "—"}</td>
                       <td className="px-3 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => handleEdit(member)}
-                            className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500 transition-colors"
+                            className="p-2 rounded-lg text-cyan-400 hover:bg-cyan-500/15 hover:text-cyan-300 transition-colors"
                           >
                             <Pencil className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteClick(member._id)}
-                            className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 transition-colors"
+                            className="p-2 rounded-lg text-red-400 hover:bg-red-500/15 hover:text-red-300 transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -332,23 +325,23 @@ const MemberManagement = () => {
 
       {/* Single Delete Confirm Modal */}
       {deletingId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">Remove Member?</h3>
-            <p className="text-sm text-gray-500 mb-6">
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800/90 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl p-6 max-w-sm w-full">
+            <h3 className="text-lg font-semibold text-white mb-2">Remove Member?</h3>
+            <p className="text-sm text-slate-400 mb-6">
               This member will be marked inactive. They will no longer appear in the member bank.
             </p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setDeletingId(null)}
-                className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50"
+                className="px-4 py-2 rounded-xl text-sm font-medium border border-slate-600 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteConfirm}
                 disabled={isDeleting}
-                className="px-4 py-2 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 disabled:opacity-60"
+                className="px-4 py-2 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 shadow-lg shadow-red-500/30 disabled:opacity-60"
               >
                 {isDeleting ? "Removing..." : "Remove"}
               </button>
@@ -359,24 +352,24 @@ const MemberManagement = () => {
 
       {/* Bulk Delete Confirm Modal */}
       {confirmBulk && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800/90 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl p-6 max-w-sm w-full">
+            <h3 className="text-lg font-semibold text-white mb-2">
               Remove {selected.size} Member{selected.size !== 1 ? "s" : ""}?
             </h3>
-            <p className="text-sm text-gray-500 mb-6">
+            <p className="text-sm text-slate-400 mb-6">
               These members will be marked inactive and removed from the member bank.
             </p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setConfirmBulk(false)}
-                className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50"
+                className="px-4 py-2 rounded-xl text-sm font-medium border border-slate-600 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={handleBulkDelete}
-                className="px-4 py-2 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600"
+                className="px-4 py-2 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 shadow-lg shadow-red-500/30"
               >
                 Remove All
               </button>
@@ -384,7 +377,7 @@ const MemberManagement = () => {
           </div>
         </div>
       )}
-    </div>
+    </AppBackground>
   );
 };
 

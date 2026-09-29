@@ -1,33 +1,29 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, ListChecks, Users, ArrowLeft } from "lucide-react"; // CreditCard was only used by the now-hidden Square Payments tile below
+import { Plus, ListChecks, Users } from "lucide-react"; // CreditCard was only used by the now-hidden Square Payments tile below
 import { useGetRoundRobinTournaments, useGetRoundRobinMembers } from "../services/roundRobin.queries.js";
-import Logout from "../../../../components/Logout.jsx";
+import AppBackground from "../../../../components/AppBackground.jsx";
+import PageHeader from "../../../../components/PageHeader.jsx";
+import DashboardTile from "../../../../components/DashboardTile.jsx";
 
 const actionCards = [
   {
     icon: Plus,
-    color: "text-blue-600",
-    bg: "bg-blue-50",
-    border: "border-blue-200",
+    gradient: "from-cyan-400 to-blue-500",
     title: "New Tournament",
     description: "Create a new round robin tournament, configure groups, and generate matches.",
     path: "/round-robin/create-tournament",
   },
   {
     icon: ListChecks,
-    color: "text-teal-600",
-    bg: "bg-teal-50",
-    border: "border-teal-200",
+    gradient: "from-emerald-400 to-teal-500",
     title: "Manage Tournaments",
     description: "View, edit, and manage all your round robin tournaments and their standings.",
     path: "/round-robin/tournaments",
   },
   {
     icon: Users,
-    color: "text-purple-600",
-    bg: "bg-purple-50",
-    border: "border-purple-200",
+    gradient: "from-purple-400 to-indigo-500",
     title: "Manage Members",
     description: "Maintain your global player bank. Add, edit, or bulk import members.",
     path: "/round-robin/members",
@@ -56,40 +52,38 @@ const RoundRobinDashboard = () => {
   const totalMembers = membersData?.data?.length ?? 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
-      {/* Header */}
-      <div className="flex justify-between items-center bg-white p-4 shadow-lg sticky top-0">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate("/dashboard")}
-            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
-          </button>
-          <h2 className="text-xl font-semibold text-teal-800">Round Robin</h2>
-        </div>
-        <Logout />
-      </div>
+    <AppBackground>
+      <PageHeader
+        title="Round Robin"
+        subtitle="Tournaments, players and standings"
+        onBack={() => navigate("/dashboard")}
+      />
 
       <div className="p-6 max-w-5xl mx-auto">
-        <h1 className="text-2xl font-bold text-center mb-2 text-teal-800">
-          Round Robin Tournaments
-        </h1>
-        <p className="text-center text-gray-500 mb-6 text-sm">
-          Manage your player bank, create tournaments, track groups and standings.
-        </p>
+        <div className="text-center mb-8 pt-4">
+          <h1 className="text-3xl font-semibold text-white mb-3" style={{ fontFamily: "Outfit, sans-serif" }}>
+            Round Robin Tournaments
+          </h1>
+          <div className="h-1 w-24 bg-gradient-to-r from-cyan-500 to-emerald-500 mx-auto rounded-full mb-4" />
+          <p className="text-slate-400 text-sm">
+            Manage your player bank, create tournaments, track groups and standings.
+          </p>
+        </div>
 
         {/* Stats strip */}
-        <div className="flex justify-center gap-8 mb-8">
-          <div className="text-center">
-            <p className="text-3xl font-bold text-teal-700">{totalTournaments}</p>
-            <p className="text-xs text-gray-500 mt-1">Tournaments</p>
-          </div>
-          <div className="w-px bg-gray-200" />
-          <div className="text-center">
-            <p className="text-3xl font-bold text-purple-700">{totalMembers}</p>
-            <p className="text-xs text-gray-500 mt-1">Members</p>
-          </div>
+        <div className="flex justify-center gap-4 mb-10">
+          {[
+            { label: "Tournaments", value: totalTournaments, cls: "from-cyan-400 to-blue-400" },
+            { label: "Members", value: totalMembers, cls: "from-purple-400 to-indigo-400" },
+          ].map(({ label, value, cls }) => (
+            <div
+              key={label}
+              className="min-w-[140px] text-center bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl px-6 py-4"
+            >
+              <p className={`text-3xl font-bold bg-gradient-to-r ${cls} bg-clip-text text-transparent`}>{value}</p>
+              <p className="text-xs uppercase tracking-wider text-slate-400 mt-1">{label}</p>
+            </div>
+          ))}
         </div>
 
         {/* Action cards — flex-wrap + justify-center instead of a fixed
@@ -99,22 +93,19 @@ const RoundRobinDashboard = () => {
         wide screens instead of centering the row). Each card gets a fixed
         width so wrapping and spacing stay consistent at every count. */}
         <div className="flex flex-wrap justify-center gap-6">
-          {actionCards.map(({ icon: Icon, color, bg, border, title, description, path }) => (
-            <div
+          {actionCards.map(({ icon, gradient, title, description, path }) => (
+            <DashboardTile
               key={path}
-              className={`w-full sm:w-72 rounded-3xl shadow-lg p-8 cursor-pointer hover:shadow-xl transition-shadow duration-300 border ${border} ${bg}`}
+              icon={icon}
+              gradient={gradient}
+              title={title}
+              description={description}
               onClick={() => navigate(path)}
-            >
-              <div className="flex flex-col items-center text-center">
-                <Icon className={`w-14 h-14 mb-4 ${color}`} />
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">{title}</h3>
-                <p className="text-gray-600 text-sm">{description}</p>
-              </div>
-            </div>
+            />
           ))}
         </div>
       </div>
-    </div>
+    </AppBackground>
   );
 };
 
