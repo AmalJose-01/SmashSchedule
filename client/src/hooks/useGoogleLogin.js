@@ -23,7 +23,7 @@ export const useGoogleLogin = () => {
     },
     onError: (err) => {
       toast.dismiss();
-      toast.error(err?.response.data.message || "Failed to save score");
+      toast.error(err?.response?.data?.message || "Login failed");
     },
   });
 
@@ -54,9 +54,8 @@ export const useGoogleLogin = () => {
           },
         }
       );
-    } catch (error) {
-
-      alert(error.response?.data?.message || "Login failed");
+    } catch {
+      // Error (e.g. wrong portal for this account) is already shown by onError.
     }
   };
 
