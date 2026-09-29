@@ -3,6 +3,18 @@ const { ensureClubWithCode } = require("../../../../utils/clubCode");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const AdminUser = require("../model/adminUser")
+
+const VALID_ACCOUNT_TYPES = ["admin", "user"];
+
+// An account can only sign in through its own portal: admins on Admin Login,
+// players on User Login. Returns an error message, or null when allowed.
+const accountTypeMismatch = (existingType, requestedType) => {
+  if (existingType === requestedType) return null;
+  return existingType === "admin"
+    ? "This is an admin account. Please sign in from Admin Login."
+    : "This is a player account. Please sign in from User Login.";
+};
+
 const adminLoginController = {
     createUserWithGoogle: async (req, res) => {
     console.log("req.body", req.body);
@@ -15,13 +27,13 @@ const adminLoginController = {
       }
       let checkUserISExist = await AdminUser.findOne({ emailID: email });
 
-      if (checkUserISExist && accountType !== checkUserISExist.accountType) {
-        // Update account type without triggering password validation
-        await AdminUser.updateOne(
-          { _id: checkUserISExist._id },
-          { accountType }
-        );
-        checkUserISExist.accountType = accountType;
+      if (!VALID_ACCOUNT_TYPES.includes(accountType)) {
+        return res.status(400).json({ message: "Invalid account type" });
+      }
+      // Existing accounts must use their own portal — never switch type here.
+      if (checkUserISExist) {
+        const mismatch = accountTypeMismatch(checkUserISExist.accountType, accountType);
+        if (mismatch) return res.status(403).json({ message: mismatch });
       }
 
       console.log("checkUserISExist", checkUserISExist);
@@ -95,13 +107,8 @@ const adminLoginController = {
         return res.status(400).json({ message: "Invalid username or password" });
       }
 
-      // Check account type match - if not, update it without triggering password validation
-      if (accountType !== user.accountType) {
-        await AdminUser.updateOne(
-          { _id: user._id },
-          { accountType }
-        );
-        user.accountType = accountType;
+      if (!VALID_ACCOUNT_TYPES.includes(accountType)) {
+        return res.status(400).json({ message: "Invalid account type" });
       }
 
       // Check password
@@ -117,6 +124,11 @@ const adminLoginController = {
       if (!isPasswordValid) {
         return res.status(400).json({ message: "Invalid username or password" });
       }
+
+      // Only after the password checks out (so this can't be used to probe
+      // which emails exist): admins must use Admin Login, players User Login.
+      const mismatch = accountTypeMismatch(user.accountType, accountType);
+      if (mismatch) return res.status(403).json({ message: mismatch });
 
       // Create payload without password
       const userPayload = {
@@ -158,13 +170,13 @@ const adminLoginController = {
       }
       let checkUserISExist = await AdminUser.findOne({ emailID: email });
 
-      if (checkUserISExist && accountType !== checkUserISExist.accountType) {
-        // Update account type without triggering password validation
-        await AdminUser.updateOne(
-          { _id: checkUserISExist._id },
-          { accountType }
-        );
-        checkUserISExist.accountType = accountType;
+      if (!VALID_ACCOUNT_TYPES.includes(accountType)) {
+        return res.status(400).json({ message: "Invalid account type" });
+      }
+      // Existing accounts must use their own portal — never switch type here.
+      if (checkUserISExist) {
+        const mismatch = accountTypeMismatch(checkUserISExist.accountType, accountType);
+        if (mismatch) return res.status(403).json({ message: mismatch });
       }
 
       console.log("checkUserISExist", checkUserISExist);
