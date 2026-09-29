@@ -1,0 +1,112 @@
+# SmashSchedule — CI/CD pipeline
+# Save as: .github/workflows/ci.yml  (in the repo root)
+#
+# Every push to main and every pull request into main:
+#   • client: install + production build (Vite)
+#   • server: install + syntax-check every .js file and make sure the app's
+#             routes load
+#
+# Push to main only, and only when BOTH checks pass:
+#   • deploy backend → Render (via its Deploy Hook)
+#
+# Frontend: Vercel keeps deploying main on its own through its Git
+# integration. That's safe — if the Vite build fails on Vercel, the current
+# live site stays up.
+#
+# One-time setup:
+#   1. Render service → Settings → Deploy Hook → copy the URL.
+#   2. GitHub repo → Settings → Secrets and variables → Actions →
+#      New repository secret: RENDER_DEPLOY_HOOK_URL = <that URL>
+#   3. Render service → Settings → Auto-Deploy → Off
+#      (otherwise Render also deploys every push, even broken ones).
+
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# A newer push to the same branch cancels the older, still-running pipeline.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  client:
+    name: Client build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      # Lint is reported but doesn't fail the pipeline yet — the codebase has
+      # some existing lint errors. Remove `continue-on-error` once they're fixed.
+      - name: Lint (informational)
+        run: npx eslint src
+        continue-on-error: true
+
+      - name: Build
+        run: npm run build
+        # Add any VITE_* variables the build needs as repo secrets, e.g.:
+        # env:
+        #   VITE_API_URL: ${{ secrets.VITE_API_URL }}
+
+  server:
+    name: Server checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      - name: Syntax-check all server files
+        run: |
+          find . -name "*.js" -not -path "./node_modules/*" -print0 \
+            | xargs -0 -n1 node --check
+
+      # Loads every route/controller/model (catches bad requires and typos)
+      # without starting the server or connecting to the database.
+      - name: Routes load
+        run: node -e 'require("./routes/index.js"); console.log("routes OK")'
+
+  deploy-backend:
+    name: Deploy backend (Render)
+    # Only real pushes to main — never pull requests — and only after both
+    # the client and server checks have passed.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [client, server]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::error::RENDER_DEPLOY_HOOK_URL secret is not set"
+            exit 1
+          fi
+          # Deploy exactly the commit that passed the checks.
+          curl -fsS -X POST "${HOOK}&ref=${GITHUB_SHA}" -o /dev/null
+          echo "Render deploy triggered for ${GITHUB_SHA}"
