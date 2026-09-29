@@ -24,6 +24,17 @@ const GRADE_DEFAULT_POINTS = {
 const POINTS_PER_WIN = 0.5;
 const POINTS_PER_LOSS = 0.5; // subtracted
 
+// Member points are capped: a member at the cap gains nothing more from a
+// win, but losses still take points off. Floor is 0.
+const MIN_MEMBER_POINTS = 0;
+const MAX_MEMBER_POINTS = 100;
+
+const clampMemberPoints = (value) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return MIN_MEMBER_POINTS;
+  return Math.min(MAX_MEMBER_POINTS, Math.max(MIN_MEMBER_POINTS, Math.round(n * 10) / 10));
+};
+
 // Grades that participate in the auto promote/demote ladder (A–G only).
 const RANKED_GRADES = ["A", "B", "C", "D", "E", "F", "G"];
 
@@ -33,4 +44,7 @@ module.exports = {
   POINTS_PER_WIN,
   POINTS_PER_LOSS,
   RANKED_GRADES,
+  MIN_MEMBER_POINTS,
+  MAX_MEMBER_POINTS,
+  clampMemberPoints,
 };

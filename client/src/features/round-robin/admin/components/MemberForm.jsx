@@ -9,6 +9,7 @@ import {
 } from "../services/roundRobin.queries.js";
 
 const GRADES = ["A", "B", "C", "D", "E", "F", "G", "H", "Unrated"];
+const MAX_POINTS = 100; // kept in sync with server MAX_MEMBER_POINTS
 const GENDERS = ["Male", "Female", "Other", "Prefer not to say"];
 
 // Kept in sync with server/src/features/round-robin/constants/grades.js —
@@ -136,6 +137,9 @@ const ManualTab = ({ member, onClose }) => {
     if (!form.name.trim()) e.name = "Name is required";
     if (!form.email.trim()) e.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Invalid email";
+    const pts = Number(form.points);
+    if (form.points === "" || !Number.isFinite(pts)) e.points = "Points are required";
+    else if (pts < 0 || pts > MAX_POINTS) e.points = `Points must be between 0 and ${MAX_POINTS}`;
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -229,13 +233,15 @@ const ManualTab = ({ member, onClose }) => {
             type="number"
             step="0.5"
             min={0}
+            max={MAX_POINTS}
             value={form.points}
             onChange={handleChange("points")}
             className={inputCls("points")}
           />
           <p className="text-slate-500 text-xs mt-1">
-            Defaults to {GRADE_DEFAULT_POINTS[form.grade] ?? 0} for grade {form.grade} — changing grade resets this.
+            Defaults to {GRADE_DEFAULT_POINTS[form.grade] ?? 0} for grade {form.grade} — changing grade resets this. Max {MAX_POINTS}.
           </p>
+          {errors.points && <p className="text-red-400 text-xs mt-1">{errors.points}</p>}
         </div>
 
         {/* Membership Status */}

@@ -14,16 +14,16 @@ import AppBackground from "../../../../components/AppBackground.jsx";
 import PageHeader from "../../../../components/PageHeader.jsx";
 
 const STATUS_STYLES = {
-  scheduled:  { cls: "bg-gray-100 text-gray-600",   icon: Clock },
-  ongoing:    { cls: "bg-yellow-100 text-yellow-700", icon: Swords },
-  completed:  { cls: "bg-green-100 text-green-700",  icon: CheckCircle },
-  cancelled:  { cls: "bg-red-100 text-red-500",      icon: null },
+  scheduled:  { cls: "bg-white/10 text-slate-300",   icon: Clock },
+  ongoing:    { cls: "bg-yellow-500/15 text-yellow-300", icon: Swords },
+  completed:  { cls: "bg-green-500/15 text-green-300",  icon: CheckCircle },
+  cancelled:  { cls: "bg-red-500/15 text-red-400",      icon: null },
 };
 
 const GRADE_COLORS = {
-  A: "bg-red-100 text-red-700", B: "bg-orange-100 text-orange-700",
-  C: "bg-yellow-100 text-yellow-700", D: "bg-green-100 text-green-700",
-  E: "bg-blue-100 text-blue-700", Unrated: "bg-gray-100 text-gray-600",
+  A: "bg-red-500/15 text-red-300", B: "bg-orange-500/15 text-orange-300",
+  C: "bg-yellow-500/15 text-yellow-300", D: "bg-green-500/15 text-green-300",
+  E: "bg-blue-500/15 text-blue-300", Unrated: "bg-white/10 text-slate-300",
 };
 
 const MatchManagement = () => {
@@ -110,7 +110,7 @@ const MatchManagement = () => {
   if (matchesLoading) {
     return (
       <AppBackground className="flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
       </AppBackground>
     );
   }
@@ -149,20 +149,20 @@ const MatchManagement = () => {
 
       {/* ── Sticky standings (always visible below header) ────────────────────── */}
       {(groupStandings || doublesGroupStandings) && (
-        <div className="sticky top-[65px] z-[5] bg-white shadow border-b border-gray-100 overflow-hidden">
-          <div className="px-5 py-2 bg-teal-50 border-b border-teal-100 flex items-center gap-2">
-            <Trophy className="w-4 h-4 text-teal-600" />
-            <h3 className="font-semibold text-teal-800 text-sm">
+        <div className="sticky top-[65px] z-[5] bg-slate-900/85 backdrop-blur-xl shadow border-b border-slate-700/50 overflow-hidden">
+          <div className="px-5 py-2 bg-slate-900/50 border-b border-slate-700/50 flex items-center gap-2">
+            <Trophy className="w-4 h-4 text-cyan-400" />
+            <h3 className="font-semibold text-white text-sm">
               {groupStandings ? `${groupStandings.groupName} Standings` : "Group Standings"}
             </h3>
-            {standingsLoading && <Loader2 className="w-3.5 h-3.5 text-teal-400 animate-spin ml-auto" />}
+            {standingsLoading && <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin ml-auto" />}
           </div>
 
           {/* Singles standings */}
           {groupStandings && !standingsLoading && (
             <div className="overflow-x-auto max-h-48 overflow-y-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 text-gray-500 text-xs sticky top-0">
+                <thead className="bg-slate-900/40 text-slate-400 text-xs sticky top-0">
                   <tr>
                     <th className="px-4 py-2 text-left font-semibold">#</th>
                     <th className="px-4 py-2 text-left font-semibold">Player</th>
@@ -172,7 +172,7 @@ const MatchManagement = () => {
                     <th className="px-4 py-2 text-center font-semibold">Pts</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-slate-700/50">
                   {(groupStandings.standings ?? []).map((s, i) => {
                     const sid = s.playerId?.toString?.() ?? s.playerId;
                     const isInThisMatch =
@@ -181,15 +181,15 @@ const MatchManagement = () => {
                       sid === match.player2Id?._id?.toString() ||
                       sid === match.player2Id?.toString();
                     return (
-                      <tr key={i} className={`${i === 0 ? "bg-yellow-50" : "hover:bg-gray-50"} ${isInThisMatch ? "font-semibold" : ""}`}>
-                        <td className="px-4 py-2.5 text-gray-500">{i + 1}</td>
-                        <td className="px-4 py-2.5 text-gray-800">{s.name ?? s.playerId?.name ?? "—"}</td>
-                        <td className="px-4 py-2.5 text-center text-green-600">{s.wins}</td>
+                      <tr key={i} className={`${i === 0 ? "bg-amber-500/10" : "hover:bg-white/5"} ${isInThisMatch ? "font-semibold" : ""}`}>
+                        <td className="px-4 py-2.5 text-slate-400">{i + 1}</td>
+                        <td className="px-4 py-2.5 text-white">{s.name ?? s.playerId?.name ?? "—"}</td>
+                        <td className="px-4 py-2.5 text-center text-emerald-400">{s.wins}</td>
                         <td className="px-4 py-2.5 text-center text-red-400">{s.losses}</td>
-                        <td className={`px-4 py-2.5 text-center ${s.pointsDiff >= 0 ? "text-green-600" : "text-red-400"}`}>
+                        <td className={`px-4 py-2.5 text-center ${s.pointsDiff >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                           {s.pointsDiff >= 0 ? "+" : ""}{s.pointsDiff}
                         </td>
-                        <td className="px-4 py-2.5 text-center font-bold text-teal-700">{s.totalPoints}</td>
+                        <td className="px-4 py-2.5 text-center font-bold text-cyan-300">{s.totalPoints}</td>
                       </tr>
                     );
                   })}
@@ -202,7 +202,7 @@ const MatchManagement = () => {
           {doublesGroupStandings && !standingsLoading && (
             <div className="overflow-x-auto max-h-48 overflow-y-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 text-gray-500 text-xs sticky top-0">
+                <thead className="bg-slate-900/40 text-slate-400 text-xs sticky top-0">
                   <tr>
                     <th className="px-4 py-2 text-left font-semibold">#</th>
                     <th className="px-4 py-2 text-left font-semibold">Group</th>
@@ -212,26 +212,26 @@ const MatchManagement = () => {
                     <th className="px-4 py-2 text-center font-semibold">Pts</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-slate-700/50">
                   {doublesGroupStandings.map((g, i) => (
                     <tr
                       key={g._id}
-                      className={`${i === 0 ? "bg-yellow-50" : "hover:bg-gray-50"} ${g.isHomeGroup || g.isAwayGroup ? "font-semibold" : ""}`}
+                      className={`${i === 0 ? "bg-amber-500/10" : "hover:bg-white/5"} ${g.isHomeGroup || g.isAwayGroup ? "font-semibold" : ""}`}
                     >
-                      <td className="px-4 py-2.5 text-gray-500">{i + 1}</td>
-                      <td className="px-4 py-2.5 text-gray-800">
+                      <td className="px-4 py-2.5 text-slate-400">{i + 1}</td>
+                      <td className="px-4 py-2.5 text-white">
                         <span className="flex items-center gap-1.5">
                           {g.groupName}
-                          {g.isHomeGroup && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-100 text-teal-700">HOME</span>}
-                          {g.isAwayGroup && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">AWAY</span>}
+                          {g.isHomeGroup && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-500/15 text-cyan-300">HOME</span>}
+                          {g.isAwayGroup && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-300">AWAY</span>}
                         </span>
                       </td>
-                      <td className="px-4 py-2.5 text-center text-green-600">{g.wins}</td>
+                      <td className="px-4 py-2.5 text-center text-emerald-400">{g.wins}</td>
                       <td className="px-4 py-2.5 text-center text-red-400">{g.losses}</td>
-                      <td className={`px-4 py-2.5 text-center ${g.pointsDiff >= 0 ? "text-green-600" : "text-red-400"}`}>
+                      <td className={`px-4 py-2.5 text-center ${g.pointsDiff >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                         {g.pointsDiff >= 0 ? "+" : ""}{g.pointsDiff}
                       </td>
-                      <td className="px-4 py-2.5 text-center font-bold text-teal-700">{g.totalPoints}</td>
+                      <td className="px-4 py-2.5 text-center font-bold text-cyan-300">{g.totalPoints}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -245,7 +245,7 @@ const MatchManagement = () => {
 
 
         {/* Score entry */}
-        <div className="bg-white rounded-2xl shadow border border-gray-100 p-5">
+        <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow border border-slate-700/50 p-5">
           <ScoreEntry
             match={match}
             tournamentId={tournamentId}
@@ -271,18 +271,18 @@ const MatchManagement = () => {
 
 // ── Player card ───────────────────────────────────────────────────────────────
 const PlayerCard = ({ player, partner, label, winner }) => (
-  <div className={`flex-1 text-center p-4 rounded-xl transition-colors ${winner ? "bg-teal-50 border-2 border-teal-300" : "bg-gray-50"}`}>
-    {winner && <Trophy className="w-4 h-4 text-teal-500 mx-auto mb-1" />}
-    <p className="font-semibold text-gray-800 text-sm truncate">{player?.name ?? "—"}</p>
+  <div className={`flex-1 text-center p-4 rounded-xl transition-colors ${winner ? "bg-cyan-500/10 border-2 border-cyan-500/40" : "bg-slate-900/40"}`}>
+    {winner && <Trophy className="w-4 h-4 text-cyan-400 mx-auto mb-1" />}
+    <p className="font-semibold text-white text-sm truncate">{player?.name ?? "—"}</p>
     {partner && (
-      <p className="font-semibold text-gray-600 text-sm truncate">/ {partner.name}</p>
+      <p className="font-semibold text-slate-300 text-sm truncate">/ {partner.name}</p>
     )}
     {player?.grade && (
       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block ${GRADE_COLORS[player.grade] ?? GRADE_COLORS.Unrated}`}>
         {player.grade}
       </span>
     )}
-    <p className="text-xs text-gray-400 mt-1">{label}</p>
+    <p className="text-xs text-slate-400 mt-1">{label}</p>
   </div>
 );
 
@@ -307,15 +307,15 @@ const OtherMatches = ({ matches, currentMatchId, match, isDoubles, groupId, tour
   if (others.length === 0) return null;
 
   const STATUS_STYLES_MATCH = {
-    scheduled:  "bg-gray-100 text-gray-500",
-    ongoing:    "bg-yellow-100 text-yellow-700",
-    completed:  "bg-green-100 text-green-700",
-    cancelled:  "bg-red-100 text-red-400",
+    scheduled:  "bg-white/10 text-slate-400",
+    ongoing:    "bg-yellow-500/15 text-yellow-300",
+    completed:  "bg-green-500/15 text-green-300",
+    cancelled:  "bg-red-500/15 text-red-400",
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow border border-gray-100 p-5">
-      <h3 className="font-semibold text-gray-700 mb-3 text-sm">
+    <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow border border-slate-700/50 p-5">
+      <h3 className="font-semibold text-slate-200 mb-3 text-sm">
         {isDoubles ? `Other Matches — ${fixtureName ?? "Fixture"}` : "Other Matches in Group"}
       </h3>
       <div className="space-y-2">
@@ -338,30 +338,30 @@ const OtherMatches = ({ matches, currentMatchId, match, isDoubles, groupId, tour
           const isExpanded = expandedId === m._id;
 
           return (
-            <div key={m._id} className="rounded-xl border border-gray-100 overflow-hidden">
+            <div key={m._id} className="rounded-xl border border-slate-700/50 overflow-hidden">
               <div
-                className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors"
+                className="flex items-center gap-3 p-3 hover:bg-white/5 cursor-pointer transition-colors"
                 onClick={() => setExpandedId((prev) => (prev === m._id ? null : m._id))}
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className={`text-sm font-semibold px-2 py-0.5 rounded-lg ${
-                      homeWon ? "bg-green-100 text-green-700" :
+                      homeWon ? "bg-green-500/15 text-green-300" :
                       awayWon ? "text-red-400" :
-                      "text-gray-700"
+                      "text-slate-200"
                     }`}>{team1Name}</span>
                     <span className="inline-block px-1.5 py-0.5 rounded bg-red-500 text-white text-[10px] font-bold flex-shrink-0">VS</span>
                     <span className={`text-sm font-semibold px-2 py-0.5 rounded-lg ${
-                      awayWon ? "bg-green-100 text-green-700" :
+                      awayWon ? "bg-green-500/15 text-green-300" :
                       homeWon ? "text-red-400" :
-                      "text-gray-700"
+                      "text-slate-200"
                     }`}>{team2Name}</span>
                   </div>
-                  <p className="text-xs text-gray-400 mt-0.5">{m.court}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{m.court}</p>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {m.sets?.length > 0 && (
-                    <span className="text-xs text-gray-400 font-mono">
+                    <span className="text-xs text-slate-400 font-mono">
                       {m.sets.map((s) => `${s.home}-${s.away}`).join(", ")}
                     </span>
                   )}
@@ -369,15 +369,15 @@ const OtherMatches = ({ matches, currentMatchId, match, isDoubles, groupId, tour
                     {m.status}
                   </span>
                   {isExpanded ? (
-                    <ChevronUp className="w-4 h-4 text-gray-400" />
+                    <ChevronUp className="w-4 h-4 text-slate-400" />
                   ) : (
-                    <ChevronDown className="w-4 h-4 text-gray-400" />
+                    <ChevronDown className="w-4 h-4 text-slate-400" />
                   )}
                 </div>
               </div>
 
               {isExpanded && (
-                <div className="border-t border-gray-100 bg-gray-50/50 p-4">
+                <div className="border-t border-slate-700/50 bg-slate-900/40 p-4">
                   <ScoreEntry
                     match={m}
                     tournamentId={tournamentId}
