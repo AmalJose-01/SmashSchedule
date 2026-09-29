@@ -20,3 +20,10 @@ export const uploadClubLogo = async (file) => {
   });
   return response.data;
 };
+
+// Creates the club's 8-char key if it doesn't have one yet (idempotent —
+// an existing key is returned unchanged).
+export const generateClubCode = async () => {
+  const response = await apiClient.post(`/club/my-profile/generate-code`);
+  return response.data;
+};

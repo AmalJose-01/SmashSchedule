@@ -1,3 +1,4 @@
+import { takeRedirect } from "../utils/postLoginRedirect";
 import { useMutation } from "@tanstack/react-query";
 import { loginAPI } from "../services/userServices";
 import { toast } from "sonner";
@@ -27,7 +28,7 @@ export const useLogin = () => {
           navigate("/dashboard", { replace: true });
         } else if (user.accountType === "user") {
           console.log("navigaTE ....FG");
-          navigate("/user/dashboard", { replace: true });
+          navigate(takeRedirect("user") || "/user/dashboard", { replace: true });
         }
       })
       .catch((err) => {

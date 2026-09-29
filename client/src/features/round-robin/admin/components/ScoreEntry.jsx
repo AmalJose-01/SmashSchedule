@@ -24,7 +24,7 @@ const isValidSet = (set, winPt, gap) => {
 const ScoreEntry = ({ match, tournamentId, tournament, onScoreRecorded }) => {
   const maxSets = tournament?.numberOfSets    ?? 3;
   const winPt   = tournament?.setWinningPoint ?? 21;
-  const gap     = tournament?.winningPointGap ?? 2;
+  const gap     = tournament?.winningPointGap ?? 1;
   // True majority of sets — matches the backend formula in matchHelpers.js.
   // For an even count (e.g. Best of 2) winning every set still wins outright;
   // an even split is decided by total points instead (see hint text below).

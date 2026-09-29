@@ -26,6 +26,10 @@ const clubSchema = new mongoose.Schema(
       },
     },
     isProfileComplete: { type: Boolean, default: false },
+    // Unique 8-char key players use to find this club (typed or via QR).
+    // Generated at admin sign-up; older clubs get one from the
+    // "Generate key" button on the Club Profile page.
+    clubCode: { type: String, uppercase: true, trim: true, unique: true, sparse: true },
   },
   { timestamps: true }
 );

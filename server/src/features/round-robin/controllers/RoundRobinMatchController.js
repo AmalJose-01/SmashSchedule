@@ -12,7 +12,7 @@ const getTournamentConfig = async (tournamentId) => {
   return {
     numberOfSets:    t?.numberOfSets    ?? 3,
     setWinningPoint: t?.setWinningPoint ?? 21,
-    winningPointGap: t?.winningPointGap ?? 2,
+    winningPointGap: t?.winningPointGap ?? 1,
   };
 };
 

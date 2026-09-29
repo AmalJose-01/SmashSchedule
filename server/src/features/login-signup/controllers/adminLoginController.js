@@ -1,3 +1,5 @@
+const Club = require("../../../../model/club");
+const { ensureClubWithCode } = require("../../../../utils/clubCode");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const AdminUser = require("../model/adminUser")
@@ -35,6 +37,16 @@ const adminLoginController = {
           accountType,
         });
         console.log("User created:", checkUserISExist);
+
+        // A newly registered club admin gets their club key straight away.
+        // (Existing admins use the "Generate key" button on Club Profile.)
+        if (accountType === "admin") {
+          try {
+            await ensureClubWithCode(Club, checkUserISExist._id);
+          } catch (err) {
+            console.error("club key creation failed:", err);
+          }
+        }
       }
 
       // create payload without password
@@ -168,6 +180,16 @@ const adminLoginController = {
           accountType,
         });
         console.log("User created:", checkUserISExist);
+
+        // A newly registered club admin gets their club key straight away.
+        // (Existing admins use the "Generate key" button on Club Profile.)
+        if (accountType === "admin") {
+          try {
+            await ensureClubWithCode(Club, checkUserISExist._id);
+          } catch (err) {
+            console.error("club key creation failed:", err);
+          }
+        }
       }
 
       // create payload without password

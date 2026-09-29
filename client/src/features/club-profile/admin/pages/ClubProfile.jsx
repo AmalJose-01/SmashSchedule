@@ -9,6 +9,7 @@ import AddressSearch from "../../../../components/AddressSearch";
 // import { useGetSquareStatus } from "../../../round-robin/admin/services/roundRobin.queries.js";
 import AppBackground from "../../../../components/AppBackground.jsx";
 import PageHeader from "../../../../components/PageHeader.jsx";
+import ClubKeyCard from "../components/ClubKeyCard.jsx";
 import "./ClubProfile.css";
 
 const ClubProfile = () => {
@@ -108,6 +109,9 @@ const ClubProfile = () => {
             </button>
           )}
         </div>
+
+        {/* ===== CLUB KEY + QR ===== */}
+        <ClubKeyCard club={club} />
 
         {/* ===== CLUB DETAILS ===== */}
         <div className="cp-section-card">

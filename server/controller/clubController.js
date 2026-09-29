@@ -1,6 +1,15 @@
 const Club = require("../model/club");
 const AdminUser = require("../model/adminUser");
+const Tournament = require("../model/tournamentModel");
+const RoundRobinTournament = require("../src/features/round-robin/models/RoundRobinTournament");
+const mongoose = require("mongoose");
 const cloudinary = require("cloudinary").v2;
+const {
+  generateUniqueClubCode,
+  normaliseClubCode,
+  isClubCodeShape,
+  ensureClubWithCode,
+} = require("../utils/clubCode");
 
 // Configure Cloudinary
 cloudinary.config({
@@ -79,9 +88,14 @@ const clubController = {
         if (location.coordinates) updateData["location.coordinates"] = location.coordinates;
       }
 
+      // A club created here for the first time also gets its code.
+      const hasClub = await Club.exists({ adminId: req.userId });
       let club = await Club.findOneAndUpdate(
         { adminId: req.userId },
-        { $set: updateData },
+        {
+          $set: updateData,
+          ...(!hasClub && { $setOnInsert: { clubCode: await generateUniqueClubCode(Club) } }),
+        },
         { new: true, upsert: true }
       );
 
@@ -140,6 +154,35 @@ const clubController = {
     }
   },
 
+  // ========== GENERATE CLUB CODE (Admin) ==========
+  // For admins created before club codes existed. Idempotent: if the club
+  // already has a code it's returned unchanged, never replaced.
+  generateClubCode: async (req, res) => {
+    try {
+      const club = await ensureClubWithCode(Club, req.userId);
+      return res.status(200).json({ message: "Club key ready", clubCode: club.clubCode, club });
+    } catch (error) {
+      console.error("generateClubCode error:", error);
+      return res.status(500).json({ message: "Could not generate club key" });
+    }
+  },
+
+  // ========== GET CLUB BY CODE (Public - for users) ==========
+  getClubByCode: async (req, res) => {
+    try {
+      const code = normaliseClubCode(req.params.code);
+      if (!isClubCodeShape(code)) {
+        return res.status(400).json({ message: "Club key must be 8 letters/numbers" });
+      }
+      const club = await Club.findOne({ clubCode: code }).lean();
+      if (!club) return res.status(404).json({ message: "No club found with that key" });
+      return res.status(200).json({ club });
+    } catch (error) {
+      console.error("getClubByCode error:", error);
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
+  },
+
   // ========== SEARCH CLUBS (Public - for users) ==========
   searchClubs: async (req, res) => {
     try {
@@ -166,6 +209,12 @@ const clubController = {
       }
 
       if (q) {
+        // Exact club key match (8 chars) wins — show just that club.
+        if (isClubCodeShape(q)) {
+          const byCode = await Club.findOne({ clubCode: normaliseClubCode(q) }).lean();
+          if (byCode) return res.status(200).json({ clubs: [byCode] });
+        }
+
         // Text search by name or city
         const clubs = await Club.find({
           ...query,
@@ -186,6 +235,49 @@ const clubController = {
       return res.status(200).json({ clubs });
     } catch (error) {
       console.error("searchClubs error:", error);
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
+  },
+
+  // ========== CLUB EVENTS (for players) ==========
+  // Tournaments + round robins run by the club's admin. Includes Draft round
+  // robins — a round robin stays "Draft" from creation until its matches are
+  // finalized, which is exactly when players want to see it's coming up.
+  getClubEvents: async (req, res) => {
+    try {
+      const { clubId } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(clubId)) {
+        return res.status(400).json({ message: "Invalid club" });
+      }
+      const club = await Club.findById(clubId).select("adminId").lean();
+      if (!club) return res.status(404).json({ message: "Club not found" });
+
+      const [tournaments, roundRobins] = await Promise.all([
+        Tournament.aggregate([
+          { $match: { adminId: club.adminId } },
+          { $sort: { createdAt: -1 } },
+          {
+            $project: {
+              tournamentName: 1, numberOfPlayersQualifiedToKnockout: 1, date: 1, time: 1,
+              status: 1, registrationFee: 1, maximumParticipants: 1, uniqueKey: 1, matchType: 1, location: 1,
+            },
+          },
+          { $lookup: { from: "teams", localField: "_id", foreignField: "tournamentId", as: "teams" } },
+          { $addFields: { registeredTeamsCount: { $size: "$teams" } } },
+          { $project: { teams: 0 } },
+        ]),
+        RoundRobinTournament.find({ adminId: club.adminId })
+          .select("tournamentName matchType status startDate endDate numberOfSlots numberOfCourts")
+          .sort({ startDate: -1, createdAt: -1 })
+          .lean(),
+      ]);
+
+      // Events change often (new round robins, status updates) — never let the
+      // browser reuse a cached copy (that's what produced 304 Not Modified).
+      res.set("Cache-Control", "no-store");
+      return res.status(200).json({ tournaments, roundRobins });
+    } catch (error) {
+      console.error("getClubEvents error:", error);
       return res.status(500).json({ message: "Internal Server Error" });
     }
   },

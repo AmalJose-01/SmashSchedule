@@ -1,3 +1,4 @@
+import { takeRedirect } from "../utils/postLoginRedirect";
 import { useMutation } from "@tanstack/react-query";
 import { loginWithGoogleAPI } from "../services/userServices";
 import { toast } from "sonner";
@@ -41,7 +42,7 @@ export const useGoogleLogin = () => {
             if (user.accountType === "admin") {
               navigate("/dashboard", { replace: true });
             } else if (user.accountType === "user") {
-              navigate("/user/dashboard", { replace: true });
+              navigate(takeRedirect("user") || "/user/dashboard", { replace: true });
             }
 
             return "Login successful!";

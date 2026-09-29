@@ -10,8 +10,26 @@ import { useGoogleLogin } from "../../hooks/useGoogleLogin";
 import { Lock, Mail, Eye, EyeOff, Shield, User } from "lucide-react";
 import AppBackground from "../../components/AppBackground";
 
-const inputCls = (hasError) =>
-  `w-full pl-12 py-3 bg-slate-900/50 border rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all ${
+// Admin = cyan/blue, user (player) = green/yellow.
+const THEME = {
+  admin: {
+    ring: "focus:ring-cyan-500",
+    icon: "from-cyan-400 to-blue-500 shadow-cyan-500/50",
+    button: "from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 shadow-cyan-500/30 hover:shadow-cyan-500/50",
+    link: "text-cyan-400 hover:text-cyan-300",
+    check: "text-cyan-500 focus:ring-cyan-500",
+  },
+  user: {
+    ring: "focus:ring-emerald-400",
+    icon: "from-emerald-400 to-yellow-400 shadow-emerald-500/50",
+    button: "from-emerald-500 to-yellow-500 hover:from-emerald-600 hover:to-yellow-600 shadow-emerald-500/30 hover:shadow-emerald-500/50",
+    link: "text-emerald-400 hover:text-emerald-300",
+    check: "text-emerald-500 focus:ring-emerald-400",
+  },
+};
+
+const inputCls = (hasError, ring) =>
+  `w-full pl-12 py-3 bg-slate-900/50 border rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 ${ring} focus:border-transparent transition-all ${
     hasError ? "border-red-500" : "border-slate-600"
   }`;
 
@@ -32,6 +50,7 @@ const Login = () => {
   // Same page serves both /admin/login and /user/login.
   const isAdmin = location.pathname === "/admin/login";
   const accountType = isAdmin ? "admin" : "user";
+  const t = THEME[accountType];
 
   const {
     register,
@@ -65,11 +84,11 @@ const Login = () => {
   const HeaderIcon = isAdmin ? Shield : User;
 
   return (
-    <AppBackground className="flex items-center justify-center p-4 py-12">
+    <AppBackground variant={accountType} className="flex items-center justify-center p-4 py-12">
       <div className="w-full max-w-md">
         {/* Logo/Header Section */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-500 mb-4 shadow-lg shadow-cyan-500/50">
+          <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br ${t.icon} mb-4 shadow-lg`}>
             <HeaderIcon className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-semibold text-white mb-2" style={{ fontFamily: "Outfit, sans-serif" }}>
@@ -95,7 +114,7 @@ const Login = () => {
                   type="email"
                   autoComplete="email"
                   {...register("email")}
-                  className={inputCls(errors.email) + " pr-4"}
+                  className={inputCls(errors.email, t.ring) + " pr-4"}
                   placeholder={isAdmin ? "admin@example.com" : "you@example.com"}
                 />
               </div>
@@ -116,7 +135,7 @@ const Login = () => {
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   {...register("password")}
-                  className={inputCls(errors.password) + " pr-12"}
+                  className={inputCls(errors.password, t.ring) + " pr-12"}
                   placeholder="••••••••"
                 />
                 <button
@@ -136,11 +155,11 @@ const Login = () => {
               <label className="flex items-center cursor-pointer group">
                 <input
                   type="checkbox"
-                  className="w-4 h-4 rounded border-slate-600 bg-slate-900/50 text-cyan-500 focus:ring-2 focus:ring-cyan-500 focus:ring-offset-0 cursor-pointer"
+                  className={`w-4 h-4 rounded border-slate-600 bg-slate-900/50 focus:ring-2 focus:ring-offset-0 cursor-pointer ${t.check}`}
                 />
                 <span className="ml-2 text-slate-300 group-hover:text-white transition-colors">Remember me</span>
               </label>
-              <Link to="/forgot-password" className="text-cyan-400 hover:text-cyan-300 transition-colors">
+              <Link to="/forgot-password" className={`${t.link} transition-colors`}>
                 Forgot password?
               </Link>
             </div>
@@ -149,7 +168,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className={`w-full py-3 px-4 bg-gradient-to-r ${t.button} text-white rounded-xl transition-all duration-200 shadow-lg hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
             >
               {isLoading ? (
                 <span className="flex items-center justify-center">
@@ -196,7 +215,7 @@ const Login = () => {
               Don&apos;t have an account?{" "}
               <Link
                 to={isAdmin ? "/admin/signup" : "/user/signup"}
-                className="text-cyan-400 hover:text-cyan-300 transition-colors"
+                className={`${t.link} transition-colors`}
               >
                 Sign up
               </Link>
