@@ -5,7 +5,7 @@ import { useRecordMatchScore, useResetMatchScore } from "../services/roundRobin.
 const EMPTY_SET = { home: "", away: "" };
 
 const inputCls =
-  "w-16 text-center border border-gray-200 rounded-lg py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-300";
+  "w-16 text-center bg-slate-900/60 border border-slate-600 rounded-lg py-2 text-sm font-mono text-white placeholder-slate-600 [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:opacity-70";
 
 /**
  * A set is won when one side reaches winPt with at least gap lead.
@@ -104,22 +104,22 @@ const ScoreEntry = ({ match, tournamentId, tournament, onScoreRecorded }) => {
       <div className="space-y-4">
         <div className="flex items-center gap-4">
           <div className="flex-1 text-center">
-            <p className="text-sm font-semibold text-gray-700 truncate">
+            <p className="text-sm font-semibold text-slate-200 truncate">
               {match?.player1Id?.name ?? "Player 1"}
               {match?.player1PartnerId && (
-                <span className="text-gray-400"> / {match.player1PartnerId.name}</span>
+                <span className="text-slate-400"> / {match.player1PartnerId.name}</span>
               )}
             </p>
-            <p className="text-xs text-gray-400">(Home)</p>
+            <p className="text-xs text-slate-400">(Home)</p>
           </div>
-          <span className="text-gray-300 font-bold text-lg">vs</span>
+          <span className="text-slate-500 font-bold text-lg">vs</span>
           <div className="flex-1 text-center">
-            <p className="text-sm font-semibold text-gray-400 truncate">BYE</p>
-            <p className="text-xs text-gray-400">(No opponent)</p>
+            <p className="text-sm font-semibold text-slate-400 truncate">BYE</p>
+            <p className="text-xs text-slate-400">(No opponent)</p>
           </div>
         </div>
 
-        <div className="flex items-center justify-center gap-2 text-center text-sm font-semibold py-2.5 rounded-xl text-teal-700 bg-teal-50">
+        <div className="flex items-center justify-center gap-2 text-center text-sm font-semibold py-2.5 rounded-xl text-cyan-300 bg-cyan-500/10">
           <Award className="w-4 h-4" />
           Automatic bye — counted as a win
         </div>
@@ -131,7 +131,7 @@ const ScoreEntry = ({ match, tournamentId, tournament, onScoreRecorded }) => {
     <div className="space-y-4">
       {/* Scoring rule hint */}
       {!isCompleted && (
-        <p className="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2">
+        <p className="text-xs text-slate-400 bg-slate-900/40 rounded-lg px-3 py-2">
           Best of {maxSets} · Set won at {winPt} pts with {gap}-pt lead · First to {reqWins} set{reqWins !== 1 ? "s" : ""} wins
           {isEvenFormat && " · if sets split evenly, total points decide (a tie goes to a draw)"}
         </p>
@@ -140,31 +140,31 @@ const ScoreEntry = ({ match, tournamentId, tournament, onScoreRecorded }) => {
       {/* Player labels */}
       <div className="flex items-center gap-4">
         <div className="flex-1 text-center">
-          <p className="text-sm font-semibold text-gray-700 truncate">
+          <p className="text-sm font-semibold text-slate-200 truncate">
             {match?.player1Id?.name ?? "Player 1"}
             {match?.player1PartnerId && (
-              <span className="text-gray-400"> / {match.player1PartnerId.name}</span>
+              <span className="text-slate-400"> / {match.player1PartnerId.name}</span>
             )}
           </p>
-          <p className="text-xs text-gray-400">(Home)</p>
+          <p className="text-xs text-slate-400">(Home)</p>
         </div>
-        <span className="text-gray-300 font-bold text-lg">vs</span>
+        <span className="text-slate-500 font-bold text-lg">vs</span>
         <div className="flex-1 text-center">
-          <p className="text-sm font-semibold text-gray-700 truncate">
+          <p className="text-sm font-semibold text-slate-200 truncate">
             {match?.player2Id?.name ?? "Player 2"}
             {match?.player2PartnerId && (
-              <span className="text-gray-400"> / {match.player2PartnerId.name}</span>
+              <span className="text-slate-400"> / {match.player2PartnerId.name}</span>
             )}
           </p>
-          <p className="text-xs text-gray-400">(Away)</p>
+          <p className="text-xs text-slate-400">(Away)</p>
         </div>
       </div>
 
       {/* Sets */}
       <div className="space-y-2">
         {sets.map((set, idx) => (
-          <div key={idx} className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3">
-            <span className="text-xs text-gray-400 font-medium w-10 flex-shrink-0">
+          <div key={idx} className="flex items-center gap-3 bg-slate-900/40 rounded-xl px-4 py-3">
+            <span className="text-xs text-slate-400 font-medium w-10 flex-shrink-0">
               Set {idx + 1}
             </span>
             <div className="flex items-center gap-2 flex-1 justify-center">
@@ -178,7 +178,7 @@ const ScoreEntry = ({ match, tournamentId, tournament, onScoreRecorded }) => {
                 className={inputCls}
                 placeholder="—"
               />
-              <span className="text-gray-300 font-bold">—</span>
+              <span className="text-slate-500 font-bold">—</span>
               <input
                 type="number"
                 min={0}
@@ -193,7 +193,7 @@ const ScoreEntry = ({ match, tournamentId, tournament, onScoreRecorded }) => {
             {!isCompleted && sets.length > 1 && (
               <button
                 onClick={() => removeSet(idx)}
-                className="p-1 rounded-lg hover:bg-red-50 text-red-300 hover:text-red-500 transition-colors"
+                className="p-1 rounded-lg hover:bg-red-500/10 text-red-300 hover:text-red-500 transition-colors"
               >
                 <Minus className="w-4 h-4" />
               </button>
@@ -206,7 +206,7 @@ const ScoreEntry = ({ match, tournamentId, tournament, onScoreRecorded }) => {
       {!isCompleted && sets.length < maxSets && (
         <button
           onClick={addSet}
-          className="flex items-center gap-1.5 text-sm text-teal-600 font-medium hover:text-teal-700 transition-colors"
+          className="flex items-center gap-1.5 text-sm text-cyan-400 font-medium hover:text-cyan-300 transition-colors"
         >
           <Plus className="w-4 h-4" /> Add Set {sets.length + 1} of {maxSets}
         </button>
@@ -214,7 +214,7 @@ const ScoreEntry = ({ match, tournamentId, tournament, onScoreRecorded }) => {
 
       {/* Validation error */}
       {validationError && (
-        <div className="flex items-start gap-2 text-red-500 text-xs bg-red-50 rounded-xl p-3">
+        <div className="flex items-start gap-2 text-red-400 text-xs bg-red-500/10 rounded-xl p-3">
           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
           {validationError}
         </div>
@@ -225,7 +225,7 @@ const ScoreEntry = ({ match, tournamentId, tournament, onScoreRecorded }) => {
         <button
           onClick={handleSubmit}
           disabled={isPending}
-          className="w-full flex items-center justify-center gap-2 bg-teal-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-teal-700 disabled:opacity-60 transition-colors"
+          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 shadow-lg shadow-cyan-500/30 text-white py-2.5 rounded-xl font-semibold text-sm hover:from-cyan-600 hover:to-blue-600 disabled:opacity-60 transition-colors"
         >
           <Send className="w-4 h-4" />
           {isPending ? "Saving..." : "Record Score"}
@@ -234,7 +234,7 @@ const ScoreEntry = ({ match, tournamentId, tournament, onScoreRecorded }) => {
         <div className="space-y-2">
           <div
             className={`text-center text-sm font-semibold py-2.5 rounded-xl ${
-              match?.isDraw ? "text-amber-600 bg-amber-50" : "text-green-600 bg-green-50"
+              match?.isDraw ? "text-amber-300 bg-amber-500/10" : "text-emerald-400 bg-emerald-500/10"
             }`}
           >
             {match?.isDraw ? "Match completed — drawn on total points" : "Match completed — score locked"}
@@ -242,7 +242,7 @@ const ScoreEntry = ({ match, tournamentId, tournament, onScoreRecorded }) => {
           <button
             onClick={() => resetScore(match._id)}
             disabled={isResetting}
-            className="w-full flex items-center justify-center gap-2 border border-red-200 text-red-500 py-2.5 rounded-xl font-semibold text-sm hover:bg-red-50 disabled:opacity-60 transition-colors"
+            className="w-full flex items-center justify-center gap-2 border border-red-500/30 text-red-400 py-2.5 rounded-xl font-semibold text-sm hover:bg-red-500/10 disabled:opacity-60 transition-colors"
           >
             <RotateCcw className="w-4 h-4" />
             {isResetting ? "Resetting..." : "Edit Score"}

@@ -6,6 +6,7 @@ const {
   POINTS_PER_WIN,
   POINTS_PER_LOSS,
   RANKED_GRADES,
+  clampMemberPoints,
 } = require("../constants/grades");
 
 // Walks a member up/down the ranked ladder (A-G) until their grade matches
@@ -50,8 +51,10 @@ const adjustMemberPoints = async (memberId, delta) => {
   const member = await RoundRobinMember.findById(memberId);
   if (!member) return;
 
-  const updated = Math.round((member.points + delta) * 10) / 10;
-  member.points = Math.max(0, updated);
+  // Capped at 100: a win at 100 adds nothing, a loss still subtracts.
+  // Clamp the starting value too, so any legacy >100 record drops from 100.
+  const current = clampMemberPoints(member.points);
+  member.points = clampMemberPoints(current + delta);
   applyGradeTransition(member);
   await member.save();
 };
