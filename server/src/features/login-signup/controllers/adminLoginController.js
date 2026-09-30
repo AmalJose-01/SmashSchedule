@@ -3,6 +3,7 @@ const { ensureClubWithCode } = require("../../../../utils/clubCode");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const AdminUser = require("../model/adminUser")
+const { isUnverifiedAdmin, sendAdminNotVerified } = require("../../../../utils/adminVerification");
 
 const VALID_ACCOUNT_TYPES = ["admin", "user"];
 
@@ -60,6 +61,10 @@ const adminLoginController = {
           }
         }
       }
+
+      // Admins need isVerified: true before they can sign in (a brand-new
+      // Google admin is created, then waits for verification).
+      if (isUnverifiedAdmin(checkUserISExist)) return sendAdminNotVerified(res);
 
       // create payload without password
       const userPayload = {
@@ -129,6 +134,9 @@ const adminLoginController = {
       // which emails exist): admins must use Admin Login, players User Login.
       const mismatch = accountTypeMismatch(user.accountType, accountType);
       if (mismatch) return res.status(403).json({ message: mismatch });
+
+      // Admins need isVerified: true before they can sign in.
+      if (isUnverifiedAdmin(user)) return sendAdminNotVerified(res);
 
       // Create payload without password
       const userPayload = {
@@ -203,6 +211,10 @@ const adminLoginController = {
           }
         }
       }
+
+      // Admins need isVerified: true before they can sign in (a brand-new
+      // Google admin is created, then waits for verification).
+      if (isUnverifiedAdmin(checkUserISExist)) return sendAdminNotVerified(res);
 
       // create payload without password
       const userPayload = {

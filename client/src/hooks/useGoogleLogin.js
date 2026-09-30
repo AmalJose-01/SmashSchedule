@@ -1,4 +1,5 @@
 import { takeRedirect } from "../utils/postLoginRedirect";
+import { isAdminNotVerifiedError } from "../utils/adminVerification";
 import { useMutation } from "@tanstack/react-query";
 import { loginWithGoogleAPI } from "../services/userServices";
 import { toast } from "sonner";
@@ -23,6 +24,7 @@ export const useGoogleLogin = () => {
     },
     onError: (err) => {
       toast.dismiss();
+      if (isAdminNotVerifiedError(err)) return; // alert + logout already handled
       toast.error(err?.response?.data?.message || "Login failed");
     },
   });

@@ -4,6 +4,7 @@ import { logOut } from "../../redux/slices/userSlice";
 import { toast } from "sonner";
 import { getAccessToken, headerData } from "../../../utils/storageHandler";
 import store from "../../redux/store";
+import { isAdminNotVerifiedError, forceLogoutUnverifiedAdmin } from "../../utils/adminVerification";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
@@ -28,6 +29,14 @@ axiosInstance.interceptors.response.use(
         console.log("All error ", error);
         
         const status = error?.response?.status;
+
+        // Admin account not verified (at login or mid-session) → alert,
+        // force logout, back to the home page.
+        if (isAdminNotVerifiedError(error)) {
+            toast.dismiss();
+            forceLogoutUnverifiedAdmin(error.response.data.message);
+            return Promise.reject(error);
+        }
 
         if (status === 401) {
             console.log("Axios Interceptor - 401 Unauthorized");

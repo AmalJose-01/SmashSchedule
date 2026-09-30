@@ -1,5 +1,6 @@
 const Club = require("../../../../model/club");
 const { ensureClubWithCode } = require("../../../../utils/clubCode");
+const { isUnverifiedAdmin, ADMIN_NOT_VERIFIED_CODE, ADMIN_NOT_VERIFIED_MESSAGE } = require("../../../../utils/adminVerification");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const AdminUser = require("../model/adminUser");
@@ -41,6 +42,15 @@ const userSignupController = {
         } catch (err) {
           console.error("club key creation failed:", err); // they can generate it later from Club Profile
         }
+      }
+
+      // New admins must be verified before they get a session.
+      if (isUnverifiedAdmin(user)) {
+        return res.status(201).json({
+          message: `Account created. ${ADMIN_NOT_VERIFIED_MESSAGE}`,
+          code: ADMIN_NOT_VERIFIED_CODE,
+          requiresVerification: true,
+        });
       }
 
       const userPayload = {

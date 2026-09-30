@@ -81,6 +81,12 @@ export const useUserSignup = () => {
       },
       {
         onSuccess: (data) => {
+          // New admin accounts wait for verification — no session yet.
+          if (data.requiresVerification) {
+            window.alert(data.message);
+            navigate("/", { replace: true });
+            return;
+          }
           const accountType = data.user?.accountType || "user";
 
           dispatch(

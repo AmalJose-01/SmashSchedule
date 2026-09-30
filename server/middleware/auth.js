@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const AdminUser = require("../src/features/login-signup/model/adminUser");
+const { isUnverifiedAdmin, sendAdminNotVerified } = require("../utils/adminVerification");
 
 require("dotenv").config();
 
@@ -27,12 +28,16 @@ const auth = async (req, res, next) => {
     }
 
     //  Find the user and ensure it exists
-    const user = await AdminUser.findById(decoded.id).select("_id");
+    const user = await AdminUser.findById(decoded.id).select("_id accountType isVerified");
     if (!user) {
       console.log("user Not Found");
 
       return res.status(404).json({ status: false, message: "User not found" });
     }
+
+    // Unverified admins are signed out on their next request (client sees
+    // code ADMIN_NOT_VERIFIED, shows an alert and logs out).
+    if (isUnverifiedAdmin(user)) return sendAdminNotVerified(res);
 
     //  Attach user info to request
     req.userId = user._id;
