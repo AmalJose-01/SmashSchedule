@@ -40,7 +40,7 @@ const buildPlayerMailBody = ({ teamName, tournamentDetail, playerOneName }) => {
     <p>Thank you for helping us look after the venue!</p>
 
     <h3>📊 Live Scores, Fixtures & Standings</h3>
-    <p>We’ll be using <strong>Smash Schedule</strong> to manage:</p>
+    <p>We’ll be using <strong>Rallix</strong> to manage:</p>
     <ul>
       <li>Match fixtures</li>
       <li>Live score updates</li>
@@ -50,7 +50,7 @@ const buildPlayerMailBody = ({ teamName, tournamentDetail, playerOneName }) => {
     <p>
       * Website:
      <a href="https://smash-schedule.vercel.app/" target="_blank" rel="noopener noreferrer">
-  Smash Schedule
+  Rallix
 </a>
       <br />
       * Viewing Score Access Code:

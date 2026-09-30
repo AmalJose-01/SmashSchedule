@@ -3,6 +3,7 @@ import { CalendarDays, Trophy, Loader2, MapPin, Users } from "lucide-react";
 import AppBackground from "../../../../components/AppBackground.jsx";
 import PageHeader from "../../../../components/PageHeader.jsx";
 import { useRoundRobinView } from "../services/playerRoundRobin.js";
+import JoinStatus, { SlotsText } from "../components/JoinStatus.jsx";
 
 const STATUS_LABELS = { Draft: "Upcoming", Scheduled: "Scheduled", Finalized: "Scheduled", Ongoing: "Live", Completed: "Completed", Active: "Active" };
 const MATCH_STATUS = {
@@ -31,7 +32,7 @@ const MatchRow = ({ m }) => {
 
   if (m.isBye) {
     return (
-      <div className="h-full flex items-center gap-3 px-4 py-3 bg-slate-900/40 border border-slate-700/50 rounded-xl">
+      <div className={`h-full flex items-center gap-3 px-4 py-3 border rounded-xl ${m.isMine ? "bg-emerald-500/10 border-emerald-400/50" : "bg-slate-900/40 border-slate-700/50"}`}>
         <span className="flex-1 text-sm text-white">{teamName(m.player1Id, m.player1PartnerId)}</span>
         <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full border bg-yellow-500/15 text-yellow-300 border-yellow-500/30">Walkover</span>
       </div>
@@ -39,9 +40,11 @@ const MatchRow = ({ m }) => {
   }
 
   return (
-    <div className="h-full flex flex-col justify-center px-4 py-3 bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl">
+    <div className={`h-full flex flex-col justify-center px-4 py-3 backdrop-blur-xl border rounded-xl ${m.isMine ? "bg-emerald-500/10 border-emerald-400/60 shadow-lg shadow-emerald-500/10" : "bg-slate-800/50 border-slate-700/50"}`}>
       <div className="flex items-center justify-between gap-2 mb-1.5 text-[11px] text-slate-500">
-        <span className="truncate">{m.court ? `Court ${String(m.court).replace(/^court\s*/i, "")}` : ""}{m.slot ? ` · Round ${m.slot}` : ""}</span>
+        <span className="truncate">
+          {m.court ? `Court ${String(m.court).replace(/^court\s*/i, "")}` : ""}{m.slot ? ` · Round ${m.slot}` : ""}
+        </span>
         <span className={`flex-shrink-0 font-semibold px-2 py-0.5 rounded-full border ${st.cls}`}>{m.isDraw && done ? "Draw" : st.label}</span>
       </div>
       <div className="flex items-center gap-3">
@@ -64,9 +67,17 @@ const MatchRow = ({ m }) => {
   );
 };
 
-const ScheduleTab = ({ matches, matchType }) => {
+const ScheduleTab = ({ matches, matchType, isParticipant, hasSchedule }) => {
   if (matches.length === 0)
-    return <Card className="p-10 text-center text-slate-400 text-sm">The schedule will appear once the organiser finalises the matches.</Card>;
+    return (
+      <Card className="p-10 text-center text-slate-400 text-sm">
+        {!isParticipant
+          ? "You're not playing in this round robin."
+          : !hasSchedule
+          ? "Your matches will appear once the organiser finalises the schedule."
+          : "You don't have any matches in this round robin."}
+      </Card>
+    );
 
   const byGroup = matches.reduce((acc, m) => {
     let key;
@@ -107,7 +118,10 @@ const RoundRobinView = () => {
   const { data, isLoading, isError } = useRoundRobinView(id);
 
   const tournament = data?.tournament;
-  const matches = data?.matches ?? [];
+  // Only the signed-in player's own matches. The server already sends just
+  // those; this also drops anything flagged isMine: false (e.g. from an older
+  // server build) so other people's matches never show.
+  const matches = (data?.matches ?? []).filter((m) => m.isMine !== false);
 
   return (
     <AppBackground variant="user">
@@ -134,13 +148,53 @@ const RoundRobinView = () => {
               {tournament.numberOfCourts != null && (
                 <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-emerald-400" />{tournament.numberOfCourts} courts</span>
               )}
-              {tournament.numberOfSlots != null && (
-                <span className="flex items-center gap-1.5"><Users className="w-4 h-4 text-emerald-400" />{tournament.numberOfSlots} slots</span>
+              {data?.join ? (
+                <SlotsText join={data.join} className="gap-1.5 [&>svg]:w-4 [&>svg]:h-4 [&>svg]:text-emerald-400" />
+              ) : (
+                tournament.numberOfSlots != null && (
+                  <span className="flex items-center gap-1.5"><Users className="w-4 h-4 text-emerald-400" />{tournament.numberOfSlots} slots</span>
+                )
+              )}
+              {fmtDate(tournament.registrationDeadline) && (
+                <span className="flex items-center gap-1.5"><CalendarDays className="w-4 h-4 text-yellow-300" />Register by {fmtDate(tournament.registrationDeadline)}</span>
               )}
               <span className="flex items-center gap-1.5"><Trophy className="w-4 h-4 text-emerald-400" />Best of {tournament.numberOfSets ?? 3} · to {tournament.setWinningPoint ?? 21}</span>
             </Card>
 
-            <ScheduleTab matches={matches} matchType={tournament.matchType} />
+            {/* Join / registration status */}
+            {/* Once the schedule is out, joined players just see their matches below */}
+            {data?.join && !(data.join.joined && (data.join.scheduled ?? ["Finalized", "Ongoing", "Completed"].includes(tournament.status))) && (
+              <Card className={`p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 ${data.join.joined ? "!border-emerald-500/40" : ""}`}>
+                <div className="flex-1">
+                  <p className="text-white font-semibold">
+                    {data.join.joined
+                      ? "You're registered"
+                      : data.join.canJoin
+                      ? "Want to play in this round robin?"
+                      : "Registration"}
+                  </p>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    <SlotsText join={data.join} />
+                  </p>
+                </div>
+                <JoinStatus roundRobinId={id} join={data.join} size="lg" />
+              </Card>
+            )}
+
+            <div className="flex items-center justify-between">
+              <h2 className="text-base sm:text-lg font-semibold text-white">My Matches</h2>
+              {matches.length > 0 && (
+                <span className="text-xs text-slate-400">
+                  {matches.filter((m) => m.status === "completed").length}/{matches.length} played
+                </span>
+              )}
+            </div>
+            <ScheduleTab
+              matches={matches}
+              matchType={tournament.matchType}
+              isParticipant={!!data?.isParticipant}
+              hasSchedule={!!data?.hasSchedule}
+            />
           </>
         )}
       </div>

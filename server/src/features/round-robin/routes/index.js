@@ -28,6 +28,8 @@ router.get("/tournaments/:id/standings", auth, RoundRobinMatchController.getStan
 router.post("/members", auth, RoundRobinMemberController.createMember);
 router.post("/members/bulk-import", auth, RoundRobinMemberController.bulkImportMembers);
 router.get("/members", auth, RoundRobinMemberController.getMembers);
+router.get("/members/pending", auth, RoundRobinMemberController.getPendingMembers); // before /members/:memberId
+router.patch("/members/:memberId/approve", auth, RoundRobinMemberController.approveMember);
 router.get("/members/:memberId", auth, RoundRobinMemberController.getMemberById);
 router.put("/members/:memberId", auth, RoundRobinMemberController.updateMember);
 router.delete("/members/:memberId", auth, RoundRobinMemberController.deleteMember);

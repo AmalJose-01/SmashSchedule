@@ -35,7 +35,7 @@ const PageHeader = ({
   badge,
   onBack,
   actions,
-  eyebrow = "SmashSchedule",
+  eyebrow = "Rallix",
   showLogout = true,
   variant = "admin",
   // true: one avatar button with My Profile + Log out instead of the plain logout icon

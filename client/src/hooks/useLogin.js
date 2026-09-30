@@ -1,4 +1,5 @@
 import { takeRedirect } from "../utils/postLoginRedirect";
+import { isAdminNotVerifiedError } from "../utils/adminVerification";
 import { useMutation } from "@tanstack/react-query";
 import { loginAPI } from "../services/userServices";
 import { toast } from "sonner";
@@ -33,6 +34,7 @@ export const useLogin = () => {
       })
       .catch((err) => {
         console.error("Login error:", err);
+        if (isAdminNotVerifiedError(err)) return; // alert + logout already handled
         const message =
           err.response?.data?.message ||
           err.message ||

@@ -78,6 +78,15 @@ const Step1 = ({ form, setForm, errors }) => (
         className={inputCls()}
       />
     </Field>
+    <Field label="Registration Deadline *" error={errors.registrationDeadline}>
+      <input
+        type="datetime-local"
+        value={form.registrationDeadline}
+        onChange={(e) => setForm((f) => ({ ...f, registrationDeadline: e.target.value }))}
+        className={inputCls(errors.registrationDeadline)}
+      />
+      <p className="text-xs text-slate-400 mt-1">Last date and time players can register.</p>
+    </Field>
     <Field label="Description">
       <textarea
         value={form.description}
@@ -290,6 +299,12 @@ const Step3 = ({ form }) => (
         ["Set Winning Point", form.setWinningPoint],
         ["Winning Gap", form.winningPointGap],
         ["Start Date", form.startDate || "—"],
+        [
+          "Registration Deadline",
+          form.registrationDeadline
+            ? new Date(form.registrationDeadline).toLocaleString("en-AU", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
+            : "—",
+        ],
       ].map(([k, v]) => (
         <div key={k} className="flex justify-between text-sm">
           <span className="text-slate-400">{k}</span>
@@ -319,6 +334,7 @@ const INITIAL_FORM = {
   tournamentName: "",
   matchType: "Doubles",
   startDate: getDefaultStartDate(),
+  registrationDeadline: "", // mandatory, starts empty
   description: "",
   numberOfGroups: 2,
   playersPerGroup: 4,
@@ -346,6 +362,11 @@ const CreateTournamentRR = () => {
     if (step === 0) {
       if (!form.tournamentName.trim()) e.tournamentName = "Tournament name is required";
       if (!form.matchType) e.matchType = "Match type is required";
+      if (!form.registrationDeadline) {
+        e.registrationDeadline = "Registration deadline is required";
+      } else if (new Date(form.registrationDeadline) <= new Date()) {
+        e.registrationDeadline = "Deadline must be in the future";
+      }
     }
     if (step === 1) {
       if (!form.numberOfGroups || form.numberOfGroups < 1) e.numberOfGroups = "At least 1 group required";
@@ -379,6 +400,8 @@ const CreateTournamentRR = () => {
         playersPerGroup:  Number(form.playersPerGroup),
         numberOfCourts:   Number(form.numberOfCourts),
         numberOfSlots:    Number(form.numberOfSlots),
+        // datetime-local is local time — send as a full ISO timestamp.
+        registrationDeadline: new Date(form.registrationDeadline).toISOString(),
         numberOfMatchesPerMember: Number(form.numberOfMatchesPerMember),
         pointsForWin:     Number(form.pointsForWin),
         pointsForLoss:    Number(form.pointsForLoss),

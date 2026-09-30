@@ -26,6 +26,8 @@ router.get("/code/:code", clubController.getClubByCode); // before /:clubId
 router.get("/:clubId/events", auth, clubController.getClubEvents);
 // Player read-only round robin schedule
 router.get("/round-robin/:id", auth, PlayerRoundRobinController.getRoundRobinView);
+router.post("/round-robin/:id/join", auth, PlayerRoundRobinController.joinRoundRobin);
+router.delete("/round-robin/:id/join", auth, PlayerRoundRobinController.leaveRoundRobin);
 router.get("/:clubId", clubController.getClubById);
 
 module.exports = router;

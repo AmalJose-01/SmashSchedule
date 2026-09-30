@@ -20,7 +20,7 @@ const Dashboard = () => {
         {/* Hero */}
         <div className="text-center mb-10">
           <h1 className="text-3xl sm:text-4xl font-semibold text-white mb-3" style={{ fontFamily: "Outfit, sans-serif" }}>
-            Welcome to SmashSchedule Admin
+            Welcome to Rallix Admin
           </h1>
           <div className="h-1 w-24 bg-gradient-to-r from-cyan-500 to-emerald-500 mx-auto rounded-full mb-4" />
           <p className="text-slate-400">

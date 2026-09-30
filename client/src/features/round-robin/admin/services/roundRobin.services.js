@@ -37,6 +37,13 @@ export const updateRoundRobinMemberAPI = ({ memberId, data }) =>
 export const deleteRoundRobinMemberAPI = (memberId) =>
   apiClient.delete(`${BASE}/members/${memberId}`).then((r) => r.data);
 
+// Players who asked to join from their own login, awaiting approval.
+export const getPendingRoundRobinMembersAPI = () =>
+  apiClient.get(`${BASE}/members/pending`).then((r) => r.data);
+
+export const approveRoundRobinMemberAPI = ({ memberId, data }) =>
+  apiClient.patch(`${BASE}/members/${memberId}/approve`, data).then((r) => r.data);
+
 export const bulkImportRoundRobinMembersAPI = (members) =>
   apiClient.post(`${BASE}/members/bulk-import`, { members }).then((r) => r.data);
 

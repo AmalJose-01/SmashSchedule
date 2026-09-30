@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
+  getPendingRoundRobinMembersAPI,
+  approveRoundRobinMemberAPI,
   resetMatchScoreAPI,
   getRoundRobinTournamentsAPI,
   getRoundRobinTournamentByIdAPI,
@@ -43,6 +45,7 @@ export const rrKeys = {
   tournaments: ["rr-tournaments"],
   tournament: (id) => ["rr-tournament", id],
   members: ["rr-members"],
+  pendingMembers: ["rr-members", "pending"],
   member: (id) => ["rr-member", id],
   players: (tournamentId) => ["rr-players", tournamentId],
   groups: (tournamentId) => ["rr-groups", tournamentId],
@@ -143,6 +146,26 @@ export const useCreateRoundRobinMember = () => {
       queryClient.invalidateQueries({ queryKey: rrKeys.members });
     },
     onError: (err) => toast.error(err.response?.data?.message || "Failed to add member"),
+  });
+};
+
+export const useGetPendingRoundRobinMembers = () =>
+  useQuery({
+    queryKey: rrKeys.pendingMembers,
+    queryFn: getPendingRoundRobinMembersAPI,
+    staleTime: 1000 * 30,
+  });
+
+export const useApproveRoundRobinMember = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: approveRoundRobinMemberAPI,
+    onSuccess: () => {
+      toast.success("Member approved");
+      // rrKeys.members is a prefix of pendingMembers, so this refreshes both lists.
+      queryClient.invalidateQueries({ queryKey: rrKeys.members });
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to approve member"),
   });
 };
 

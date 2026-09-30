@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Search, ScanLine, X, Loader2, MapPin, Phone, Mail, SearchX, KeyRound, Plus, Check } from "lucide-react";
 import { useMyClubs, useAddMyClub } from "../../my-clubs/services/myClubs.queries.js";
+import JoinRoundRobinPrompt from "../../my-clubs/components/JoinRoundRobinPrompt.jsx";
 import AppBackground from "../../../components/AppBackground.jsx";
 import PageHeader from "../../../components/PageHeader.jsx";
 import QrScanner from "../components/QrScanner.jsx";
@@ -14,6 +15,8 @@ const ClubResult = ({ club }) => {
   const { data: myClubs = [] } = useMyClubs();
   const { mutate: addClub, isPending: adding } = useAddMyClub();
   const alreadyAdded = myClubs.some((c) => c._id === club._id);
+  // After "Add to My Clubs", ask whether they also want to join the round robin.
+  const [askJoin, setAskJoin] = useState(false);
 
   const location = [club.location?.address, club.location?.city, club.location?.state, club.location?.country]
     .filter(Boolean)
@@ -62,7 +65,7 @@ const ClubResult = ({ club }) => {
         ) : (
           <button
             type="button"
-            onClick={() => addClub(club._id)}
+            onClick={() => addClub(club._id, { onSuccess: () => setAskJoin(true) })}
             disabled={adding}
             className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-emerald-500 to-yellow-500 hover:from-emerald-600 hover:to-yellow-600 shadow-lg shadow-emerald-500/30 disabled:opacity-60 transition-all"
           >
@@ -71,6 +74,7 @@ const ClubResult = ({ club }) => {
           </button>
         )}
       </div>
+      {askJoin && <JoinRoundRobinPrompt club={club} onClose={() => setAskJoin(false)} />}
     </div>
   );
 };
@@ -115,7 +119,7 @@ const FindClub = () => {
       setScanNote("");
       search(key);
     } else {
-      setScanNote("That QR code isn't a SmashSchedule club code. Try again or type the key.");
+      setScanNote("That QR code isn't a Rallix club code. Try again or type the key.");
     }
   };
 

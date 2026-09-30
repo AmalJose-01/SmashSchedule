@@ -3,6 +3,7 @@ const RoundRobinMember = require("../models/RoundRobinMember");
 const RoundRobinPlayer = require("../models/RoundRobinPlayer");
 const RoundRobinTournament = require("../models/RoundRobinTournament");
 const { GRADE_DEFAULT_POINTS } = require("../constants/grades");
+const { isValidPhone, INVALID_PHONE_MESSAGE } = require("../../../../utils/phone");
 
 const RoundRobinMemberController = {
   createMember: async (req, res) => {
@@ -10,6 +11,9 @@ const RoundRobinMemberController = {
       const { name, grade, points, isMember, email, contact, nationalMemberId, dateOfBirth, gender } = req.body;
       if (!name || !email) {
         return res.status(400).json({ message: "name and email are required" });
+      }
+      if (!isValidPhone(contact)) {
+        return res.status(400).json({ message: INVALID_PHONE_MESSAGE });
       }
 
       const cleanEmail = email.toLowerCase().trim();
@@ -56,10 +60,61 @@ const RoundRobinMemberController = {
 
   getMembers: async (req, res) => {
     try {
-      const members = await RoundRobinMember.find({ adminId: req.userId, isActive: true }).sort({ name: 1 });
+      const members = await RoundRobinMember.find({ adminId: req.userId, isActive: true, status: { $ne: "pending" } }).sort({ name: 1 });
       return res.status(200).json({ message: "Members fetched", data: members });
     } catch (error) {
       console.log("getMembers error:", error);
+      return res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+  },
+
+  // Players who asked to join from their own login, waiting for approval.
+  getPendingMembers: async (req, res) => {
+    try {
+      const members = await RoundRobinMember.find({ adminId: req.userId, isActive: true, status: "pending" }).sort({ createdAt: -1 });
+      return res.status(200).json({ message: "Pending members fetched", data: members });
+    } catch (error) {
+      console.log("getPendingMembers error:", error);
+      return res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+  },
+
+  // Approve a pending member. Grade is required; points default to the
+  // grade's starting points unless the admin sets them.
+  approveMember: async (req, res) => {
+    try {
+      const { memberId } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(memberId)) {
+        return res.status(400).json({ message: "Invalid member id" });
+      }
+      const member = await RoundRobinMember.findOne({ _id: memberId, adminId: req.userId, isActive: true });
+      if (!member) return res.status(404).json({ message: "Member not found" });
+
+      const { name, grade, points, isMember, contact, nationalMemberId, dateOfBirth, gender } = req.body;
+      if (!grade || !Object.prototype.hasOwnProperty.call(GRADE_DEFAULT_POINTS, grade)) {
+        return res.status(400).json({ message: "Grade is required to approve a member" });
+      }
+      if (name !== undefined && !String(name).trim()) {
+        return res.status(400).json({ message: "Name is required" });
+      }
+      if (contact !== undefined && !isValidPhone(contact)) {
+        return res.status(400).json({ message: INVALID_PHONE_MESSAGE });
+      }
+
+      if (name !== undefined) member.name = String(name).trim();
+      member.grade = grade;
+      member.points = points !== undefined && points !== "" ? points : GRADE_DEFAULT_POINTS[grade] ?? 0;
+      if (isMember !== undefined) member.isMember = isMember;
+      if (contact !== undefined) member.contact = contact;
+      if (nationalMemberId !== undefined) member.nationalMemberId = nationalMemberId;
+      if (dateOfBirth !== undefined) member.dateOfBirth = dateOfBirth || null;
+      if (gender !== undefined) member.gender = gender;
+      member.status = "approved";
+
+      await member.save();
+      return res.status(200).json({ message: "Member approved", data: member });
+    } catch (error) {
+      console.log("approveMember error:", error);
       return res.status(500).json({ message: "Internal server error", error: error.message });
     }
   },
@@ -96,6 +151,9 @@ const RoundRobinMemberController = {
       }
 
       const { name, grade, points, isMember, contact, nationalMemberId, dateOfBirth, gender } = req.body;
+      if (contact !== undefined && !isValidPhone(contact)) {
+        return res.status(400).json({ message: INVALID_PHONE_MESSAGE });
+      }
       if (name !== undefined) member.name = name;
       if (grade !== undefined) member.grade = grade;
       if (points !== undefined) member.points = points;
@@ -250,7 +308,17 @@ const RoundRobinMemberController = {
         return res.status(404).json({ message: "Tournament not found" });
       }
 
-      const members = await RoundRobinMember.find({ _id: { $in: memberIds }, isActive: true });
+      // Only approved members with a grade can play in a round robin.
+      const members = await RoundRobinMember.find({
+        _id: { $in: memberIds },
+        adminId: req.userId,
+        isActive: true,
+        status: { $ne: "pending" },
+        grade: { $nin: [null, ""] },
+      });
+      if (members.length === 0) {
+        return res.status(400).json({ message: "Only approved members with a grade can be added" });
+      }
 
       // Enforce player capacity (numberOfSlots). Members already in the
       // tournament don't consume a new slot, so only count genuinely new ones.

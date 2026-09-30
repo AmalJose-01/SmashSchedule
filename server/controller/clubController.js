@@ -3,6 +3,9 @@ const AdminUser = require("../model/adminUser");
 const Tournament = require("../model/tournamentModel");
 const RoundRobinTournament = require("../src/features/round-robin/models/RoundRobinTournament");
 const mongoose = require("mongoose");
+const { sortEvents, tournamentDate } = require("../utils/eventSort");
+const RoundRobinPlayer = require("../src/features/round-robin/models/RoundRobinPlayer");
+const { getJoinInfo, findMember } = require("../src/features/round-robin/services/playerJoinService");
 const cloudinary = require("cloudinary").v2;
 const {
   generateUniqueClubCode,
@@ -267,15 +270,36 @@ const clubController = {
           { $project: { teams: 0 } },
         ]),
         RoundRobinTournament.find({ adminId: club.adminId })
-          .select("tournamentName matchType status startDate endDate numberOfSlots numberOfCourts")
+          .select("tournamentName matchType status startDate endDate registrationDeadline numberOfSlots numberOfCourts adminId")
           .sort({ startDate: -1, createdAt: -1 })
           .lean(),
       ]);
 
+      // Slots used / left and whether this player can join each round robin.
+      const counts = roundRobins.length
+        ? await RoundRobinPlayer.aggregate([
+            { $match: { tournamentId: { $in: roundRobins.map((r) => r._id) } } },
+            { $group: { _id: "$tournamentId", n: { $sum: 1 } } },
+          ])
+        : [];
+      const countBy = new Map(counts.map((c) => [String(c._id), c.n]));
+      const { member } = await findMember(club.adminId, req.userId);
+      const roundRobinsWithJoin = await Promise.all(
+        roundRobins.map(async (r) => {
+          const join = await getJoinInfo(r, req.userId, { playerCount: countBy.get(String(r._id)) ?? 0, member });
+          const { adminId, ...rest } = r;
+          return { ...rest, join };
+        })
+      );
+
       // Events change often (new round robins, status updates) — never let the
       // browser reuse a cached copy (that's what produced 304 Not Modified).
       res.set("Cache-Control", "no-store");
-      return res.status(200).json({ tournaments, roundRobins });
+      return res.status(200).json({
+        // Latest first; same day → later end first; otherwise by name.
+        tournaments: sortEvents(tournaments, (t) => ({ start: tournamentDate(t), end: tournamentDate(t), name: t.tournamentName })),
+        roundRobins: sortEvents(roundRobinsWithJoin, (r) => ({ start: r.startDate, end: r.endDate, name: r.tournamentName })),
+      });
     } catch (error) {
       console.error("getClubEvents error:", error);
       return res.status(500).json({ message: "Internal Server Error" });

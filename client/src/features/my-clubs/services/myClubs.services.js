@@ -5,4 +5,6 @@ export const addMyClub = async (clubId) => (await apiClient.post(`/user-detail/c
 export const setClubFavourite = async ({ clubId, isFavourite }) =>
   (await apiClient.patch(`/user-detail/clubs/${clubId}`, { isFavourite })).data;
 export const removeMyClub = async (clubId) => (await apiClient.delete(`/user-detail/clubs/${clubId}`)).data;
+export const joinClubRoundRobin = async (clubId) =>
+  (await apiClient.post(`/user-detail/clubs/${clubId}/join-round-robin`)).data;
 export const getClubEvents = async (clubId) => (await apiClient.get(`/club/${clubId}/events`)).data;

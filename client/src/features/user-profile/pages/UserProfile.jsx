@@ -4,6 +4,7 @@ import { Pencil, CheckCircle, Loader2, User } from "lucide-react";
 import AppBackground from "../../../components/AppBackground.jsx";
 import PageHeader from "../../../components/PageHeader.jsx";
 import { useGetMyUserDetail, useSaveMyUserDetail } from "../services/userDetail.queries.js";
+import { isValidPhone, INVALID_PHONE_MESSAGE } from "../../../utils/phone.js";
 
 // Same personal fields as the admin Member Bank form, minus grade & points.
 const GENDERS = ["Male", "Female", "Other", "Prefer not to say"];
@@ -72,6 +73,7 @@ const UserProfile = () => {
     e.preventDefault();
     const errs = {};
     if (!form.name.trim()) errs.name = "Name is required";
+    if (!isValidPhone(form.contact)) errs.contact = INVALID_PHONE_MESSAGE;
     if (form.dateOfBirth && new Date(form.dateOfBirth) > new Date()) errs.dateOfBirth = "Date of birth can't be in the future";
     setErrors(errs);
     if (Object.keys(errs).length) return;
@@ -156,8 +158,8 @@ const UserProfile = () => {
                         {form.gender && !GENDERS.includes(form.gender) && <option value={form.gender}>{form.gender}</option>}
                       </select>
                     </Field>
-                    <Field label="Contact">
-                      <input type="tel" value={form.contact} onChange={set("contact")} placeholder="Phone number" className={inputCls()} />
+                    <Field label="Contact" error={errors.contact}>
+                      <input type="tel" inputMode="tel" value={form.contact} onChange={set("contact")} placeholder="e.g. 0412 345 678" className={inputCls(errors.contact)} />
                     </Field>
                     <Field label="Date of Birth" error={errors.dateOfBirth}>
                       <input type="date" value={form.dateOfBirth} onChange={set("dateOfBirth")} max={new Date().toISOString().slice(0, 10)} className={inputCls(errors.dateOfBirth)} />

@@ -53,7 +53,7 @@ const adjustMemberPoints = async (memberId, delta) => {
 
   // Capped at 100: a win at 100 adds nothing, a loss still subtracts.
   // Clamp the starting value too, so any legacy >100 record drops from 100.
-  const current = clampMemberPoints(member.points);
+  const current = clampMemberPoints(member.points) ?? 0;
   member.points = clampMemberPoints(current + delta);
   applyGradeTransition(member);
   await member.save();

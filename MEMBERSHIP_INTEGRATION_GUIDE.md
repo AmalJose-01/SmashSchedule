@@ -297,7 +297,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 await resend.emails.send({
   from: "noreply@yourdomain.com",
   to: member.email,
-  subject: "Welcome to SmashSchedule!",
+  subject: "Welcome to Rallix!",
   html: `<h1>Welcome ${member.firstName}!</h1><p>Your membership is confirmed.</p>`,
 });
 ```

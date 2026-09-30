@@ -8,7 +8,9 @@ const RoundRobinMemberSchema = new Schema(
     name: { type: String, required: true },
     grade: {
       type: String,
-      enum: ["A", "B", "C", "D", "E", "F", "G", "H", "Unrated"],
+      // null = not graded yet (a player who joined from their own login and
+      // is waiting for admin approval).
+      enum: ["A", "B", "C", "D", "E", "F", "G", "H", "Unrated", null],
       default: "Unrated",
     },
     // Always kept within 0–100 (see clampMemberPoints) — every write path
@@ -21,10 +23,17 @@ const RoundRobinMemberSchema = new Schema(
     gender: { type: String, trim: true },
     isMember: { type: Boolean, default: true },
     isActive: { type: Boolean, default: true },
+    // "pending" = the player asked to join from their own account; the admin
+    // must approve (and set a grade) before they appear in the Member Bank.
+    // Members the admin adds directly are "approved" straight away.
+    status: { type: String, enum: ["pending", "approved"], default: "approved" },
+    // The player's login account, once linked (self-join, or matched by email).
+    userId: { type: Schema.Types.ObjectId, ref: "AdminUser", default: null },
   },
   { timestamps: true }
 );
 
 RoundRobinMemberSchema.index({ email: 1, adminId: 1 }, { unique: true });
+RoundRobinMemberSchema.index({ userId: 1 });
 
 module.exports = mongoose.model("RoundRobinMember", RoundRobinMemberSchema);

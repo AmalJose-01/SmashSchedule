@@ -31,6 +31,9 @@ const RoundRobinTournamentSchema = new Schema(
     playersPerGroup: { type: Number, required: function () { return this.format !== "Graded"; } },
     numberOfMatchesPerMember: { type: Number, default: 3 },
     startDate: { type: Date },
+    // Registration deadline (date + time). Required for new tournaments;
+    // not schema-required so older tournaments without one still save.
+    registrationDeadline: { type: Date, default: null },
     endDate: { type: Date },
     groupingStrategy: {
       type: String,

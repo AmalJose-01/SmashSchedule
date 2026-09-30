@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { getMyClubs, addMyClub, setClubFavourite, removeMyClub, getClubEvents } from "./myClubs.services.js";
+import { getMyClubs, addMyClub, setClubFavourite, removeMyClub, getClubEvents, joinClubRoundRobin } from "./myClubs.services.js";
 
 export const myClubsKeys = {
   list: ["my-clubs"],
@@ -26,6 +26,18 @@ const useListMutation = (mutationFn, successMsg) => {
 export const useAddMyClub = () => useListMutation(addMyClub, "Added to My Clubs");
 export const useSetClubFavourite = () => useListMutation(setClubFavourite);
 export const useRemoveMyClub = () => useListMutation(removeMyClub, "Removed from My Clubs");
+
+export const useJoinClubRoundRobin = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: joinClubRoundRobin,
+    onSuccess: (res) => {
+      toast.success(res?.message || "Request sent");
+      qc.invalidateQueries({ queryKey: myClubsKeys.list });
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Couldn't send your request"),
+  });
+};
 
 export const useClubEvents = (clubId, enabled) =>
   useQuery({

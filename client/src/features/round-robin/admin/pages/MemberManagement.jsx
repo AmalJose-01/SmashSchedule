@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Search, Pencil, Trash2, Users, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Users, ArrowUp, ArrowDown, ArrowUpDown, UserCheck, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import MemberForm from "../components/MemberForm.jsx";
 import {
   useGetRoundRobinMembers,
+  useGetPendingRoundRobinMembers,
   useDeleteRoundRobinMember,
   rrKeys,
 } from "../services/roundRobin.queries.js";
@@ -64,12 +65,15 @@ const MemberManagement = () => {
   const [sort, setSort] = useState({ key: "name", dir: "asc" });
   const [formOpen, setFormOpen] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
+  const [approvingMember, setApprovingMember] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [selected, setSelected] = useState(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [confirmBulk, setConfirmBulk] = useState(false);
 
   const { data, isLoading } = useGetRoundRobinMembers();
+  const { data: pendingData } = useGetPendingRoundRobinMembers();
+  const pending = pendingData?.data ?? [];
   const { mutate: deleteMember, isPending: isDeleting } = useDeleteRoundRobinMember();
 
   const members = data?.data ?? [];
@@ -184,6 +188,48 @@ const MemberManagement = () => {
             Add Member
           </button>
         </div>
+
+        {/* Pending join requests (players who joined from their own login) */}
+        {pending.length > 0 && (
+          <div className="mb-6 bg-amber-500/5 backdrop-blur-xl border border-amber-500/30 rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-amber-500/20">
+              <Clock className="w-4 h-4 text-amber-300" />
+              <h2 className="text-sm font-semibold text-amber-200">
+                Pending approval <span className="text-amber-300/70">({pending.length})</span>
+              </h2>
+              <span className="hidden sm:inline text-xs text-amber-300/60 ml-2">Joined from their own login — approve and set a grade</span>
+            </div>
+            <div className="divide-y divide-amber-500/10">
+              {pending.map((m) => (
+                <div key={m._id} className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-white truncate">{m.name}</p>
+                    <p className="text-xs text-slate-400 truncate">
+                      {m.email}
+                      {m.contact ? ` · ${m.contact}` : ""}
+                      {m.createdAt ? ` · requested ${new Date(m.createdAt).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setApprovingMember(m)}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-lg shadow-emerald-500/20 transition-all"
+                    >
+                      <UserCheck className="w-4 h-4" /> Approve
+                    </button>
+                    <button
+                      onClick={() => handleDeleteClick(m._id)}
+                      title="Decline request"
+                      className="p-2 rounded-lg text-red-400 hover:bg-red-500/15 hover:text-red-300 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Search */}
         <div className="relative mb-4">
@@ -321,6 +367,11 @@ const MemberManagement = () => {
       {/* Add / Edit Form Modal */}
       {formOpen && (
         <MemberForm member={editingMember} onClose={handleFormClose} />
+      )}
+
+      {/* Approve pending member — grade is mandatory */}
+      {approvingMember && (
+        <MemberForm member={approvingMember} approveMode onClose={() => setApprovingMember(null)} />
       )}
 
       {/* Single Delete Confirm Modal */}

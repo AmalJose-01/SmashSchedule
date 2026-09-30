@@ -2,6 +2,7 @@ import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { CalendarDays, ChevronRight, Users } from "lucide-react";
 import { setTournamentData } from "../../../redux/slices/tournamentSlice";
+import JoinStatus, { SlotsText } from "../../round-robin/player/components/JoinStatus.jsx";
 
 const statusCls = (s = "") => {
   const k = s.toLowerCase();
@@ -52,28 +53,37 @@ export const TournamentRow = ({ t }) => {
   );
 };
 
+// Row is a div (not a button) because it contains its own Join button.
 export const RoundRobinRow = ({ r }) => {
   const navigate = useNavigate();
+  const open = () => navigate(`/user/round-robin/${r._id}`);
   return (
-  <button
-    type="button"
-    onClick={() => navigate(`/user/round-robin/${r._id}`)}
-    className="group w-full flex items-center gap-3 text-left bg-slate-900/40 hover:bg-slate-900/70 border border-slate-700/50 hover:border-emerald-500/40 rounded-xl px-4 py-3 transition-all"
-  >
-    <div className="min-w-0 flex-1">
-      <p className="text-sm font-semibold text-white truncate">{r.tournamentName}</p>
-      <p className="flex flex-wrap items-center gap-x-3 text-xs text-slate-400 mt-0.5">
-        <span>{r.matchType}</span>
-        {fmt(r.startDate) && (
-          <span className="flex items-center gap-1"><CalendarDays className="w-3 h-3" />{fmt(r.startDate)}</span>
-        )}
-        {r.numberOfSlots != null && (
-          <span className="flex items-center gap-1"><Users className="w-3 h-3" />{r.numberOfSlots} slots</span>
-        )}
-      </p>
+    <div
+      role="link"
+      tabIndex={0}
+      onClick={open}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), open())}
+      className="group w-full flex items-center gap-3 text-left cursor-pointer bg-slate-900/40 hover:bg-slate-900/70 border border-slate-700/50 hover:border-emerald-500/40 rounded-xl px-4 py-3 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+    >
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-white truncate">{r.tournamentName}</p>
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-400 mt-0.5">
+          <span>{r.matchType}</span>
+          {fmt(r.startDate) && (
+            <span className="flex items-center gap-1"><CalendarDays className="w-3 h-3" />{fmt(r.startDate)}</span>
+          )}
+          {r.join ? (
+            <SlotsText join={r.join} />
+          ) : (
+            r.numberOfSlots != null && (
+              <span className="flex items-center gap-1"><Users className="w-3 h-3" />{r.numberOfSlots} slots</span>
+            )
+          )}
+        </p>
+      </div>
+      <JoinStatus roundRobinId={r._id} join={r.join} status={r.status} />
+      <StatusPill status={r.status} />
+      <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-emerald-400 transition-colors" />
     </div>
-    <StatusPill status={r.status} />
-    <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-emerald-400 transition-colors" />
-  </button>
   );
 };
