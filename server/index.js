@@ -14,6 +14,10 @@ var whitelist = [
   'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175',
   // Production frontend (GoDaddy cPanel)
   'https://rallix.com.au', 'https://www.rallix.com.au',
+  // QA frontend (deployed from the qa branch)
+  'https://qa.rallix.com.au',
+  // Dev frontend (deployed from the dev branch)
+  'https://dev.rallix.com.au',
   // Old Vercel deployments (remove once rallix.com.au is live)
   'https://smash-schedule.vercel.app', 'https://smash-schedule-git-qa-next-amaljose-01s-projects.vercel.app', 'https://rallix.vercel.app','http://rallix.com.au',
   // Extra origins without a code change: CORS_ORIGINS=https://a.com,https://b.com
