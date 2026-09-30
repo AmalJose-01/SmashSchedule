@@ -49,7 +49,7 @@ const buildPlayerMailBody = ({ teamName, tournamentDetail, playerOneName }) => {
 
     <p>
       * Website:
-     <a href="https://smash-schedule.vercel.app/" target="_blank" rel="noopener noreferrer">
+     <a href="${process.env.CLIENT_URL || "https://rallix.com.au"}" target="_blank" rel="noopener noreferrer">
   Rallix
 </a>
       <br />
