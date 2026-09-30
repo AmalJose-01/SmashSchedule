@@ -2,6 +2,8 @@ const Stripe = require("stripe");
 const stripe = Stripe(process.env.STRIPE_KEY);
 const AdminUser = require("../model/adminUser");
 const BASE_URL = require("../utils/config")
+// Stripe sends the admin back to the React app (rallix.com.au), not the API.
+const FRONTEND_URL = (process.env.CLIENT_URL || BASE_URL).replace(/\/$/, "");
 const subscriptionPaymentController = {
   subscriptionPayment: async (req, res) => {
     try {
@@ -52,8 +54,8 @@ const subscriptionPaymentController = {
         mode: "subscription",
         line_items: [{ price: "price_1Sd70SAGJ8rZb74kQKnxRd7m", quantity: 1 }],
         success_url:
-          `${BASE_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${BASE_URL}/cancel`,
+          `${FRONTEND_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${FRONTEND_URL}/cancel`,
         customer_email: user.emailID,
               client_reference_id: req.userId.toString(),
 

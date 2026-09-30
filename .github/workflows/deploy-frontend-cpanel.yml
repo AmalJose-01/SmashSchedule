@@ -1,0 +1,59 @@
+# Builds the React frontend and uploads it to https://rallix.com.au
+# (GoDaddy cPanel) over FTPS on every push to main that changes client/.
+# The backend stays on Render: https://smashschedule-1.onrender.com
+# Setup guide: docs/CPANEL_DEPLOY.md
+name: Deploy frontend to rallix.com.au
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "client/**"
+      - ".github/workflows/deploy-frontend-cpanel.yml"
+  workflow_dispatch: # manual "Run workflow" button in the Actions tab
+
+concurrency:
+  group: deploy-frontend-cpanel
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL || 'https://smashschedule-1.onrender.com/api/v1' }}
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+          VITE_GOOGLE_API_KEY: ${{ secrets.VITE_GOOGLE_API_KEY }}
+          VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
+          VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}
+
+      - name: Check build output
+        run: test -f dist/index.html && test -f dist/.htaccess
+
+      - name: Upload to cPanel (FTPS)
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.CPANEL_FTP_SERVER }}
+          username: ${{ secrets.CPANEL_FTP_USERNAME }}
+          password: ${{ secrets.CPANEL_FTP_PASSWORD }}
+          protocol: ftps
+          port: 21
+          local-dir: client/dist/
+          server-dir: ${{ vars.CPANEL_SERVER_DIR || './' }}
