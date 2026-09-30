@@ -11,5 +11,6 @@ router.get("/clubs", auth, userDetailController.getMyClubs);
 router.post("/clubs", auth, userDetailController.addMyClub);
 router.patch("/clubs/:clubId", auth, userDetailController.setClubFavourite);
 router.delete("/clubs/:clubId", auth, userDetailController.removeMyClub);
+router.post("/clubs/:clubId/join-round-robin", auth, userDetailController.joinClubRoundRobin);
 
 module.exports = router;

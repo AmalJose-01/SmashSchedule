@@ -1,6 +1,13 @@
 const mongoose = require("mongoose");
 const RoundRobinTournament = require("../models/RoundRobinTournament");
 const RoundRobinMatch = require("../models/RoundRobinMatch");
+const RoundRobinMember = require("../models/RoundRobinMember");
+const RoundRobinPlayer = require("../models/RoundRobinPlayer");
+const AdminUser = require("../../login-signup/model/adminUser");
+const { getJoinInfo, joinRoundRobin, leaveRoundRobin } = require("../services/playerJoinService");
+
+const SLOTS = ["player1Id", "player1PartnerId", "player2Id", "player2PartnerId"];
+const idOf = (x) => (x ? String(x._id ?? x) : null);
 
 // Read-only round robin schedule for players (standings are admin-only). Only
 // exposes names — no emails/contacts — since any signed-in player can open it.
@@ -13,7 +20,7 @@ const PlayerRoundRobinController = {
       }
 
       const tournament = await RoundRobinTournament.findById(id)
-        .select("tournamentName matchType format status startDate endDate numberOfCourts numberOfSlots numberOfSets setWinningPoint winningPointGap description adminId")
+        .select("tournamentName matchType format status startDate endDate registrationDeadline numberOfCourts numberOfSlots numberOfSets setWinningPoint winningPointGap description adminId")
         .lean();
       if (!tournament) return res.status(404).json({ message: "Round robin not found" });
 
@@ -27,14 +34,69 @@ const PlayerRoundRobinController = {
           .sort({ slot: 1, createdAt: 1 })
           .lean();
 
+      // Which of this tournament's player entries belong to the signed-in
+      // player (via their linked member record, or their login email).
+      const account = await AdminUser.findById(req.userId).select("emailID").lean();
+      const email = account?.emailID?.toLowerCase();
+      const myMembers = await RoundRobinMember.find({
+        adminId: tournament.adminId,
+        $or: [{ userId: req.userId }, ...(email ? [{ email }] : [])],
+      })
+        .select("_id")
+        .lean();
+      const myPlayers = myMembers.length
+        ? await RoundRobinPlayer.find({ tournamentId: id, memberId: { $in: myMembers.map((m) => m._id) } }).select("_id").lean()
+        : [];
+      const mine = new Set(myPlayers.map((p) => String(p._id)));
+
+      // Players only get their own matches — nobody else's matches are sent.
+      const myMatches = matches
+        .filter((m) => SLOTS.some((slot) => mine.has(idOf(m[slot]))))
+        .map((m) => ({ ...m, isMine: true }));
+      const hasSchedule = matches.length > 0;
+
+      const join = await getJoinInfo(tournament, req.userId);
+
       const { adminId, ...safeTournament } = tournament;
       res.set("Cache-Control", "no-store");
-      return res.status(200).json({ tournament: safeTournament, matches });
+      return res.status(200).json({ tournament: safeTournament, matches: myMatches, isParticipant: mine.size > 0, hasSchedule, join });
     } catch (error) {
       console.error("getRoundRobinView error:", error);
       return res.status(500).json({ message: "Internal server error" });
     }
   },
+};
+
+// POST /club/round-robin/:id/join — the signed-in player registers themselves.
+PlayerRoundRobinController.joinRoundRobin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid round robin" });
+    }
+    const join = await joinRoundRobin(id, req.userId);
+    return res.status(201).json({ message: "You're in! See you on court.", data: join });
+  } catch (error) {
+    if (error?.status) return res.status(error.status).json({ message: error.message, data: error.info });
+    console.error("joinRoundRobin error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// DELETE /club/round-robin/:id/join — the player cancels (before the deadline).
+PlayerRoundRobinController.leaveRoundRobin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid round robin" });
+    }
+    const join = await leaveRoundRobin(id, req.userId);
+    return res.status(200).json({ message: "Your registration has been cancelled.", data: join });
+  } catch (error) {
+    if (error?.status) return res.status(error.status).json({ message: error.message, data: error.info });
+    console.error("leaveRoundRobin error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
 };
 
 module.exports = PlayerRoundRobinController;

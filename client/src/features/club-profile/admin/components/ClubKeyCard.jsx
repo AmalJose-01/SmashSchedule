@@ -33,7 +33,7 @@ const ClubKeyCard = ({ club }) => {
   };
 
   const share = async () => {
-    const text = `Join ${club?.name || "our club"} on SmashSchedule — club key: ${code}`;
+    const text = `Join ${club?.name || "our club"} on Rallix — club key: ${code}`;
     if (navigator.share) {
       try {
         await navigator.share({ title: club?.name || "Club key", text, url: link });

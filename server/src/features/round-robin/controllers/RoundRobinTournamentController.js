@@ -28,6 +28,7 @@ const RoundRobinTournamentController = {
         numberOfMatchesPerMember,
         startDate,
         endDate,
+        registrationDeadline,
         groupingStrategy,
         gradeOrder,
         pointsForWin,
@@ -47,6 +48,14 @@ const RoundRobinTournamentController = {
           message: "tournamentName, matchType, and numberOfCourts are required",
         });
       }
+      const deadline = registrationDeadline ? new Date(registrationDeadline) : null;
+      if (!deadline || Number.isNaN(deadline.getTime())) {
+        return res.status(400).json({ message: "Registration deadline (date and time) is required" });
+      }
+      if (deadline <= new Date()) {
+        return res.status(400).json({ message: "Registration deadline must be in the future" });
+      }
+
       const slots = Number(numberOfSlots);
       if (numberOfSlots === undefined || numberOfSlots === null || numberOfSlots === "" || !Number.isInteger(slots) || slots < 1) {
         return res.status(400).json({
@@ -75,6 +84,7 @@ const RoundRobinTournamentController = {
         numberOfMatchesPerMember: numberOfMatchesPerMember ?? 3,
         startDate,
         endDate,
+        registrationDeadline: deadline,
         groupingStrategy: groupingStrategy || "random",
         gradeOrder: isGraded && Array.isArray(gradeOrder) && gradeOrder.length ? gradeOrder : undefined,
         pointsForWin: pointsForWin ?? 2,
@@ -140,11 +150,18 @@ const RoundRobinTournamentController = {
 
       const allowedFields = [
         "tournamentName", "matchType", "format", "description", "numberOfCourts", "numberOfSlots",
-        "numberOfGroups", "playersPerGroup", "numberOfMatchesPerMember", "startDate", "endDate",
+        "numberOfGroups", "playersPerGroup", "numberOfMatchesPerMember", "startDate", "endDate", "registrationDeadline",
         "groupingStrategy", "gradeOrder", "pointsForWin", "pointsForLoss", "status", "entryFee",
         "entryFeeMember", "entryFeeNonMember",
         "numberOfSets", "setWinningPoint", "winningPointGap",
       ];
+
+      if (req.body.registrationDeadline !== undefined) {
+        const d = req.body.registrationDeadline ? new Date(req.body.registrationDeadline) : null;
+        if (!d || Number.isNaN(d.getTime())) {
+          return res.status(400).json({ message: "Registration deadline (date and time) is required" });
+        }
+      }
 
       if (req.body.numberOfSlots !== undefined) {
         const slots = Number(req.body.numberOfSlots);
@@ -185,7 +202,23 @@ const RoundRobinTournamentController = {
         return res.status(404).json({ message: "Tournament not found" });
       }
 
-      return res.status(200).json({ message: "Tournament deleted" });
+      // Remove everything that belonged to this tournament so no scheduled
+      // matches (or its groups/registered players) are left behind. Payment
+      // records are kept on purpose — they're financial history.
+      const [matches, groups, players] = await Promise.all([
+        RoundRobinMatch.deleteMany({ tournamentId: id }),
+        RoundRobinGroup.deleteMany({ tournamentId: id }),
+        RoundRobinPlayer.deleteMany({ tournamentId: id }),
+      ]);
+
+      return res.status(200).json({
+        message: "Tournament deleted",
+        data: {
+          matchesDeleted: matches.deletedCount,
+          groupsDeleted: groups.deletedCount,
+          playersDeleted: players.deletedCount,
+        },
+      });
     } catch (error) {
       console.log("deleteTournament error:", error);
       return res.status(500).json({ message: "Internal server error", error: error.message });

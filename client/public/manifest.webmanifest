@@ -1,0 +1,17 @@
+{
+  "name": "Rallix — Badminton scheduling",
+  "short_name": "Rallix",
+  "description": "Join your club's tournaments and round robins, see your matches and follow the scores.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#064e3b",
+  "theme_color": "#047857",
+  "icons": [
+    { "src": "/rallix-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/rallix-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/rallix-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/rallix.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

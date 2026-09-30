@@ -1,71 +1,107 @@
 import { useNavigate } from "react-router-dom";
-import { Shield, User, Trophy, ChevronRight } from "lucide-react";
+import { LogIn, ScanSearch, CalendarDays, Trophy, ArrowRight, Shield } from "lucide-react";
 import AppBackground from "../../components/AppBackground";
+import RallixLogo from "../../components/RallixLogo";
+import { RallyScene, PerspectiveCourt, FloatingShuttles } from "./HomeArt";
 
-const OPTIONS = [
-  {
-    key: "admin",
-    path: "/admin/login",
-    title: "Admin Login",
-    description: "Manage tournaments, players and schedules",
-    icon: Shield,
-    iconBg: "from-cyan-400 to-blue-500",
-    glow: "shadow-cyan-500/40",
-  },
-  {
-    key: "user",
-    path: "/user/login",
-    title: "User Login",
-    description: "View your matches, results and standings",
-    icon: User,
-    iconBg: "from-emerald-400 to-teal-500",
-    glow: "shadow-emerald-500/40",
-  },
+const FEATURES = [
+  { icon: ScanSearch, title: "Find your club", text: "Club key or QR code" },
+  { icon: CalendarDays, title: "Your matches", text: "Court, round & time" },
+  { icon: Trophy, title: "Live scores", text: "Updated as you play" },
 ];
 
 const LoginSelector = () => {
   const navigate = useNavigate();
 
   return (
-    <AppBackground className="flex items-center justify-center p-4 py-12">
-      <div className="w-full max-w-md">
-        {/* Logo/Header Section */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-400 to-emerald-500 mb-4 shadow-lg shadow-cyan-500/50">
-            <Trophy className="w-8 h-8 text-white" />
+    <AppBackground variant="user" className="flex items-center">
+      <PerspectiveCourt />
+      <FloatingShuttles />
+
+      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-10 lg:py-16 grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+        {/* ── Hero ─────────────────────────────────────────────── */}
+        <div className="text-center lg:text-left">
+          <div className="flex justify-center lg:justify-start mb-6">
+            <RallixLogo size="md" />
           </div>
-          <h1 className="text-3xl font-semibold text-white mb-2" style={{ fontFamily: "Outfit, sans-serif" }}>
-            Welcome to SmashSchedule
+
+          <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded-full px-3 py-1 mb-5">
+            <span className="w-1.5 h-1.5 rounded-full bg-yellow-300 animate-pulse" /> Tournaments · Round robins
+          </p>
+
+          <h1
+            className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.05] tracking-tight text-white mb-4"
+            style={{ fontFamily: "Outfit, sans-serif" }}
+          >
+            Every rally,{" "}
+            <span className="bg-gradient-to-r from-emerald-300 via-lime-300 to-yellow-300 bg-clip-text text-transparent">
+              perfectly scheduled.
+            </span>
           </h1>
-          <p className="text-slate-400">Choose your login type to continue</p>
+          <p className="text-base sm:text-lg text-slate-300 max-w-md mx-auto lg:mx-0">
+            Join your club&apos;s tournaments and round robins, see exactly when and where you play, and follow the scores live.
+          </p>
+
+          {/* Rally animation — hidden on phones so Player Login stays on the first screen */}
+          <RallyScene className="hidden sm:block mt-8 max-w-md mx-auto lg:mx-0 px-[6%]" />
         </div>
 
-        {/* Selector Card */}
-        <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 p-8">
-          <div className="space-y-4">
-            {OPTIONS.map(({ key, path, title, description, icon: Icon, iconBg, glow }) => (
+        {/* ── Player login card (main action) ───────────────────── */}
+        <div className="w-full max-w-md mx-auto">
+          <div className="relative bg-slate-900/60 backdrop-blur-xl rounded-3xl shadow-2xl shadow-black/40 border border-emerald-400/20 p-6 sm:p-8 overflow-hidden">
+            {/* court-line accent */}
+            <span aria-hidden="true" className="pointer-events-none absolute inset-3 rounded-2xl border border-white/5" />
+            <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-3 bottom-3 w-px bg-white/5" />
+            <span aria-hidden="true" className="pointer-events-none absolute -top-24 -right-24 w-60 h-60 rounded-full bg-gradient-to-br from-emerald-400 to-yellow-300 opacity-20 blur-3xl" />
+
+            <div className="relative">
+              <h2 className="text-2xl font-semibold text-white" style={{ fontFamily: "Outfit, sans-serif" }}>
+                Ready to play?
+              </h2>
+              <p className="text-sm text-slate-400 mt-1 mb-6">Sign in to see your clubs, tournaments and matches.</p>
+
               <button
-                key={key}
                 type="button"
-                onClick={() => navigate(path)}
-                className="group w-full flex items-center gap-4 text-left p-4 bg-slate-900/50 hover:bg-slate-900/80 border border-slate-600 hover:border-cyan-500/60 rounded-xl transition-all duration-200 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                onClick={() => navigate("/user/login")}
+                className="group w-full flex items-center justify-center gap-3 py-4 rounded-2xl text-lg font-semibold text-slate-900 bg-gradient-to-r from-emerald-400 via-lime-300 to-yellow-300 shadow-xl shadow-emerald-500/30 hover:shadow-emerald-400/60 hover:scale-[1.02] active:scale-[0.99] transition-all"
               >
-                <span className={`flex-shrink-0 inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br ${iconBg} shadow-lg ${glow}`}>
-                  <Icon className="w-6 h-6 text-white" />
-                </span>
-                <span className="flex-1 min-w-0">
-                  <span className="block text-white font-semibold">{title}</span>
-                  <span className="block text-sm text-slate-400">{description}</span>
-                </span>
-                <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all" />
+                <LogIn className="w-5 h-5" />
+                Player Login
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
-            ))}
+
+              <button
+                type="button"
+                onClick={() => navigate("/user/signup")}
+                className="w-full mt-3 py-3 rounded-2xl text-sm font-semibold text-emerald-200 border border-emerald-400/30 bg-emerald-500/5 hover:bg-emerald-500/15 transition-colors"
+              >
+                New to Rallix? Create a player account
+              </button>
+
+              <div className="grid grid-cols-3 gap-2 mt-7 pt-6 border-t border-slate-700/50">
+                {FEATURES.map(({ icon: Icon, title, text }) => (
+                  <div key={title} className="text-center">
+                    <span className="mx-auto mb-2 inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-yellow-400/10 border border-emerald-400/20">
+                      <Icon className="w-5 h-5 text-emerald-300" />
+                    </span>
+                    <p className="text-xs font-semibold text-white">{title}</p>
+                    <p className="text-[11px] text-slate-500 leading-tight mt-0.5">{text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <div className="mt-6 pt-6 border-t border-slate-700/50">
-            <p className="text-center text-slate-400 text-sm">
-              Select your account type to access the appropriate dashboard
-            </p>
+          {/* Admin login — secondary */}
+          <div className="mt-5 text-center">
+            <button
+              type="button"
+              onClick={() => navigate("/admin/login")}
+              className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white px-4 py-2 rounded-xl hover:bg-white/5 transition-colors"
+            >
+              <Shield className="w-4 h-4" />
+              Club admin? <span className="font-semibold underline underline-offset-4 decoration-slate-600">Admin login</span>
+            </button>
           </div>
         </div>
       </div>

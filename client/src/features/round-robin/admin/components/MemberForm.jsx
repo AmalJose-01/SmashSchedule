@@ -3,10 +3,13 @@ import { X, Upload, UserPlus, AlertCircle, CheckCircle2, ChevronRight, ChevronLe
 import { readString } from "react-papaparse";
 import * as XLSX from "xlsx";
 import {
+  useApproveRoundRobinMember,
   useCreateRoundRobinMember,
   useUpdateRoundRobinMember,
   useBulkImportRoundRobinMembers,
 } from "../services/roundRobin.queries.js";
+
+import { isValidPhone, INVALID_PHONE_MESSAGE } from "../../../../utils/phone.js";
 
 const GRADES = ["A", "B", "C", "D", "E", "F", "G", "H", "Unrated"];
 const MAX_POINTS = 100; // kept in sync with server MAX_MEMBER_POINTS
@@ -110,13 +113,15 @@ const applyMapping = (rawRows, fieldMap) =>
   });
 
 // ── Manual Entry Tab ──────────────────────────────────────────────────────────
-const ManualTab = ({ member, onClose }) => {
+const ManualTab = ({ member, onClose, approveMode = false }) => {
   const [form, setForm] = useState(
     member
       ? {
           name: member.name ?? "",
-          grade: member.grade ?? "Unrated",
-          points: member.points ?? GRADE_DEFAULT_POINTS[member.grade ?? "Unrated"],
+          // A pending (self-joined) member has no grade/points yet — the
+          // admin must pick a grade to approve them.
+          grade: member.grade ?? (approveMode ? "" : "Unrated"),
+          points: member.points ?? (approveMode ? "" : GRADE_DEFAULT_POINTS[member.grade ?? "Unrated"]),
           email: member.email ?? "",
           contact: member.contact ?? "",
           nationalMemberId: member.nationalMemberId ?? "",
@@ -130,13 +135,16 @@ const ManualTab = ({ member, onClose }) => {
 
   const { mutate: createMember, isPending: isCreating } = useCreateRoundRobinMember();
   const { mutate: updateMember, isPending: isUpdating } = useUpdateRoundRobinMember();
-  const isPending = isCreating || isUpdating;
+  const { mutate: approveMember, isPending: isApproving } = useApproveRoundRobinMember();
+  const isPending = isCreating || isUpdating || isApproving;
 
   const validate = () => {
     const e = {};
     if (!form.name.trim()) e.name = "Name is required";
     if (!form.email.trim()) e.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Invalid email";
+    if (!form.grade) e.grade = "Grade is required";
+    if (!isValidPhone(form.contact)) e.contact = INVALID_PHONE_MESSAGE;
     const pts = Number(form.points);
     if (form.points === "" || !Number.isFinite(pts)) e.points = "Points are required";
     else if (pts < 0 || pts > MAX_POINTS) e.points = `Points must be between 0 and ${MAX_POINTS}`;
@@ -167,7 +175,9 @@ const ManualTab = ({ member, onClose }) => {
       dateOfBirth: form.dateOfBirth || undefined,
       gender: form.gender || undefined,
     };
-    if (member) {
+    if (approveMode) {
+      approveMember({ memberId: member._id, data: payload }, { onSuccess: onClose });
+    } else if (member) {
       updateMember({ memberId: member._id, data: payload }, { onSuccess: onClose });
     } else {
       createMember({ ...payload, email: form.email }, { onSuccess: onClose });
@@ -181,6 +191,11 @@ const ManualTab = ({ member, onClose }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {approveMode && (
+        <p className="text-sm text-amber-200 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3">
+          This player joined from their own account. Check their details and choose a grade to approve them.
+        </p>
+      )}
       <div className="grid grid-cols-2 gap-3">
         {/* Name */}
         <div className="col-span-2">
@@ -216,14 +231,18 @@ const ManualTab = ({ member, onClose }) => {
 
         {/* Grade */}
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">Grade</label>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">
+            Grade {approveMode && <span className="text-red-400">*</span>}
+          </label>
           <select
             value={form.grade}
             onChange={handleGradeChange}
-            className="w-full bg-slate-900/50 border border-slate-600 rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-500 [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+            className={inputCls("grade")}
           >
+            {!form.grade && <option value="">Select grade</option>}
             {GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
           </select>
+          {errors.grade && <p className="text-red-400 text-xs mt-1">{errors.grade}</p>}
         </div>
 
         {/* Points */}
@@ -279,12 +298,17 @@ const ManualTab = ({ member, onClose }) => {
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-1.5">Contact</label>
           <input
-            type="text"
+            type="tel"
+            inputMode="tel"
             value={form.contact}
-            onChange={handleChange("contact")}
-            placeholder="Phone number"
+            onChange={(e) => {
+              handleChange("contact")(e);
+              if (errors.contact) setErrors((er) => ({ ...er, contact: undefined }));
+            }}
+            placeholder="e.g. 0412 345 678"
             className={inputCls("contact")}
           />
+          {errors.contact && <p className="text-red-400 text-xs mt-1">{errors.contact}</p>}
         </div>
 
         {/* DOB */}
@@ -317,8 +341,8 @@ const ManualTab = ({ member, onClose }) => {
         className="w-full py-3 rounded-xl font-semibold text-sm mt-2 hover:scale-[1.01] disabled:opacity-50 disabled:hover:scale-100 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all"
       >
         {isPending
-          ? member ? "Saving..." : "Adding..."
-          : member ? "Save Changes" : "Add Member"}
+          ? approveMode ? "Approving..." : member ? "Saving..." : "Adding..."
+          : approveMode ? "Approve Member" : member ? "Save Changes" : "Add Member"}
       </button>
     </form>
   );
@@ -620,7 +644,7 @@ const BulkImportTab = () => {
 };
 
 // ── Modal Shell ───────────────────────────────────────────────────────────────
-const MemberForm = ({ member, onClose }) => {
+const MemberForm = ({ member, onClose, approveMode = false }) => {
   const [tab, setTab] = useState("manual");
   const isEditMode = !!member;
 
@@ -629,7 +653,7 @@ const MemberForm = ({ member, onClose }) => {
       <div className="bg-slate-800/90 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50">
           <h2 className="text-lg font-semibold text-white">
-            {isEditMode ? "Edit Member" : "Add Member"}
+            {approveMode ? "Approve Member" : isEditMode ? "Edit Member" : "Add Member"}
           </h2>
           <button onClick={onClose} className="p-2 rounded-xl text-slate-400 hover:bg-white/10 hover:text-white transition-colors">
             <X className="w-5 h-5" />
@@ -660,7 +684,7 @@ const MemberForm = ({ member, onClose }) => {
 
         <div className="p-6 overflow-y-auto flex-1">
           {tab === "manual" || isEditMode
-            ? <ManualTab member={member} onClose={onClose} />
+            ? <ManualTab member={member} onClose={onClose} approveMode={approveMode} />
             : <BulkImportTab />}
         </div>
       </div>

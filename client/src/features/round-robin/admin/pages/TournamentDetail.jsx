@@ -124,6 +124,15 @@ const Field = ({ label, children }) => (
   </div>
 );
 
+// Date → value for <input type="datetime-local"> in the browser's local time.
+const toLocalInput = (d) => {
+  if (!d) return "";
+  const dt = new Date(d);
+  if (Number.isNaN(dt.getTime())) return "";
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+};
+
 const ViewRow = ({ label, value }) => (
   <div className="flex justify-between items-center py-2.5 border-b border-slate-700/50 last:border-0">
     <span className="text-sm text-slate-400">{label}</span>
@@ -142,6 +151,7 @@ const ConfigTab = ({ tournament, isFinalized }) => {
       matchType:      tournament.matchType ?? "Singles",
       description:    tournament.description    ?? "",
       startDate:      tournament.startDate ? new Date(tournament.startDate).toISOString().slice(0, 16) : "",
+      registrationDeadline: toLocalInput(tournament.registrationDeadline),
       endDate:        tournament.endDate   ? new Date(tournament.endDate).toISOString().slice(0, 16)   : "",
       numberOfCourts: tournament.numberOfCourts  ?? 1,
       numberOfSlots:  tournament.numberOfSlots ?? "",
@@ -159,12 +169,17 @@ const ConfigTab = ({ tournament, isFinalized }) => {
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
 
   const handleSave = () => {
+    if (!form.registrationDeadline) {
+      toast.error("Registration deadline is required");
+      return;
+    }
     updateTournament(
       {
         id: tournament._id,
         data: {
           ...form,
           numberOfCourts:  Number(form.numberOfCourts),
+          registrationDeadline: new Date(form.registrationDeadline).toISOString(),
           ...(form.numberOfSlots !== "" && { numberOfSlots: Number(form.numberOfSlots) }),
           numberOfMatchesPerMember: Number(form.numberOfMatchesPerMember),
           entryFeeMember:    Number(form.entryFeeMember),
@@ -212,6 +227,7 @@ const ConfigTab = ({ tournament, isFinalized }) => {
             <ViewRow label="Status"     value={tournament.status} />
             <ViewRow label="Description" value={tournament.description || "—"} />
             <ViewRow label="Start Date" value={formatDate(tournament.startDate)} />
+            <ViewRow label="Registration Deadline" value={formatDate(tournament.registrationDeadline)} />
             <ViewRow label="End Date"   value={formatDate(tournament.endDate)} />
           </div>
         </div>
@@ -269,6 +285,15 @@ const ConfigTab = ({ tournament, isFinalized }) => {
             <input type="datetime-local" value={form.endDate} onChange={(e) => set("endDate", e.target.value)} className={inputCls()} />
           </Field>
         </div>
+        <Field label="Registration Deadline *">
+          <input
+            type="datetime-local"
+            value={form.registrationDeadline}
+            onChange={(e) => set("registrationDeadline", e.target.value)}
+            className={inputCls(!form.registrationDeadline)}
+          />
+          {!form.registrationDeadline && <p className="text-red-400 text-xs mt-1">Registration deadline is required</p>}
+        </Field>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Match Type">
             <select value={form.matchType} onChange={(e) => set("matchType", e.target.value)} className={inputCls()}>
@@ -359,7 +384,7 @@ const ConfigTab = ({ tournament, isFinalized }) => {
   );
 };
 
-const AddPlayersPanel = ({ tournamentId, existingPlayers, defaultOpen = false }) => {
+const AddPlayersPanel = ({ tournamentId, existingPlayers, defaultOpen = false, numberOfSlots }) => {
   const [open, setOpen] = useState(defaultOpen);
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState([]);
@@ -367,18 +392,37 @@ const AddPlayersPanel = ({ tournamentId, existingPlayers, defaultOpen = false })
   const { mutate: addMembers, isPending } = useAddMembersToTournament();
 
   const existingEmails = new Set(existingPlayers.map((p) => p.email));
-  const members = (membersData?.data ?? []).filter((m) => !existingEmails.has(m.email));
+  // Only approved members with a grade can be added to a round robin.
+  const members = (membersData?.data ?? []).filter(
+    (m) => !existingEmails.has(m.email) && m.status !== "pending" && !!m.grade
+  );
   const filtered = members.filter(
     (m) =>
       m.name.toLowerCase().includes(search.toLowerCase()) ||
       m.email.toLowerCase().includes(search.toLowerCase())
   );
 
-  const toggle = (id) =>
-    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  // Number of Slots is a hard cap: never select more players than free slots.
+  const hasLimit = Number(numberOfSlots) > 0;
+  const remaining = hasLimit ? Math.max(0, numberOfSlots - existingPlayers.length) : Infinity;
+  const isFull = hasLimit && remaining === 0;
+  const atLimit = selectedIds.length >= remaining;
 
+  const toggle = (id) =>
+    setSelectedIds((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      if (prev.length >= remaining) return prev; // no free slot left
+      return [...prev, id];
+    });
+
+  // "Select all" fills only the free slots.
+  const selectableCount = Math.min(filtered.length, remaining);
   const toggleAll = () =>
-    setSelectedIds(selectedIds.length === filtered.length ? [] : filtered.map((m) => m._id));
+    setSelectedIds(
+      selectedIds.length >= selectableCount && selectedIds.length > 0
+        ? []
+        : filtered.slice(0, selectableCount).map((m) => m._id)
+    );
 
   const handleAdd = () => {
     addMembers(
@@ -386,6 +430,14 @@ const AddPlayersPanel = ({ tournamentId, existingPlayers, defaultOpen = false })
       { onSuccess: () => { setSelectedIds([]); setOpen(false); } }
     );
   };
+
+  if (isFull) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-2.5">
+        <Lock className="w-4 h-4" /> Tournament is full — all {numberOfSlots} slots are taken. Increase Number of Slots on the Config tab to add more.
+      </div>
+    );
+  }
 
   if (!open) {
     return (
@@ -401,7 +453,14 @@ const AddPlayersPanel = ({ tournamentId, existingPlayers, defaultOpen = false })
   return (
     <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-slate-200 text-sm">Add Players from Member Bank</h3>
+        <div>
+          <h3 className="font-semibold text-slate-200 text-sm">Add Players from Member Bank</h3>
+          {hasLimit && (
+            <p className="text-xs text-slate-400 mt-0.5">
+              {existingPlayers.length}/{numberOfSlots} slots used · {remaining - selectedIds.length} left after this selection
+            </p>
+          )}
+        </div>
         <button onClick={() => setOpen(false)} className="text-xs text-slate-400 hover:text-white">
           Close
         </button>
@@ -427,9 +486,16 @@ const AddPlayersPanel = ({ tournamentId, existingPlayers, defaultOpen = false })
       ) : (
         <>
           <div className="flex items-center justify-between">
-            <p className="text-xs text-slate-400">{selectedIds.length} selected</p>
+            <p className={`text-xs ${hasLimit && atLimit ? "text-amber-300" : "text-slate-400"}`}>
+              {selectedIds.length} selected
+              {hasLimit && atLimit && " — slot limit reached"}
+            </p>
             <button onClick={toggleAll} className="text-xs text-cyan-400 font-medium hover:underline">
-              {selectedIds.length === filtered.length ? "Deselect all" : "Select all"}
+              {selectedIds.length >= selectableCount && selectedIds.length > 0
+                ? "Deselect all"
+                : hasLimit && selectableCount < filtered.length
+                ? `Select first ${selectableCount}`
+                : "Select all"}
             </button>
           </div>
           <div className="border border-slate-600 rounded-xl overflow-hidden max-h-64 overflow-y-auto">
@@ -439,13 +505,14 @@ const AddPlayersPanel = ({ tournamentId, existingPlayers, defaultOpen = false })
                 <label
                   key={m._id}
                   className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors border-b border-slate-700/50 last:border-0 ${
-                    checked ? "bg-cyan-500/10" : "hover:bg-white/5"
+                    checked ? "bg-cyan-500/10" : atLimit ? "opacity-40 cursor-not-allowed" : "hover:bg-white/5"
                   }`}
                 >
                   <input
                     type="checkbox"
                     checked={checked}
                     onChange={() => toggle(m._id)}
+                    disabled={!checked && atLimit}
                     className="accent-cyan-500 w-4 h-4"
                   />
                   <span className="flex-1 text-sm font-medium text-white">{m.name}</span>
@@ -548,7 +615,7 @@ const PlayersTab = ({ tournamentId, isFinalized, tournament }) => {
             <p className="text-xs text-white/60 mt-1">Players can no longer be added once matches are scheduled.</p>
           </div>
         ) : (
-          <AddPlayersPanel tournamentId={tournamentId} existingPlayers={players} defaultOpen />
+          <AddPlayersPanel tournamentId={tournamentId} existingPlayers={players} defaultOpen numberOfSlots={tournament?.numberOfSlots} />
         )}
       </div>
     );
@@ -567,7 +634,10 @@ const PlayersTab = ({ tournamentId, isFinalized, tournament }) => {
         </div>
       )}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-400 font-medium">{players.length} player{players.length !== 1 ? "s" : ""} registered</p>
+        <p className="text-sm text-slate-400 font-medium">
+          {players.length}
+          {tournament?.numberOfSlots ? ` / ${tournament.numberOfSlots}` : ""} player{players.length !== 1 ? "s" : ""} registered
+        </p>
         {isFinalized && (
           <span className="flex items-center gap-1.5 text-xs text-slate-400">
             <Lock className="w-3.5 h-3.5" /> Locked — matches already scheduled
@@ -575,7 +645,7 @@ const PlayersTab = ({ tournamentId, isFinalized, tournament }) => {
         )}
       </div>
 
-      {!isFinalized && <AddPlayersPanel tournamentId={tournamentId} existingPlayers={players} />}
+      {!isFinalized && <AddPlayersPanel tournamentId={tournamentId} existingPlayers={players} numberOfSlots={tournament?.numberOfSlots} />}
 
       <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 overflow-hidden">
         <table className="w-full text-sm">

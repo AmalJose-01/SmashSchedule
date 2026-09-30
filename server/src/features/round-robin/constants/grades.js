@@ -30,6 +30,8 @@ const MIN_MEMBER_POINTS = 0;
 const MAX_MEMBER_POINTS = 100;
 
 const clampMemberPoints = (value) => {
+  // Pending (self-joined, not yet approved) members have no points yet.
+  if (value === null || value === undefined || value === "") return null;
   const n = Number(value);
   if (!Number.isFinite(n)) return MIN_MEMBER_POINTS;
   return Math.min(MAX_MEMBER_POINTS, Math.max(MIN_MEMBER_POINTS, Math.round(n * 10) / 10));
