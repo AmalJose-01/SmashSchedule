@@ -50,18 +50,21 @@ jobs:
       - name: Resolve backend URL
         id: api
         run: |
-          # Environment variable, or a secret with the same name, or the default
-          # backend for this branch.
-          URL="${{ vars.VITE_API_URL || secrets.VITE_API_URL }}"
-          if [ -z "$URL" ]; then
-            case "${{ github.ref_name }}" in
-              main) URL="https://smashschedule-1.onrender.com/api/v1" ;;
-              qa)   URL="https://smashschedule-qa.onrender.com/api/v1" ;;
-              *)
+          # Fixed backend per branch, so QA can never call production (or the
+          # reverse) even if a VITE_API_URL variable is set somewhere in GitHub.
+          #   main → production Render service
+          #   qa   → QA Render service
+          #   dev  → VITE_API_URL from the GitHub Environment "dev"
+          case "${{ github.ref_name }}" in
+            main) URL="https://smashschedule-1.onrender.com/api/v1" ;;
+            qa)   URL="https://smashschedule-qa.onrender.com/api/v1" ;;
+            *)
+              URL="${{ vars.VITE_API_URL || secrets.VITE_API_URL }}"
+              if [ -z "$URL" ]; then
                 echo "::error::Set variable VITE_API_URL in GitHub Environment '${{ github.ref_name }}' (its Render API, ending in /api/v1)"
-                exit 1 ;;
-            esac
-          fi
+                exit 1
+              fi ;;
+          esac
           echo "Backend: $URL"
           echo "url=$URL" >> "$GITHUB_OUTPUT"
 
