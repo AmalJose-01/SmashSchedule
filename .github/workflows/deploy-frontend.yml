@@ -1,0 +1,95 @@
+# Frontend CI/CD → GoDaddy cPanel (same pattern as healthvis):
+#   branch main → rallix.com.au       (GitHub Environment "production")
+#   branch qa   → qa.rallix.com.au    (GitHub Environment "qa")
+#   branch dev  → dev.rallix.com.au   (GitHub Environment "dev")
+# Environment secrets/variables override the repository ones with the same
+# name, so each site has its own FTP login, backend URL and Stripe key.
+# Setup guide: docs/CPANEL_DEPLOY.md
+name: Deploy frontend
+
+on:
+  push:
+    branches: [main, qa, dev]
+    paths:
+      - "client/**"
+      - ".github/workflows/deploy-frontend.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-frontend-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.ref_name == 'main' && 'production' || github.ref_name }}
+      url: ${{ github.ref_name == 'main' && 'https://rallix.com.au' || format('https://{0}.rallix.com.au', github.ref_name) }}
+    defaults:
+      run:
+        working-directory: client
+    env:
+      IS_PROD: ${{ github.ref_name == 'main' }}
+
+    steps:
+      - name: Only main, qa and dev deploy
+        if: ${{ !contains(fromJSON('["main","qa","dev"]'), github.ref_name) }}
+        working-directory: .
+        run: |
+          echo "::error::Branch ${{ github.ref_name }} has no site. Run this from main, qa or dev."
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Resolve backend URL
+        id: api
+        run: |
+          URL="${{ vars.VITE_API_URL }}"
+          if [ -z "$URL" ]; then
+            if [ "$IS_PROD" = "true" ]; then
+              URL="https://smashschedule-1.onrender.com/api/v1"
+            else
+              echo "::error::Set variable VITE_API_URL in GitHub Environment '${{ github.ref_name }}' (its Render API, ending in /api/v1)"
+              exit 1
+            fi
+          fi
+          echo "Backend: $URL"
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_API_URL: ${{ steps.api.outputs.url }}
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+          VITE_GOOGLE_API_KEY: ${{ secrets.VITE_GOOGLE_API_KEY }}
+          VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
+          VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}
+
+      - name: Check build output
+        run: test -f dist/index.html && test -f dist/.htaccess
+
+      - name: Keep dev/qa out of Google search
+        if: env.IS_PROD != 'true'
+        run: |
+          printf '\n# Non-production: do not index\n<IfModule mod_headers.c>\n  Header set X-Robots-Tag "noindex, nofollow"\n</IfModule>\n' >> dist/.htaccess
+          printf 'User-agent: *\nDisallow: /\n' > dist/robots.txt
+
+      - name: Upload to cPanel (FTPS)
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.CPANEL_FTP_SERVER }}
+          username: ${{ secrets.CPANEL_FTP_USERNAME }}
+          password: ${{ secrets.CPANEL_FTP_PASSWORD }}
+          protocol: ftps
+          port: 21
+          local-dir: client/dist/
+          server-dir: ${{ vars.CPANEL_SERVER_DIR || './' }}
