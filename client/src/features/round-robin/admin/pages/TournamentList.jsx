@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Trophy, Trash2, ChevronRight, CalendarDays } from "lucide-react";
+import { Plus, Trophy, Trash2, ChevronRight, CalendarDays, Users, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -13,12 +13,12 @@ import AppBackground from "../../../../components/AppBackground.jsx";
 import PageHeader from "../../../../components/PageHeader.jsx";
 
 const STATUS_STYLES = {
-  Draft:      "bg-gray-100 text-gray-600",
-  Active:     "bg-blue-100 text-blue-700",
-  Scheduled:  "bg-yellow-100 text-yellow-700",
-  Finalized:  "bg-teal-100 text-teal-700",
-  Ongoing:    "bg-green-100 text-green-700",
-  Completed:  "bg-purple-100 text-purple-700",
+  Draft:      "bg-slate-500/15 text-slate-300 border border-slate-500/30",
+  Active:     "bg-blue-500/15 text-blue-300 border border-blue-500/30",
+  Scheduled:  "bg-yellow-500/15 text-yellow-300 border border-yellow-500/30",
+  Finalized:  "bg-cyan-500/15 text-cyan-300 border border-cyan-500/30",
+  Ongoing:    "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30",
+  Completed:  "bg-purple-500/15 text-purple-300 border border-purple-500/30",
 };
 
 const TournamentList = () => {
@@ -104,9 +104,9 @@ const TournamentList = () => {
               type="checkbox"
               checked={allSelected}
               onChange={toggleAll}
-              className="w-4 h-4 rounded accent-teal-600 cursor-pointer"
+              className="w-4 h-4 rounded accent-cyan-500 cursor-pointer"
             />
-            <p className="text-sm text-white/70">
+            <p className="text-sm text-slate-300">
               {tournaments.length} tournament{tournaments.length !== 1 ? "s" : ""}
             </p>
           </div>
@@ -114,21 +114,21 @@ const TournamentList = () => {
 
         {/* Bulk action bar */}
         {someSelected && (
-          <div className="flex items-center justify-between bg-teal-50 border border-teal-200 rounded-xl px-4 py-2.5 mb-4">
-            <span className="text-sm font-medium text-teal-700">
+          <div className="flex items-center justify-between bg-cyan-500/10 border border-cyan-500/30 backdrop-blur-xl rounded-xl px-4 py-2.5 mb-4">
+            <span className="text-sm font-medium text-cyan-300">
               {selected.size} selected
             </span>
             <div className="flex items-center gap-2">
               <button
                 onClick={clearSelection}
-                className="text-sm text-gray-500 hover:text-gray-700 px-3 py-1.5 rounded-lg hover:bg-white transition-colors"
+                className="text-sm text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors"
               >
                 Deselect all
               </button>
               <button
                 onClick={() => setConfirmBulk(true)}
                 disabled={bulkDeleting}
-                className="flex items-center gap-1.5 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 px-3 py-1.5 rounded-lg transition-colors"
+                className="flex items-center gap-1.5 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/30 disabled:opacity-60 px-3 py-1.5 rounded-lg transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 {bulkDeleting ? "Deleting..." : `Delete ${selected.size}`}
@@ -138,14 +138,14 @@ const TournamentList = () => {
         )}
 
         {isLoading ? (
-          <div className="text-center py-16 text-white/60">Loading tournaments...</div>
+          <div className="text-center py-16 text-slate-400">Loading tournaments...</div>
         ) : tournaments.length === 0 ? (
-          <div className="text-center py-20">
-            <Trophy className="w-12 h-12 text-white/30 mx-auto mb-3" />
-            <p className="text-white/60 font-medium mb-4">No tournaments yet.</p>
+          <div className="text-center py-16 bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl">
+            <Trophy className="w-12 h-12 text-slate-500 mx-auto mb-3" />
+            <p className="text-slate-300 font-medium mb-4">No tournaments yet.</p>
             <button
               onClick={() => navigate("/round-robin/create-tournament")}
-              className="inline-flex items-center gap-2 bg-teal-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-teal-700 transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-lg shadow-cyan-500/30 transition-all"
             >
               <Plus className="w-4 h-4" />
               Create First Tournament
@@ -158,7 +158,7 @@ const TournamentList = () => {
               return (
                 <div
                   key={t._id}
-                  className={`relative bg-white rounded-2xl shadow border p-5 cursor-pointer hover:shadow-md transition-shadow group ${isSelected ? "border-teal-300 ring-2 ring-teal-100" : "border-gray-100"}`}
+                  className={`relative overflow-hidden bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-xl border p-5 cursor-pointer transition-all group hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-cyan-500/10 ${isSelected ? "border-cyan-400/60 ring-2 ring-cyan-400/20" : "border-slate-700/50 hover:border-cyan-500/40"}`}
                   onClick={() => navigate(`/round-robin/tournament/${t._id}`)}
                 >
                   {/* Checkbox */}
@@ -170,7 +170,7 @@ const TournamentList = () => {
                       type="checkbox"
                       checked={isSelected}
                       onChange={() => toggleOne(t._id)}
-                      className="w-4 h-4 rounded accent-teal-600 cursor-pointer"
+                      className="w-4 h-4 rounded accent-cyan-500 cursor-pointer"
                     />
                   </div>
 
@@ -180,28 +180,50 @@ const TournamentList = () => {
                     </span>
                     <button
                       onClick={(e) => { e.stopPropagation(); setDeletingId(t._id); }}
-                      className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/15 hover:text-red-300 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
 
-                  <h3 className="font-semibold text-gray-800 text-base mb-1 leading-snug">
+                  <h3 className="font-semibold text-white text-base mb-1 leading-snug">
                     {t.tournamentName}
                   </h3>
-                  <p className="text-xs text-gray-400 mb-3">
+                  <p className="text-xs text-slate-400 mb-3">
                     {t.matchType} · {t.numberOfGroups} group{t.numberOfGroups !== 1 ? "s" : ""} · {t.numberOfCourts} court{t.numberOfCourts !== 1 ? "s" : ""}
                   </p>
 
                   {(t.startDate || t.endDate) && (
-                    <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-3">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-3">
                       <CalendarDays className="w-3.5 h-3.5" />
                       {formatDate(t.startDate)}
                       {t.endDate && <> → {formatDate(t.endDate)}</>}
                     </div>
                   )}
 
-                  <div className="flex items-center justify-end text-teal-600 text-xs font-medium">
+                  {(t.numberOfSlots || t.registrationDeadline) && (
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {t.numberOfSlots ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-300 bg-slate-900/50 border border-slate-700/60 rounded-full px-2 py-0.5">
+                          <Users className="w-3 h-3" /> {t.numberOfSlots} slots
+                        </span>
+                      ) : null}
+                      {t.registrationDeadline && (
+                        <span
+                          className={`inline-flex items-center gap-1 text-[11px] font-medium rounded-full px-2 py-0.5 border ${
+                            new Date(t.registrationDeadline) <= new Date()
+                              ? "text-slate-400 bg-slate-900/50 border-slate-700/60"
+                              : "text-amber-300 bg-amber-500/10 border-amber-500/30"
+                          }`}
+                        >
+                          <Clock className="w-3 h-3" />
+                          {new Date(t.registrationDeadline) <= new Date() ? "Registration closed" : `Register by ${formatDate(t.registrationDeadline)}`}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-end text-cyan-400 group-hover:text-cyan-300 text-xs font-medium">
                     View <ChevronRight className="w-4 h-4 ml-0.5" />
                   </div>
                 </div>
@@ -213,23 +235,23 @@ const TournamentList = () => {
 
       {/* Single Delete Confirm */}
       {deletingId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">Delete Tournament?</h3>
-            <p className="text-sm text-gray-500 mb-6">
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl p-6 max-w-sm w-full">
+            <h3 className="text-lg font-semibold text-white mb-2">Delete Tournament?</h3>
+            <p className="text-sm text-slate-400 mb-6">
               This will permanently delete the tournament, all its groups and matches. This cannot be undone.
             </p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setDeletingId(null)}
-                className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50"
+                className="px-4 py-2 rounded-xl text-sm font-medium border border-slate-600 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteConfirm}
                 disabled={isDeleting}
-                className="px-4 py-2 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 disabled:opacity-60"
+                className="px-4 py-2 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 shadow-lg shadow-red-500/30 disabled:opacity-60"
               >
                 {isDeleting ? "Deleting..." : "Delete"}
               </button>
@@ -240,24 +262,24 @@ const TournamentList = () => {
 
       {/* Bulk Delete Confirm */}
       {confirmBulk && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl p-6 max-w-sm w-full">
+            <h3 className="text-lg font-semibold text-white mb-2">
               Delete {selected.size} Tournament{selected.size !== 1 ? "s" : ""}?
             </h3>
-            <p className="text-sm text-gray-500 mb-6">
+            <p className="text-sm text-slate-400 mb-6">
               This will permanently delete all selected tournaments, their groups and matches. This cannot be undone.
             </p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setConfirmBulk(false)}
-                className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50"
+                className="px-4 py-2 rounded-xl text-sm font-medium border border-slate-600 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={handleBulkDelete}
-                className="px-4 py-2 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600"
+                className="px-4 py-2 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 shadow-lg shadow-red-500/30"
               >
                 Delete All
               </button>

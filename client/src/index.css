@@ -1,3 +1,46 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── Typography (Rallix) ──────────────────────────────────────────────
+   Inter for reading, Outfit for headings. Applied app-wide so every page
+   — including ones with their own CSS files — gets the same type. */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv11", "ss01"; /* Inter: cleaner 1/l/a shapes */
+    letter-spacing: -0.006em;
+    line-height: 1.55;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: "Outfit", "Inter", ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+  h1 { font-weight: 700; }
+  h2, h3 { font-weight: 600; }
+
+  /* Form controls don't inherit fonts by default. */
+  input, select, textarea, button {
+    font-family: inherit;
+    letter-spacing: inherit;
+  }
+
+  /* Scores, counts and times line up neatly in tables/lists. */
+  table, .tabular-nums, [class*="font-mono"] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background: rgba(52, 211, 153, 0.35);
+    color: #fff;
+  }
+}
