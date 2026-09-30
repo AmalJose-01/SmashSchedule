@@ -10,7 +10,15 @@ const path = require("path");
 
 
 const app = express();
-var whitelist = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'https://smash-schedule.vercel.app', 'https://smash-schedule-git-qa-next-amaljose-01s-projects.vercel.app','https://rallix.vercel.app']
+var whitelist = [
+  'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175',
+  // Production frontend (GoDaddy cPanel)
+  'https://rallix.com.au', 'https://www.rallix.com.au',
+  // Old Vercel deployments (remove once rallix.com.au is live)
+  'https://smash-schedule.vercel.app', 'https://smash-schedule-git-qa-next-amaljose-01s-projects.vercel.app', 'https://rallix.vercel.app','http://rallix.com.au',
+  // Extra origins without a code change: CORS_ORIGINS=https://a.com,https://b.com
+  ...(process.env.CORS_ORIGINS || '').split(',').map((o) => o.trim()).filter(Boolean),
+]
 
 var corsOptions = {
   origin: function (origin, callback) {
