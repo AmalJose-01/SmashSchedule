@@ -302,7 +302,69 @@ const refundEntryFee = async (payment) => {
   return payment;
 };
 
+/**
+ * Player cancels their registration (before the deadline): refund every
+ * completed card payment in full and close any unfinished checkout so it
+ * can't be paid afterwards. Throws if a refund fails, so the caller can keep
+ * the registration instead of cancelling without returning the money.
+ */
+const refundOnCancel = async ({ tournamentId, playerId, memberId }) => {
+  const payments = await RoundRobinPayment.find({
+    tournamentId,
+    $or: [{ playerId }, ...(memberId ? [{ memberId, purpose: "self_join" }] : [])],
+  });
+
+  let refundedCents = 0;
+  let manualRefundDollars = 0;
+  for (const p of payments) {
+    if (p.provider === "stripe" && p.status === "PENDING") {
+      await refreshStripePayment(p); // may turn out to be paid
+      if (p.status === "PENDING" && p.stripeCheckoutSessionId) {
+        try {
+          await stripe.checkout.sessions.expire(p.stripeCheckoutSessionId);
+        } catch (e) {
+          console.log("expire checkout warning:", e?.message || e);
+        }
+        p.status = "CANCELED";
+        await p.save();
+      }
+    }
+    if (p.status !== "COMPLETED") continue;
+    if (p.provider === "stripe") {
+      await refundEntryFee(p);
+      refundedCents += p.refundedCents || 0;
+    } else {
+      manualRefundDollars += Number(p.amount) || 0; // e.g. old Square Terminal payment
+    }
+  }
+  return { refundedCents, manualRefundDollars };
+};
+
+/**
+ * Payment state of one registration: "COMPLETED" if ANY payment for it
+ * succeeded (not just the latest record). Open Stripe checkouts are checked
+ * with Stripe directly, so a paid entry shows as paid even when the webhook
+ * hasn't arrived (e.g. local dev without `stripe listen`).
+ */
+const getPlayerPaymentStatus = async (tournamentId, playerId) => {
+  const payments = await RoundRobinPayment.find({ tournamentId, playerId }).sort({ createdAt: -1 });
+  if (!payments.length) return null;
+  if (payments.some((p) => p.status === "COMPLETED")) return "COMPLETED";
+
+  for (const p of payments.filter((x) => x.provider === "stripe" && x.status === "PENDING")) {
+    try {
+      await refreshStripePayment(p);
+      if (p.status === "COMPLETED") return "COMPLETED";
+    } catch (e) {
+      console.log("payment status refresh warning:", e?.message || e);
+    }
+  }
+  return payments[0].status;
+};
+
 module.exports = {
+  refundOnCancel,
+  getPlayerPaymentStatus,
   createEntryFeeCheckout,
   createSelfJoinCheckout,
   finalizeSelfJoin,

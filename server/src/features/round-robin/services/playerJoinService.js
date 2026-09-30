@@ -10,7 +10,7 @@ const RoundRobinPlayer = require("../models/RoundRobinPlayer");
 const RoundRobinGroup = require("../models/RoundRobinGroup");
 const AdminUser = require("../../login-signup/model/adminUser");
 const RoundRobinPayment = require("../models/RoundRobinPayment");
-const { getPayableClub } = require("../../payments/stripe/entryFeeCheckoutService");
+const { getPayableClub, getPlayerPaymentStatus, refundOnCancel } = require("../../payments/stripe/entryFeeCheckoutService");
 
 const LOCKED_STATUSES = ["Finalized", "Ongoing", "Completed"];
 
@@ -61,13 +61,11 @@ const getJoinInfo = async (tournament, userId, { playerCount, member } = {}) => 
   let paymentStatus = null;
   let canPayOnline = false;
   if (entryFee > 0) {
-    const [latest, payable] = await Promise.all([
-      player
-        ? RoundRobinPayment.findOne({ tournamentId: tournament._id, playerId: player._id }).sort({ createdAt: -1 }).select("status").lean()
-        : null,
+    const [status, payable] = await Promise.all([
+      player ? getPlayerPaymentStatus(tournament._id, player._id) : null,
       getPayableClub(tournament.adminId),
     ]);
-    paymentStatus = latest?.status || null;
+    paymentStatus = status;
     canPayOnline = payable.ready;
   }
 
@@ -173,13 +171,27 @@ const leaveRoundRobin = async (tournamentId, userId) => {
   if (!info.joined) throw { status: 400, message: REASONS.notJoined, info };
   if (!info.canCancel) throw { status: 400, message: info.closedText || "Registration can no longer be changed.", info };
 
+  // Refund the entry fee first. If the refund fails the player stays
+  // registered, so nobody is cancelled without getting their money back.
+  const existing = await RoundRobinPlayer.findOne({ tournamentId, memberId: member._id }).select("_id").lean();
+  let refund = { refundedCents: 0, manualRefundDollars: 0 };
+  if (existing) {
+    try {
+      refund = await refundOnCancel({ tournamentId, playerId: existing._id, memberId: member._id });
+    } catch (err) {
+      console.error("cancel refund error:", err?.message || err);
+      throw { status: 502, message: "We couldn't refund your entry fee, so your registration was not cancelled. Please try again or contact the club.", info };
+    }
+  }
+
   const player = await RoundRobinPlayer.findOneAndDelete({ tournamentId, memberId: member._id });
   // Groups may already be generated (before finalize) — take them out there too.
   if (player) {
     await RoundRobinGroup.updateMany({ tournamentId }, { $pull: { players: { playerId: player._id } } });
   }
 
-  return getJoinInfo(tournament, userId, { member });
+  const join = await getJoinInfo(tournament, userId, { member });
+  return { ...join, refund };
 };
 
 module.exports = { getJoinInfo, joinRoundRobin, leaveRoundRobin, findMember };

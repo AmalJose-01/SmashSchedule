@@ -6,7 +6,7 @@ const RoundRobinPlayer = require("../models/RoundRobinPlayer");
 const AdminUser = require("../../login-signup/model/adminUser");
 const { getJoinInfo, joinRoundRobin, leaveRoundRobin } = require("../services/playerJoinService");
 const RoundRobinPayment = require("../models/RoundRobinPayment");
-const { getPayableClub, entryFeeFor, createSelfJoinCheckout, refreshStripePayment } = require("../../payments/stripe/entryFeeCheckoutService");
+const { getPayableClub, entryFeeFor, createSelfJoinCheckout, refreshStripePayment, getPlayerPaymentStatus } = require("../../payments/stripe/entryFeeCheckoutService");
 const { findMember } = require("../services/playerJoinService");
 
 // Entry fee state for the signed-in player's own registration (or null when
@@ -17,14 +17,11 @@ const getMyPaymentInfo = async (tournament, myPlayerIds) => {
   if (!player) return null;
   const amount = entryFeeFor(tournament, player);
   if (amount <= 0) return null;
-  const [latest, { ready }] = await Promise.all([
-    RoundRobinPayment.findOne({ tournamentId: tournament._id, playerId: player._id })
-      .sort({ createdAt: -1 })
-      .select("status provider")
-      .lean(),
+  const [status, { ready }] = await Promise.all([
+    getPlayerPaymentStatus(tournament._id, player._id),
     getPayableClub(tournament.adminId),
   ]);
-  return { amount, status: latest?.status || null, canPayOnline: ready };
+  return { amount, status, canPayOnline: ready };
 };
 
 const SLOTS = ["player1Id", "player1PartnerId", "player2Id", "player2PartnerId"];
@@ -150,7 +147,15 @@ PlayerRoundRobinController.leaveRoundRobin = async (req, res) => {
       return res.status(400).json({ message: "Invalid round robin" });
     }
     const join = await leaveRoundRobin(id, req.userId);
-    return res.status(200).json({ message: "Your registration has been cancelled.", data: join });
+    const { refundedCents = 0, manualRefundDollars = 0 } = join.refund || {};
+    let message = "Your registration has been cancelled.";
+    if (refundedCents > 0) {
+      message += ` A$${(refundedCents / 100).toFixed(2)} is being refunded to your card (usually 5–10 business days).`;
+    }
+    if (manualRefundDollars > 0) {
+      message += ` Contact the club for your A$${manualRefundDollars.toFixed(2)} refund.`;
+    }
+    return res.status(200).json({ message, data: join });
   } catch (error) {
     if (error?.status) return res.status(error.status).json({ message: error.message, data: error.info });
     console.error("leaveRoundRobin error:", error);

@@ -41,8 +41,11 @@ export const usePayRoundRobinEntryFee = () => {
       if (res?.data?.checkoutUrl) window.location.assign(res.data.checkoutUrl);
     },
     onError: (err, id) => {
-      toast.error(err.response?.data?.message || "Couldn't start payment");
+      // 409 = already paid → just refresh so the Pay button disappears.
+      if (err.response?.status === 409) toast.success("You've already paid this entry fee.");
+      else toast.error(err.response?.data?.message || "Couldn't start payment");
       qc.invalidateQueries({ queryKey: ["player-round-robin", id] });
+      qc.invalidateQueries({ queryKey: ["club-events"] });
     },
   });
 };

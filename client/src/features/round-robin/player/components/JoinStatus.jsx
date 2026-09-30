@@ -86,7 +86,12 @@ const JoinStatus = ({ roundRobinId, join, size = "sm", status }) => {
 
         {join.canCancel ? (
           confirming ? (
-            <span className="inline-flex items-center gap-1.5">
+            <span className="inline-flex flex-wrap items-center gap-1.5">
+              {join.paid && join.entryFee > 0 && (
+                <span className={`text-amber-200 ${lg ? "text-xs" : "text-[11px]"}`}>
+                  Your {money(join.entryFee)} will be refunded.
+                </span>
+              )}
               <button
                 type="button"
                 onClick={stop(() => leaveRR(roundRobinId, { onSettled: () => setConfirming(false) }))}
