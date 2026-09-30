@@ -39,9 +39,9 @@ jobs:
           echo "::error::Branch ${{ github.ref_name }} has no site. Run this from main, qa or dev."
           exit 1
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -50,14 +50,17 @@ jobs:
       - name: Resolve backend URL
         id: api
         run: |
-          URL="${{ vars.VITE_API_URL }}"
+          # Environment variable, or a secret with the same name, or the default
+          # backend for this branch.
+          URL="${{ vars.VITE_API_URL || secrets.VITE_API_URL }}"
           if [ -z "$URL" ]; then
-            if [ "$IS_PROD" = "true" ]; then
-              URL="https://smashschedule-1.onrender.com/api/v1"
-            else
-              echo "::error::Set variable VITE_API_URL in GitHub Environment '${{ github.ref_name }}' (its Render API, ending in /api/v1)"
-              exit 1
-            fi
+            case "${{ github.ref_name }}" in
+              main) URL="https://smashschedule-1.onrender.com/api/v1" ;;
+              qa)   URL="https://smashschedule-qa.onrender.com/api/v1" ;;
+              *)
+                echo "::error::Set variable VITE_API_URL in GitHub Environment '${{ github.ref_name }}' (its Render API, ending in /api/v1)"
+                exit 1 ;;
+            esac
           fi
           echo "Backend: $URL"
           echo "url=$URL" >> "$GITHUB_OUTPUT"
