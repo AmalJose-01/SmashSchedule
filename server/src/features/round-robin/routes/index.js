@@ -5,6 +5,7 @@ const RoundRobinMemberController = require("../controllers/RoundRobinMemberContr
 const RoundRobinGroupController = require("../controllers/RoundRobinGroupController");
 const RoundRobinMatchController = require("../controllers/RoundRobinMatchController");
 const SquarePaymentController = require("../../payments/square/SquarePaymentController");
+const StripeEntryFeeController = require("../../payments/stripe/StripeEntryFeeController");
 
 const router = express.Router();
 
@@ -44,13 +45,16 @@ router.post("/matches/:matchId/score", auth, RoundRobinMatchController.recordSco
 router.post("/matches/:matchId/reset", auth, RoundRobinMatchController.resetScore);
 router.put("/matches/:matchId", auth, RoundRobinMatchController.updateMatch);
 
-// Square Terminal Payments (entry fee collection)
+// Entry fee collection — Stripe Checkout (Connect destination charge, 1% platform fee).
+// Square Terminal collection is retired; old Square records still show via
+// getTournamentPayments and the status endpoint.
 router.post(
   "/tournaments/:tournamentId/players/:playerId/collect-payment",
   auth,
-  SquarePaymentController.collectPayment
+  StripeEntryFeeController.collectPayment
 );
 router.get("/tournaments/:tournamentId/payments", auth, SquarePaymentController.getTournamentPayments);
-router.get("/payments/:paymentId/status", auth, SquarePaymentController.getPaymentStatus);
+router.get("/payments/:paymentId/status", auth, StripeEntryFeeController.getPaymentStatus);
+router.post("/payments/:paymentId/refund", auth, StripeEntryFeeController.refundPayment);
 
 module.exports = router;

@@ -9,6 +9,8 @@ const RoundRobinMember = require("../models/RoundRobinMember");
 const RoundRobinPlayer = require("../models/RoundRobinPlayer");
 const RoundRobinGroup = require("../models/RoundRobinGroup");
 const AdminUser = require("../../login-signup/model/adminUser");
+const RoundRobinPayment = require("../models/RoundRobinPayment");
+const { getPayableClub } = require("../../payments/stripe/entryFeeCheckoutService");
 
 const LOCKED_STATUSES = ["Finalized", "Ongoing", "Completed"];
 
@@ -21,6 +23,7 @@ const REASONS = {
   notMember: "Join this club's round robin (from My Clubs) to register.",
   pending: "Your club membership is waiting for admin approval.",
   noGrade: "The club admin needs to set your grade before you can register.",
+  noMembership: "The club admin needs to set your membership type before you can register.",
 };
 
 const findMember = async (adminId, userId) => {
@@ -44,9 +47,40 @@ const getJoinInfo = async (tournament, userId, { playerCount, member } = {}) => 
   const remaining = slots != null ? Math.max(0, slots - count) : null;
 
   const m = member !== undefined ? member : (await findMember(tournament.adminId, userId)).member;
-  const joined = m
-    ? !!(await RoundRobinPlayer.exists({ tournamentId: tournament._id, memberId: m._id }))
-    : false;
+  const player = m
+    ? await RoundRobinPlayer.findOne({ tournamentId: tournament._id, memberId: m._id }).select("_id isMember").lean()
+    : null;
+  const joined = !!player;
+
+  // Entry fee for this player, by membership type (member / non-member).
+  const isMember = player ? player.isMember : m?.isMember;
+  const entryFee =
+    m && typeof isMember === "boolean"
+      ? Number((isMember ? tournament.entryFeeMember : tournament.entryFeeNonMember) || 0)
+      : 0;
+  let paymentStatus = null;
+  let canPayOnline = false;
+  if (entryFee > 0) {
+    const [latest, payable] = await Promise.all([
+      player
+        ? RoundRobinPayment.findOne({ tournamentId: tournament._id, playerId: player._id }).sort({ createdAt: -1 }).select("status").lean()
+        : null,
+      getPayableClub(tournament.adminId),
+    ]);
+    paymentStatus = latest?.status || null;
+    canPayOnline = payable.ready;
+  }
+
+  // Not registered yet: last online join attempt (registration is created only
+  // after payment succeeds).
+  let joinPayment = null;
+  if (!joined && m && entryFee > 0) {
+    const attempt = await RoundRobinPayment.findOne({ tournamentId: tournament._id, memberId: m._id, purpose: "self_join" })
+      .sort({ createdAt: -1 })
+      .select("status failureReason")
+      .lean();
+    if (attempt) joinPayment = { status: attempt.status, failureReason: attempt.failureReason || null };
+  }
 
   // After the deadline (or once the schedule is finalized) nothing can change:
   // no joining and no cancelling.
@@ -62,6 +96,7 @@ const getJoinInfo = async (tournament, userId, { playerCount, member } = {}) => 
   else if (!m) reason = "notMember";
   else if (m.status === "pending") reason = "pending";
   else if (!m.grade) reason = "noGrade";
+  else if (typeof m.isMember !== "boolean") reason = "noMembership";
 
   return {
     playerCount: count,
@@ -77,6 +112,16 @@ const getJoinInfo = async (tournament, userId, { playerCount, member } = {}) => 
     reason,
     reasonText: reason ? REASONS[reason] : null,
     registrationDeadline: tournament.registrationDeadline ?? null,
+    // Payment (entry fee by membership type)
+    entryFee,
+    isMember: typeof isMember === "boolean" ? isMember : null,
+    canPayOnline,
+    paymentStatus,
+    paid: paymentStatus === "COMPLETED",
+    paymentDue: joined && entryFee > 0 && paymentStatus !== "COMPLETED" && paymentStatus !== "REFUNDED",
+    joinPayment,
+    // Paid online but the registration isn't linked yet (webhook in flight).
+    confirming: !joined && joinPayment?.status === "COMPLETED",
   };
 };
 

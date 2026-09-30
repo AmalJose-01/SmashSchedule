@@ -38,6 +38,7 @@ import {
   collectPaymentAPI,
   getPaymentStatusAPI,
   getTournamentPaymentsAPI,
+  refundPaymentAPI,
 } from "./roundRobin.services.js";
 
 
@@ -415,9 +416,22 @@ export const useSquareDeviceCodeStatus = (deviceCodeId, enabled) =>
 export const useCollectPayment = () =>
   useMutation({
     mutationFn: collectPaymentAPI,
-    onSuccess: () => toast.success("Checkout sent to Terminal — ask the player to tap, insert, or swipe"),
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to start Terminal checkout"),
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to start card payment"),
   });
+
+// Full Stripe refund (club share + platform fee returned; Stripe keeps its card fee).
+export const useRefundPayment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: refundPaymentAPI,
+    onSuccess: () => {
+      toast.success("Refund issued");
+      queryClient.invalidateQueries({ queryKey: ["rr-tournament-payments"] });
+      queryClient.invalidateQueries({ queryKey: ["rr-payment-status"] });
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Refund failed"),
+  });
+};
 
 export const useGetPaymentStatus = (paymentId, options = {}) =>
   useQuery({
@@ -426,7 +440,7 @@ export const useGetPaymentStatus = (paymentId, options = {}) =>
     enabled: !!paymentId,
     refetchInterval: (query) => {
       const status = query.state.data?.data?.status;
-      return ["COMPLETED", "CANCELED", "FAILED"].includes(status) ? false : 2000;
+      return ["COMPLETED", "CANCELED", "FAILED", "REFUNDED"].includes(status) ? false : 2000;
     },
     ...options,
   });

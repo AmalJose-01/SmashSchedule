@@ -156,6 +156,38 @@ const Step2 = ({ form, setForm, errors }) => {
       </p>
     </Field>
 
+    {/* Payment — entry fee by membership type (0 = free) */}
+    <div className="border-t border-slate-700/50 pt-4">
+      <p className="text-sm font-semibold text-slate-200 mb-3">Payment</p>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Member Fee (A$)" error={errors.entryFeeMember}>
+          <input
+            type="number"
+            min={0}
+            step="0.01"
+            value={form.entryFeeMember}
+            onChange={(e) => setForm((f) => ({ ...f, entryFeeMember: e.target.value }))}
+            placeholder="0 = free"
+            className={inputCls(errors.entryFeeMember)}
+          />
+        </Field>
+        <Field label="Non-Member Fee (A$)" error={errors.entryFeeNonMember}>
+          <input
+            type="number"
+            min={0}
+            step="0.01"
+            value={form.entryFeeNonMember}
+            onChange={(e) => setForm((f) => ({ ...f, entryFeeNonMember: e.target.value }))}
+            placeholder="0 = free"
+            className={inputCls(errors.entryFeeNonMember)}
+          />
+        </Field>
+      </div>
+      <p className="text-xs text-slate-400 mt-1">
+        Players pay by card when they join, based on their membership type. Leave 0 for a free round robin.
+      </p>
+    </div>
+
     <div className="border-t border-slate-700/50 pt-4">
       <button
         type="button"
@@ -292,6 +324,8 @@ const Step3 = ({ form }) => (
         [form.matchType === "Doubles" ? "Players per Group (all pair combinations)" : "Players per Group", form.playersPerGroup],
         ["Courts", form.numberOfCourts],
         ["Player Slots", form.numberOfSlots],
+        ["Member Fee", Number(form.entryFeeMember) > 0 ? `A$${Number(form.entryFeeMember).toFixed(2)}` : "Free"],
+        ["Non-Member Fee", Number(form.entryFeeNonMember) > 0 ? `A$${Number(form.entryFeeNonMember).toFixed(2)}` : "Free"],
         ["Matches per Member", form.numberOfMatchesPerMember],
         ["Grouping Strategy", form.groupingStrategy],
         // Win/Loss points removed from the review summary too — fixed at 2/0/1 (win/loss/draw), not admin-configurable.
@@ -340,6 +374,8 @@ const INITIAL_FORM = {
   playersPerGroup: 4,
   numberOfCourts: 2,
   numberOfSlots: "",
+  entryFeeMember: 0,
+  entryFeeNonMember: 0,
   numberOfMatchesPerMember: 3,
   groupingStrategy: "random",
   pointsForWin: 2,
@@ -381,6 +417,11 @@ const CreateTournamentRR = () => {
       } else if (!Number.isInteger(Number(form.numberOfSlots)) || Number(form.numberOfSlots) < 1) {
         e.numberOfSlots = "Enter a whole number of at least 1";
       }
+      for (const key of ["entryFeeMember", "entryFeeNonMember"]) {
+        const fee = Number(form[key]);
+        if (form[key] === "" || !Number.isFinite(fee) || fee < 0) e[key] = "Enter 0 or more";
+        else if (fee > 0 && fee < 1) e[key] = "Minimum A$1.00 (or 0 for free)";
+      }
       if (!form.numberOfMatchesPerMember || form.numberOfMatchesPerMember < 1) e.numberOfMatchesPerMember = "At least 1 match per member required";
       if (!form.setWinningPoint || form.setWinningPoint < 1) e.setWinningPoint = "Required";
       if (!form.winningPointGap || form.winningPointGap < 1) e.winningPointGap = "Required";
@@ -400,6 +441,8 @@ const CreateTournamentRR = () => {
         playersPerGroup:  Number(form.playersPerGroup),
         numberOfCourts:   Number(form.numberOfCourts),
         numberOfSlots:    Number(form.numberOfSlots),
+        entryFeeMember:    Number(form.entryFeeMember),
+        entryFeeNonMember: Number(form.entryFeeNonMember),
         // datetime-local is local time — send as a full ISO timestamp.
         registrationDeadline: new Date(form.registrationDeadline).toISOString(),
         numberOfMatchesPerMember: Number(form.numberOfMatchesPerMember),
