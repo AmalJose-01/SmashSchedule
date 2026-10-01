@@ -10,7 +10,7 @@ const RoundRobinPlayer = require("../models/RoundRobinPlayer");
 const RoundRobinGroup = require("../models/RoundRobinGroup");
 const AdminUser = require("../../login-signup/model/adminUser");
 const RoundRobinPayment = require("../models/RoundRobinPayment");
-const { getPayableClub, getPlayerPaymentStatus, refundOnCancel } = require("../../payments/stripe/entryFeeCheckoutService");
+const { getPayableClub, getPlayerPaymentStatus, refundOnCancel, entryFeeFor } = require("../../payments/stripe/entryFeeCheckoutService");
 
 const LOCKED_STATUSES = ["Finalized", "Ongoing", "Completed"];
 
@@ -54,19 +54,20 @@ const getJoinInfo = async (tournament, userId, { playerCount, member } = {}) => 
 
   // Entry fee for this player, by membership type (member / non-member).
   const isMember = player ? player.isMember : m?.isMember;
-  const entryFee =
-    m && typeof isMember === "boolean"
-      ? Number((isMember ? tournament.entryFeeMember : tournament.entryFeeNonMember) || 0)
-      : 0;
+  // Payment applies only when "Accept online payment" is on, a fee is set for
+  // this membership type AND the club's Stripe payouts are active. Otherwise
+  // nothing payment-related is shown and joining is free.
+  let entryFee = m && typeof isMember === "boolean" ? entryFeeFor(tournament, { isMember }) : 0;
   let paymentStatus = null;
   let canPayOnline = false;
   if (entryFee > 0) {
-    const [status, payable] = await Promise.all([
-      player ? getPlayerPaymentStatus(tournament._id, player._id) : null,
-      getPayableClub(tournament.adminId),
-    ]);
-    paymentStatus = status;
-    canPayOnline = payable.ready;
+    const { ready } = await getPayableClub(tournament.adminId);
+    if (!ready) {
+      entryFee = 0;
+    } else {
+      canPayOnline = true;
+      paymentStatus = player ? await getPlayerPaymentStatus(tournament._id, player._id) : null;
+    }
   }
 
   // Not registered yet: last online join attempt (registration is created only

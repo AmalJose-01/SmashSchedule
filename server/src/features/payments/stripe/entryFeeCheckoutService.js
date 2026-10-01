@@ -8,8 +8,12 @@ const { calculateFees, toCents } = require("./feeCalculator");
 
 const httpError = (status, message) => Object.assign(new Error(message), { status });
 
+// Fee for this player by membership type. 0 unless the round robin has
+// "Accept online payment" switched on.
 const entryFeeFor = (tournament, player) =>
-  Number(player.isMember ? tournament.entryFeeMember || 0 : tournament.entryFeeNonMember || 0);
+  tournament.acceptOnlinePayment === true
+    ? Number(player.isMember ? tournament.entryFeeMember || 0 : tournament.entryFeeNonMember || 0)
+    : 0;
 
 // The club that owns a round robin, and whether it can take card payments.
 const getPayableClub = async (adminId) => {

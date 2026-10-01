@@ -17,11 +17,10 @@ const getMyPaymentInfo = async (tournament, myPlayerIds) => {
   if (!player) return null;
   const amount = entryFeeFor(tournament, player);
   if (amount <= 0) return null;
-  const [status, { ready }] = await Promise.all([
-    getPlayerPaymentStatus(tournament._id, player._id),
-    getPayableClub(tournament.adminId),
-  ]);
-  return { amount, status, canPayOnline: ready };
+  const { ready } = await getPayableClub(tournament.adminId);
+  if (!ready) return null; // payouts not active → no payment UI at all
+  const status = await getPlayerPaymentStatus(tournament._id, player._id);
+  return { amount, status, canPayOnline: true };
 };
 
 const SLOTS = ["player1Id", "player1PartnerId", "player2Id", "player2PartnerId"];
@@ -38,7 +37,7 @@ const PlayerRoundRobinController = {
       }
 
       const tournament = await RoundRobinTournament.findById(id)
-        .select("tournamentName matchType format status startDate endDate registrationDeadline numberOfCourts numberOfSlots numberOfSets setWinningPoint winningPointGap description adminId entryFeeMember entryFeeNonMember")
+        .select("tournamentName matchType format status startDate endDate registrationDeadline numberOfCourts numberOfSlots numberOfSets setWinningPoint winningPointGap description adminId entryFeeMember entryFeeNonMember acceptOnlinePayment")
         .lean();
       if (!tournament) return res.status(404).json({ message: "Round robin not found" });
 

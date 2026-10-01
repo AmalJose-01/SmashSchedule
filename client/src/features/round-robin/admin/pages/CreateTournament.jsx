@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Check, Trophy, ChevronDown } from "lucide-react";
 import { useCreateRoundRobinTournament } from "../services/roundRobin.queries.js";
+import { useStripeStatus } from "../../../payments/services/stripePayments.js";
+import Toggle from "../components/Toggle.jsx";
 import AppBackground from "../../../../components/AppBackground.jsx";
 import PageHeader from "../../../../components/PageHeader.jsx";
 
@@ -110,7 +112,7 @@ const ADVANCED_FIELD_KEYS = [
   "winningPointGap",
 ];
 
-const Step2 = ({ form, setForm, errors }) => {
+const Step2 = ({ form, setForm, errors, payoutsReady }) => {
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const hasAdvancedErrors = ADVANCED_FIELD_KEYS.some((key) => errors[key]);
   const showAdvanced = advancedOpen || hasAdvancedErrors;
@@ -156,37 +158,45 @@ const Step2 = ({ form, setForm, errors }) => {
       </p>
     </Field>
 
-    {/* Payment — entry fee by membership type (0 = free) */}
-    <div className="border-t border-slate-700/50 pt-4">
-      <p className="text-sm font-semibold text-slate-200 mb-3">Payment</p>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Member Fee (A$)" error={errors.entryFeeMember}>
-          <input
-            type="number"
-            min={0}
-            step="0.01"
-            value={form.entryFeeMember}
-            onChange={(e) => setForm((f) => ({ ...f, entryFeeMember: e.target.value }))}
-            placeholder="0 = free"
-            className={inputCls(errors.entryFeeMember)}
-          />
-        </Field>
-        <Field label="Non-Member Fee (A$)" error={errors.entryFeeNonMember}>
-          <input
-            type="number"
-            min={0}
-            step="0.01"
-            value={form.entryFeeNonMember}
-            onChange={(e) => setForm((f) => ({ ...f, entryFeeNonMember: e.target.value }))}
-            placeholder="0 = free"
-            className={inputCls(errors.entryFeeNonMember)}
-          />
-        </Field>
+    {/* Payment — only when the club's Stripe payouts are active. Fees show
+        only when "Accept online payment" is switched on. */}
+    {payoutsReady && (
+      <div className="border-t border-slate-700/50 pt-4 space-y-4">
+        <p className="text-sm font-semibold text-slate-200">Payment</p>
+        <Toggle
+          label="Accept online payment"
+          hint="Players pay by card when they join, based on their membership type."
+          checked={!!form.acceptOnlinePayment}
+          onChange={(v) => setForm((f) => ({ ...f, acceptOnlinePayment: v }))}
+        />
+        {form.acceptOnlinePayment && (
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Member Fee (A$)" error={errors.entryFeeMember}>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={form.entryFeeMember}
+                onChange={(e) => setForm((f) => ({ ...f, entryFeeMember: e.target.value }))}
+                placeholder="0 = free"
+                className={inputCls(errors.entryFeeMember)}
+              />
+            </Field>
+            <Field label="Non-Member Fee (A$)" error={errors.entryFeeNonMember}>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={form.entryFeeNonMember}
+                onChange={(e) => setForm((f) => ({ ...f, entryFeeNonMember: e.target.value }))}
+                placeholder="0 = free"
+                className={inputCls(errors.entryFeeNonMember)}
+              />
+            </Field>
+          </div>
+        )}
       </div>
-      <p className="text-xs text-slate-400 mt-1">
-        Players pay by card when they join, based on their membership type. Leave 0 for a free round robin.
-      </p>
-    </div>
+    )}
 
     <div className="border-t border-slate-700/50 pt-4">
       <button
@@ -313,7 +323,7 @@ const Step2 = ({ form, setForm, errors }) => {
   );
 };
 
-const Step3 = ({ form }) => (
+const Step3 = ({ form, payoutsReady }) => (
   <div className="space-y-5">
     <div className="bg-slate-900/40 border border-slate-700/50 rounded-2xl p-5 space-y-2.5">
       <h3 className="font-semibold text-white mb-3">Tournament Details</h3>
@@ -324,8 +334,17 @@ const Step3 = ({ form }) => (
         [form.matchType === "Doubles" ? "Players per Group (all pair combinations)" : "Players per Group", form.playersPerGroup],
         ["Courts", form.numberOfCourts],
         ["Player Slots", form.numberOfSlots],
-        ["Member Fee", Number(form.entryFeeMember) > 0 ? `A$${Number(form.entryFeeMember).toFixed(2)}` : "Free"],
-        ["Non-Member Fee", Number(form.entryFeeNonMember) > 0 ? `A$${Number(form.entryFeeNonMember).toFixed(2)}` : "Free"],
+        ...(payoutsReady
+          ? [
+              ["Online Payment", form.acceptOnlinePayment ? "On" : "Off"],
+              ...(form.acceptOnlinePayment
+                ? [
+                    ["Member Fee", Number(form.entryFeeMember) > 0 ? `A$${Number(form.entryFeeMember).toFixed(2)}` : "Free"],
+                    ["Non-Member Fee", Number(form.entryFeeNonMember) > 0 ? `A$${Number(form.entryFeeNonMember).toFixed(2)}` : "Free"],
+                  ]
+                : []),
+            ]
+          : []),
         ["Matches per Member", form.numberOfMatchesPerMember],
         ["Grouping Strategy", form.groupingStrategy],
         // Win/Loss points removed from the review summary too — fixed at 2/0/1 (win/loss/draw), not admin-configurable.
@@ -374,6 +393,7 @@ const INITIAL_FORM = {
   playersPerGroup: 4,
   numberOfCourts: 2,
   numberOfSlots: "",
+  acceptOnlinePayment: false,
   entryFeeMember: 0,
   entryFeeNonMember: 0,
   numberOfMatchesPerMember: 3,
@@ -391,6 +411,9 @@ const CreateTournamentRR = () => {
   const [form, setForm] = useState(INITIAL_FORM);
   const [errors, setErrors] = useState({});
   const { mutateAsync: createTournament, isPending: isCreating } = useCreateRoundRobinTournament();
+  // Payment options only exist once the club's Stripe payouts are active.
+  const { data: stripeStatus } = useStripeStatus();
+  const payoutsReady = !!stripeStatus?.data?.chargesEnabled;
   const isSubmitting = isCreating;
 
   const validateStep = () => {
@@ -417,7 +440,7 @@ const CreateTournamentRR = () => {
       } else if (!Number.isInteger(Number(form.numberOfSlots)) || Number(form.numberOfSlots) < 1) {
         e.numberOfSlots = "Enter a whole number of at least 1";
       }
-      for (const key of ["entryFeeMember", "entryFeeNonMember"]) {
+      for (const key of payoutsReady && form.acceptOnlinePayment ? ["entryFeeMember", "entryFeeNonMember"] : []) {
         const fee = Number(form[key]);
         if (form[key] === "" || !Number.isFinite(fee) || fee < 0) e[key] = "Enter 0 or more";
         else if (fee > 0 && fee < 1) e[key] = "Minimum A$1.00 (or 0 for free)";
@@ -441,8 +464,9 @@ const CreateTournamentRR = () => {
         playersPerGroup:  Number(form.playersPerGroup),
         numberOfCourts:   Number(form.numberOfCourts),
         numberOfSlots:    Number(form.numberOfSlots),
-        entryFeeMember:    Number(form.entryFeeMember),
-        entryFeeNonMember: Number(form.entryFeeNonMember),
+        acceptOnlinePayment: payoutsReady && !!form.acceptOnlinePayment,
+        entryFeeMember:    Number(form.entryFeeMember) || 0,
+        entryFeeNonMember: Number(form.entryFeeNonMember) || 0,
         // datetime-local is local time — send as a full ISO timestamp.
         registrationDeadline: new Date(form.registrationDeadline).toISOString(),
         numberOfMatchesPerMember: Number(form.numberOfMatchesPerMember),
@@ -476,8 +500,8 @@ const CreateTournamentRR = () => {
           <h2 className="text-lg font-semibold text-white mb-5 pb-3 border-b border-slate-700/50">{STEPS[step]}</h2>
 
           {step === 0 && <Step1 form={form} setForm={setForm} errors={errors} />}
-          {step === 1 && <Step2 form={form} setForm={setForm} errors={errors} />}
-          {step === 2 && <Step3 form={form} />}
+          {step === 1 && <Step2 form={form} setForm={setForm} errors={errors} payoutsReady={payoutsReady} />}
+          {step === 2 && <Step3 form={form} payoutsReady={payoutsReady} />}
 
           {/* Navigation buttons */}
           <div className="flex justify-between mt-8 pt-5 border-t border-slate-700/50">

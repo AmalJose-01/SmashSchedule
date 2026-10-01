@@ -36,6 +36,7 @@ import { computeGroupStandings } from "../../shared/groupStandings.js";
 import PageHeader from "../../../../components/PageHeader.jsx";
 import PaymentQrModal from "../../../payments/components/PaymentQrModal.jsx";
 import { useStripeStatus } from "../../../payments/services/stripePayments.js";
+import Toggle from "../components/Toggle.jsx";
 
 const STATUS_STYLES = {
   Draft:     "bg-white/10 text-slate-300",
@@ -146,6 +147,9 @@ const ConfigTab = ({ tournament, isFinalized }) => {
   const { mutate: updateTournament, isPending } = useUpdateRoundRobinTournament();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({});
+  // Payment settings only appear once the club's Stripe payouts are active.
+  const { data: stripeStatusData } = useStripeStatus();
+  const payoutsReady = !!stripeStatusData?.data?.chargesEnabled;
 
   useEffect(() => {
     setForm({
@@ -158,6 +162,7 @@ const ConfigTab = ({ tournament, isFinalized }) => {
       numberOfCourts: tournament.numberOfCourts  ?? 1,
       numberOfSlots:  tournament.numberOfSlots ?? "",
       numberOfMatchesPerMember: tournament.numberOfMatchesPerMember ?? 3,
+      acceptOnlinePayment: tournament.acceptOnlinePayment ?? false,
       entryFeeMember:    tournament.entryFeeMember    ?? 0,
       entryFeeNonMember: tournament.entryFeeNonMember ?? 0,
       pointsForWin:   tournament.pointsForWin    ?? 2,
@@ -184,8 +189,12 @@ const ConfigTab = ({ tournament, isFinalized }) => {
           registrationDeadline: new Date(form.registrationDeadline).toISOString(),
           ...(form.numberOfSlots !== "" && { numberOfSlots: Number(form.numberOfSlots) }),
           numberOfMatchesPerMember: Number(form.numberOfMatchesPerMember),
-          entryFeeMember:    Number(form.entryFeeMember),
-          entryFeeNonMember: Number(form.entryFeeNonMember),
+          // Leave the stored value alone if payouts aren't active (the section is hidden).
+          ...(payoutsReady
+            ? { acceptOnlinePayment: !!form.acceptOnlinePayment }
+            : { acceptOnlinePayment: tournament.acceptOnlinePayment ?? false }),
+          entryFeeMember:    Number(form.entryFeeMember) || 0,
+          entryFeeNonMember: Number(form.entryFeeNonMember) || 0,
           pointsForWin:    Number(form.pointsForWin),
           pointsForLoss:   Number(form.pointsForLoss),
           numberOfSets:    Number(form.numberOfSets),
@@ -248,15 +257,22 @@ const ConfigTab = ({ tournament, isFinalized }) => {
           </div>
         </div>
 
-        <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 overflow-hidden">
-          <div className="px-5 py-3 bg-slate-900/50 border-b border-slate-700/50">
-            <h3 className="font-semibold text-white text-sm">Payment</h3>
+        {payoutsReady && (
+          <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 overflow-hidden">
+            <div className="px-5 py-3 bg-slate-900/50 border-b border-slate-700/50">
+              <h3 className="font-semibold text-white text-sm">Payment</h3>
+            </div>
+            <div className="px-5 py-1">
+              <ViewRow label="Accept Online Payment" value={tournament.acceptOnlinePayment ? "On" : "Off"} />
+              {tournament.acceptOnlinePayment && (
+                <>
+                  <ViewRow label="Member Fee" value={tournament.entryFeeMember > 0 ? `A$${tournament.entryFeeMember.toFixed(2)}` : "Free"} />
+                  <ViewRow label="Non-Member Fee" value={tournament.entryFeeNonMember > 0 ? `A$${tournament.entryFeeNonMember.toFixed(2)}` : "Free"} />
+                </>
+              )}
+            </div>
           </div>
-          <div className="px-5 py-1">
-            <ViewRow label="Member Fee" value={tournament.entryFeeMember > 0 ? `A$${tournament.entryFeeMember.toFixed(2)}` : "Free"} />
-            <ViewRow label="Non-Member Fee" value={tournament.entryFeeNonMember > 0 ? `A$${tournament.entryFeeNonMember.toFixed(2)}` : "Free"} />
-          </div>
-        </div>
+        )}
 
         <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 overflow-hidden">
           <div className="px-5 py-3 bg-slate-900/50 border-b border-slate-700/50">
@@ -326,14 +342,26 @@ const ConfigTab = ({ tournament, isFinalized }) => {
             <input type="number" min={1} value={form.numberOfSlots} onChange={(e) => set("numberOfSlots", e.target.value)} className={inputCls()} />
           </Field>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Member Fee (A$)">
-            <input type="number" min={0} step="0.01" value={form.entryFeeMember} onChange={(e) => set("entryFeeMember", e.target.value)} className={inputCls()} placeholder="0 = free" />
-          </Field>
-          <Field label="Non-Member Fee (A$)">
-            <input type="number" min={0} step="0.01" value={form.entryFeeNonMember} onChange={(e) => set("entryFeeNonMember", e.target.value)} className={inputCls()} placeholder="0 = free" />
-          </Field>
-        </div>
+        {payoutsReady && (
+          <div className="border-t border-slate-700/50 pt-4 space-y-4">
+            <Toggle
+              label="Accept online payment"
+              hint="Players pay by card when they join, based on their membership type."
+              checked={!!form.acceptOnlinePayment}
+              onChange={(v) => set("acceptOnlinePayment", v)}
+            />
+            {form.acceptOnlinePayment && (
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Member Fee (A$)">
+                  <input type="number" min={0} step="0.01" value={form.entryFeeMember} onChange={(e) => set("entryFeeMember", e.target.value)} className={inputCls()} placeholder="0 = free" />
+                </Field>
+                <Field label="Non-Member Fee (A$)">
+                  <input type="number" min={0} step="0.01" value={form.entryFeeNonMember} onChange={(e) => set("entryFeeNonMember", e.target.value)} className={inputCls()} placeholder="0 = free" />
+                </Field>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Scoring Rules */}
@@ -656,14 +684,17 @@ const CollectPaymentButton = ({ tournamentId, player, existingPayment, entryFee,
 };
 
 const PlayersTab = ({ tournamentId, isFinalized, tournament }) => {
-  const navigate = useNavigate();
   const { data, isLoading } = useGetTournamentPlayers(tournamentId);
   const { mutate: removePlayer, isPending } = useRemovePlayerFromTournament();
   const { data: stripeStatusData } = useStripeStatus();
-  const hasEntryFee = (tournament?.entryFeeMember ?? 0) > 0 || (tournament?.entryFeeNonMember ?? 0) > 0;
+  const payoutsReady = !!stripeStatusData?.data?.chargesEnabled;
+  // Payment column only when payouts are active AND online payment is switched on.
+  const hasEntryFee =
+    payoutsReady &&
+    tournament?.acceptOnlinePayment === true &&
+    ((tournament?.entryFeeMember ?? 0) > 0 || (tournament?.entryFeeNonMember ?? 0) > 0);
   const { data: paymentsData } = useGetTournamentPayments(hasEntryFee ? tournamentId : null);
   const players = data?.data ?? [];
-  const payoutsReady = !!stripeStatusData?.data?.chargesEnabled;
   const paymentsByPlayerId = (paymentsData?.data ?? []).reduce((map, payment) => {
     map[payment.playerId] = payment;
     return map;
@@ -688,17 +719,6 @@ const PlayersTab = ({ tournamentId, isFinalized, tournament }) => {
 
   return (
     <div className="space-y-3">
-      {hasEntryFee && stripeStatusData && !payoutsReady && (
-        <div className="flex items-center justify-between gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-2.5 text-sm text-amber-200">
-          <span>This tournament has an entry fee. Set up payouts to your club's bank account to take card payments.</span>
-          <button
-            onClick={() => navigate("/admin/club-profile/payments")}
-            className="flex-shrink-0 text-xs font-semibold text-cyan-300 hover:underline"
-          >
-            Set up payouts →
-          </button>
-        </div>
-      )}
       <div className="flex items-center justify-between">
         <p className="text-sm text-slate-400 font-medium">
           {players.length}
