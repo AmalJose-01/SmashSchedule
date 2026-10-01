@@ -20,6 +20,7 @@ const Member = require("../../../../model/member");
 const Membership = require("../../../../model/membership");
 const MemberDocument = require("../../../../model/memberDocument");
 const Team = require("../../../../model/team");
+const TournamentPlayer = require("../../../../model/tournamentPlayer");
 
 const DELETED_NAME = "Deleted player";
 const placeholderEmail = (id) => `deleted-${id}@deleted.invalid`;
@@ -119,6 +120,24 @@ const deletePlayerAccount = async (userId) => {
           { session, runValidators: false }
         );
         summary.teams = p1.modifiedCount + p2.modifiedCount;
+
+        // Singles tournament registrations ("tournamentplayers"). Each gets a
+        // unique placeholder email so the per-tournament unique index holds.
+        const tp = await TournamentPlayer.updateMany(
+          { email: emailMatch },
+          [
+            {
+              $set: {
+                name: DELETED_NAME,
+                email: { $concat: ["deleted-", { $toString: "$_id" }, "@deleted.invalid"] },
+                contact: { $concat: ["deleted-", { $toString: "$_id" }] },
+                dob: "-",
+              },
+            },
+          ],
+          { session }
+        );
+        summary.tournamentPlayers = tp.modifiedCount;
       }
 
       // ── Profile + login ──

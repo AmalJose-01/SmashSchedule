@@ -1,5 +1,4 @@
 import {
-  Table,
   Trophy,
   Users,
   X,
@@ -12,20 +11,41 @@ import {
   Save,
   DollarSign,
 } from "lucide-react";
-import ButtonWithIcon from "../../components/ButtonWithIcon";
-import Logout from "../../components/Logout";
+import AppBackground from "../../components/AppBackground";
+import PageHeader from "../../components/PageHeader";
+import AddressSearch from "../../components/AddressSearch";
 import tournamentSetupSchema from "../../../utils/validationSchemas";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {  updateTournamentAPI } from "../../services/admin/adminTeamServices";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { logOut } from "../../redux/slices/userSlice";
 import { useEffect, useState } from "react";
 
 import { useLocation } from "react-router-dom";
+
+// Same dark field style as the round robin create page.
+const inputCls = (err) =>
+  `w-full bg-slate-900/50 border rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-500 [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all ${err ? "border-red-500" : "border-slate-600"}`;
+
+const cardCls =
+  "bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 p-5 sm:p-6 space-y-4";
+const cardTitleCls =
+  "flex items-center gap-2 text-lg font-semibold text-white pb-3 border-b border-slate-700/50";
+
+const Field = ({ icon: Icon, label, error, children }) => (
+  <div>
+    <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-1.5">
+      {Icon && <Icon className="w-4 h-4 text-cyan-400" />}
+      {label}
+    </label>
+    {children}
+    {error?.message && <p className="text-red-400 text-xs mt-1">{error.message}</p>}
+  </div>
+);
 
 const EditTournament = () => {
   const navigate = useNavigate();
@@ -35,10 +55,10 @@ const EditTournament = () => {
   const tournamentDetail = state?.tournamentDetail;
 
   const [matchTypeValue, setMatchTypeValue] = useState(
-    tournamentDetail.matchType ? tournamentDetail.matchType : "Singles"
+    tournamentDetail?.matchType || "Singles"
   ); // state to hold selected value
   const [playTypeValue, setPlayTypeValue] = useState(
-    tournamentDetail.playType ? tournamentDetail.playType : "Round Robbin"
+    tournamentDetail?.playType || "group"
   ); // state to hold selected value
 
   // ---------------------------
@@ -108,7 +128,7 @@ const EditTournament = () => {
     defaultValues: tournamentDetail || {
       tournamentName: "My Tournament",
       teamsPerGroup: 4,
-      playType: "Round Robbin",
+      playType: "group",
       numberOfPlayersQualifiedToKnockout: 2,
       numberOfCourts: 1,
       date: "",
@@ -137,369 +157,203 @@ const EditTournament = () => {
 
   useEffect(() => {}, [matchTypeValue, playTypeValue]);
 
+  // Opened directly (page refresh) — there's no tournament to edit.
+  if (!tournamentDetail) return <Navigate to="/setup-tournament" replace />;
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white ">
-      {/* Header */}
-      <div className="flex justify-between items-center bg-white p-4  shadow-lg sticky top-0">
-        <div className="flex items-center gap-4">
-          <Trophy
-            className="w-8 h-8 text-blue-600"
-            onClick={() => navigate("/")}
-          />
+    <AppBackground>
+      <PageHeader
+        title="Edit Tournament"
+        subtitle={tournamentDetail.tournamentName}
+        onBack={onClose}
+      />
 
-          <h2 className="text-xl font-semibold text-blue-800">
-            Edit Tournament
-          </h2>
-        </div>
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6"
+      >
+        {/* Two cards side by side on large screens, stacked on mobile */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          {/* ── Tournament Detail ── */}
+          <section className={cardCls}>
+            <h2 className={cardTitleCls}>
+              <Trophy className="w-5 h-5 text-cyan-400" />
+              Tournament Detail
+            </h2>
 
-        <div className="flex gap-2">
-          <Logout />
-        </div>
-      </div>
+            <Field icon={Shield} label="Tournament Name" error={errors.tournamentName}>
+              <input
+                type="text"
+                placeholder="Tournament Name"
+                {...register("tournamentName")}
+                className={inputCls(errors.tournamentName)}
+              />
+            </Field>
 
-      {/* Content View */}
-      <div className="card w-full max-w-xl mx-auto shadow-lg rounded-lg bg-blue-600 items-center mt-5 ">
-        <div className="flex  items-center justify-between p-4">
-          <div className="flex  items-center gap-3">
-            <Trophy className="w-6 h-6 text-white" />
-            <h2 className="text-2xl  text-white">Tournament Detail</h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-red-600 hover:bg-opacity-20 rounded-lg transition-colors text-white"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <div className="flex w-full bg-white rounded-b-lg">
-          <form
-            className="flex flex-col w-full mt-3 p-3 gap-3"
-            onSubmit={handleSubmit(onSubmit)}
-          >
-            {/* Team Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="md:col-span-2">
-                <label
-                  htmlFor="teamName"
-                  className="flex items-center gap-2 text-gray-700 mb-2"
-                >
-                  <Shield className="w-4 h-4" />
-                  Tournament Name
-                </label>
-                <div>
-                  <input
-                    type="text"
-                    // value={tournamentDetail.tournamentName}
-                    onChange={(e) => setValue("tournamentName", e.target.value)}
-                    placeholder="Tournament Name"
-                    {...register("tournamentName")}
-                    className="w-full p-2 border rounded"
-                  />
-                  {errors.tournamentName && (
-                    <p className="text-red-500 text-sm">
-                      {errors.tournamentName.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <div className="flex items-center gap-2 text-gray-700 mb-2">
-                  <Calendar className="w-4 h-4" />
-                  Date
-                </div>
-                <input
-                  type="date"
-                  id="date"
-                  name="date"
-                  // value={tournamentDetail.date}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  {...register("date")}
-                />
-                {errors.date && (
-                  <p className="text-red-600 text-sm">{errors.date.message}</p>
-                )}
-              </div>
-
-              <div>
-                <div className="flex items-center gap-2 text-gray-700 mb-2">
-                  <Clock className="w-4 h-4" />
-                  Time
-                </div>
-                <input
-                  type="time"
-                  id="time"
-                  name="time"
-                  // value={tournamentDetail.time}
-                  //   value={formData.time}
-                  //   onChange={handleChange}
-                  required
-                  {...register("time")}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                {errors.time && (
-                  <p className="text-red-500 text-sm">{errors.time.message}</p>
-                )}
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field icon={Calendar} label="Date" error={errors.date}>
+                <input type="date" required {...register("date")} className={inputCls(errors.date)} />
+              </Field>
+              <Field icon={Clock} label="Time" error={errors.time}>
+                <input type="time" required {...register("time")} className={inputCls(errors.time)} />
+              </Field>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="md:col-span-2">
-                <label className="flex items-center gap-2 text-gray-700 mb-2">
-                  <MapPin className="w-4 h-4" />
-                  Location
-                </label>
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Tournament Name"
-                    {...register("location")}
-                    className="w-full p-2 border rounded"
-                    // value={tournamentDetail.location}
-                  />
-                  {errors.location && (
-                    <p className="text-red-500 text-sm">
-                      {errors.location.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
+            <Field icon={MapPin} label="Location" error={errors.location}>
+              {/* Google address search (same as Club Profile). The picked
+                  address — or whatever is typed — is saved as "location". */}
+              <input type="hidden" {...register("location")} />
+              <AddressSearch
+                placeholder="Search venue address..."
+                defaultValue={tournamentDetail.location || ""}
+                className={inputCls(errors.location)}
+                onTextChange={(text) => setValue("location", text, { shouldValidate: !!errors.location })}
+                onAddressSelect={(place) =>
+                  setValue("location", place.address, { shouldValidate: true, shouldDirty: true })
+                }
+              />
+            </Field>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <div className="flex items-center gap-2 text-gray-700 mb-2">
-                  <Users className="w-4 h-4" />
-                  Maximum Participants/Team
-                </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field icon={Users} label="Maximum Participants/Team" error={errors.maximumParticipants}>
                 <input
                   type="number"
-                  id="maxParticipants"
-                  name="maxParticipants"
-                  // value={tournamentDetail.maximumParticipants}
-                  // value={formData.maxParticipants}
-                  // onChange={handleChange}
                   required
                   min="2"
                   {...register("maximumParticipants")}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter max number of participants"
+                  className={inputCls(errors.maximumParticipants)}
+                  placeholder="Max participants"
                 />
-                {errors.maximumParticipants && (
-                  <p className="text-red-600 text-sm">
-                    {errors.maximumParticipants.message}
-                  </p>
-                )}
-              </div>
-              <div>
-                <div className="flex items-center gap-2 text-gray-700 mb-2">
-                  <DollarSign className="w-4 h-4" />
-                  Registration Fee
-                </div>
+              </Field>
+              <Field icon={DollarSign} label="Registration Fee" error={errors.registrationFee}>
                 <input
                   type="number"
-                  id=" registrationFee"
-                  name=" registrationFee"
-                  // value={tournamentDetail.registrationFee}
                   required
                   {...register("registrationFee")}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter max number of participants"
+                  className={inputCls(errors.registrationFee)}
+                  placeholder="0 = free"
                 />
-                {errors.registrationFee && (
-                  <p className="text-red-600 text-sm">
-                    {errors.registrationFee.message}
-                  </p>
-                )}
-              </div>
+              </Field>
             </div>
+          </section>
 
-            {/* Tournament Format Section */}
-            <div className="pt-4 border-t">
-              <h3 className="mb-4 text-gray-900">Tournament Format</h3>
+          {/* ── Tournament Format ── */}
+          <section className={cardCls}>
+            <h2 className={cardTitleCls}>
+              <Layers className="w-5 h-5 text-cyan-400" />
+              Tournament Format
+            </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <div className="flex items-center gap-2 text-gray-700 mb-2">
-                    <Users className="w-4 h-4" />
-                    Match Type
-                  </div>
-                  <select
-                    id="matchType"
-                    {...register("matchType", { required: true })} // register only once
-                    value={matchTypeValue} // bind to state for display
-                    onChange={(e) => {
-                      setMatchTypeValue(e.target.value); // update local state
-                    }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                  >
-                    <option value="Singles">Singles</option>
-                    <option value="Doubles">Doubles</option>
-                  </select>
-                  {errors.matchType && (
-                    <p className="text-red-600 text-sm">
-                      {errors.matchType.message}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <div className="flex items-center gap-2 text-gray-700 mb-2">
-                    <Grid3x3 className="w-4 h-4" />
-                    {matchTypeValue === "Singles"
-                      ? "Player per Group"
-                      : "Teams per Group"}
-                  </div>
-                  <input
-                    type="number"
-                    id="teamsPerGroup"
-                    name="teamsPerGroup"
-                    // value={tournamentDetail.teamsPerGroup}
-                    required
-                    min="2"
-                    {...register("teamsPerGroup")}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter max number of participants"
-                  />
-                  {errors.teamsPerGroup && (
-                    <p className="text-red-600 text-sm">
-                      {errors.teamsPerGroup.message}
-                    </p>
-                  )}
-                </div>
-
-                <div
-                  className={`${
-                    playTypeValue === "group-knockout" ? "" : "col-span-2"
-                  }`}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field icon={Users} label="Match Type" error={errors.matchType}>
+                <select
+                  {...register("matchType", { required: true })}
+                  value={matchTypeValue}
+                  onChange={(e) => {
+                    setMatchTypeValue(e.target.value);
+                    setValue("matchType", e.target.value);
+                  }}
+                  className={inputCls(errors.matchType)}
                 >
-                  <div className={`flex items-center gap-2 text-gray-700 mb-2`}>
-                    <Layers className="w-4 h-4" />
-                    Play Type
-                  </div>
+                  <option value="Singles">Singles</option>
+                  <option value="Doubles">Doubles</option>
+                </select>
+              </Field>
+
+              <Field
+                icon={Grid3x3}
+                label={matchTypeValue === "Singles" ? "Players per Group" : "Teams per Group"}
+                error={errors.teamsPerGroup}
+              >
+                <input
+                  type="number"
+                  required
+                  min="2"
+                  {...register("teamsPerGroup")}
+                  className={inputCls(errors.teamsPerGroup)}
+                  placeholder="e.g. 4"
+                />
+              </Field>
+
+              <div className={playTypeValue === "group-knockout" ? "" : "sm:col-span-2"}>
+                <Field icon={Layers} label="Play Type" error={errors.playType}>
                   <select
                     {...register("playType", { required: true })}
                     value={playTypeValue}
                     onChange={(e) => {
                       setPlayTypeValue(e.target.value);
-                      setValue("playType", e.target.value); // sync with react-hook-form
+                      setValue("playType", e.target.value);
                     }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className={inputCls(errors.playType)}
                   >
-                    <option value="round-robin">Round Robin</option>
                     <option value="group">Group Stage</option>
                     <option value="knockout">Knockout</option>
                     <option value="group-knockout">Group + Knockout</option>
                   </select>
-                  {errors.playType && (
-                    <p className="text-red-600 text-sm">
-                      {errors.playType.message}
-                    </p>
-                  )}
-                </div>
+                </Field>
+              </div>
 
-                {playTypeValue === "group-knockout" && (
-                  <div>
-                    <div className="flex items-center gap-2 text-gray-700 mb-2">
-                      <Trophy className="w-4 h-4" />
-                      Qualified to Knockout
-                    </div>
-                    <input
-                      type="number"
-                      min="1"
-                      // value={
-                      //   tournamentDetail.numberOfPlayersQualifiedToKnockout
-                      // }
-                      {...register("numberOfPlayersQualifiedToKnockout")}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    {errors.numberOfPlayersQualifiedToKnockout && (
-                      <p className="text-red-600 text-sm">
-                        {errors.numberOfPlayersQualifiedToKnockout.message}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                <div className="col-span-2">
-                  <div className="flex  items-center gap-2 text-gray-700 mb-2">
-                    <MapPin className="w-4 h-4" />
-                    Number of Courts Available
-                  </div>
+              {playTypeValue === "group-knockout" && (
+                <Field
+                  icon={Trophy}
+                  label="Qualified to Knockout"
+                  error={errors.numberOfPlayersQualifiedToKnockout}
+                >
                   <input
                     type="number"
-                    id="numberOfCourts"
-                    name="numberOfCourts"
-                    // value={tournamentDetail.numberOfCourts}
-                    // value={formData.courtsAvailable}
-                    // onChange={handleChange}
+                    min="1"
+                    {...register("numberOfPlayersQualifiedToKnockout")}
+                    className={inputCls(errors.numberOfPlayersQualifiedToKnockout)}
+                  />
+                </Field>
+              )}
+
+              <div className="sm:col-span-2">
+                <Field icon={MapPin} label="Number of Courts Available" error={errors.numberOfCourts}>
+                  <input
+                    type="number"
                     required
                     min="1"
                     {...register("numberOfCourts")}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={inputCls(errors.numberOfCourts)}
                     placeholder="Enter number of courts"
                   />
-                  {errors.numberOfCourts && (
-                    <p className="text-red-600 text-sm">
-                      {errors.numberOfCourts.message}
-                    </p>
-                  )}
-                </div>
-
-                {/*  */}
-              </div>
-              <div>
-                <label
-                  htmlFor="description"
-                  className="block text-gray-700 mb-2"
-                >
-                  Description
-                </label>
-                <textarea
-                  id="description"
-                  name="description"
-                  // value={tournamentDetail.description}
-                  // value={formData.description}
-                  // onChange={handleChange}
-                  rows={4}
-                  {...register("description")}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  placeholder="Enter tournament description and rules"
-                />
-                {errors.description && (
-                  <p className="text-red-600 text-sm">
-                    {errors.description.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex gap-4 mt-6 pt-6 border-t">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={isPending}
-                  className="flex items-center gap-4 justify-center bg-gray-500 text-white p-3 rounded-xl font-bold hover:bg-red-400 transition w-full mt-4"
-                >
-                  <X className="w-5 h-5" />
-                  {"Cancel"}
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="flex items-center gap-4  justify-center bg-green-700 text-white p-3 rounded-xl font-bold hover:bg-green-800 transition w-full mt-4"
-                >
-                  <Save className="w-5 h-5" />
-                  {isPending ? "Saving..." : "Save Teams"}
-                </button>
+                </Field>
               </div>
             </div>
-          </form>
+
+            <Field label="Description" error={errors.description}>
+              <textarea
+                rows={3}
+                {...register("description")}
+                className={`${inputCls(errors.description)} resize-none`}
+                placeholder="Enter tournament description and rules"
+              />
+            </Field>
+          </section>
         </div>
-      </div>
-    </div>
+
+        {/* Actions — full width under both cards */}
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isPending}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-slate-600 bg-white/5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white disabled:opacity-40 transition-all"
+          >
+            <X className="w-4 h-4" /> Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isPending}
+            className="flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-6 py-2.5 rounded-xl font-semibold text-sm shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" />
+            {isPending ? "Saving..." : "Save Changes"}
+          </button>
+        </div>
+      </form>
+    </AppBackground>
   );
 };
 

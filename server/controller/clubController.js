@@ -265,9 +265,11 @@ const clubController = {
               status: 1, registrationFee: 1, maximumParticipants: 1, uniqueKey: 1, matchType: 1, location: 1,
             },
           },
-          { $lookup: { from: "teams", localField: "_id", foreignField: "tournamentId", as: "teams" } },
-          { $addFields: { registeredTeamsCount: { $size: "$teams" } } },
-          { $project: { teams: 0 } },
+          // Registered entries: doubles teams + singles players
+          { $lookup: { from: "tournamentteams", localField: "_id", foreignField: "tournamentId", as: "teams" } },
+          { $lookup: { from: "tournamentplayers", localField: "_id", foreignField: "tournamentId", as: "players" } },
+          { $addFields: { registeredTeamsCount: { $add: [{ $size: "$teams" }, { $size: "$players" }] } } },
+          { $project: { teams: 0, players: 0 } },
         ]),
         RoundRobinTournament.find({ adminId: club.adminId })
           .select("tournamentName matchType status startDate endDate registrationDeadline numberOfSlots numberOfCourts adminId entryFeeMember entryFeeNonMember acceptOnlinePayment")

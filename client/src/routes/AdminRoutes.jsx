@@ -10,6 +10,7 @@ import CreateTournament from "../pages/admin/CreateTournament";
 import AdminTournamentList from "../pages/admin/AdminTournamentList";
 import EditTournament from "../pages/admin/EditTournament";
 import EditTeam from "../pages/admin/EditTeam";
+import PlayerRegistration from "../pages/admin/PlayerRegistration";
 import Dashboard from "../pages/admin/Dashboard";
 import AdminMembershipDashboard from "../features/membership/admin/pages/AdminMembershipDashboard";
 import MembershipTypeManagement from "../features/membership-type/pages/MembershipTypeManagement";
@@ -87,6 +88,24 @@ const AdminRoutes = () => {
         element={
           <ProtectedRoute role="admin">
             <EditTournament />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Singles tournaments: register / edit a player */}
+      <Route
+        path="/register-player"
+        element={
+          <ProtectedRoute role="admin">
+            <PlayerRegistration />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/edit-player"
+        element={
+          <ProtectedRoute role="admin">
+            <PlayerRegistration />
           </ProtectedRoute>
         }
       />
