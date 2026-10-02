@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { KeyRound } from "lucide-react";
+import { verifyTournamentKeyAPI } from "../services/teamServices";
 
 export default function VerifyCodeModal({ open, onClose}) {
   const [code, setCode] = useState("");
@@ -10,21 +11,28 @@ export default function VerifyCodeModal({ open, onClose}) {
  const tournamentData = useSelector(
     (state) => state.tournament.tournamentData
   );
-  const handleVerify = () => {
+  const [checking, setChecking] = useState(false);
+
+  const handleVerify = async () => {
     if (code.length !== 4) {
       setError("Enter 4-digit code");
       return;
     }
-
-    // 🔐 Example verification (replace with API)
-    if (code === tournamentData.uniqueKey) {
+    setChecking(true);
+    try {
+      await verifyTournamentKeyAPI({ tournamentId: tournamentData?._id, key: code });
+      try {
+        sessionStorage.setItem(`tournamentKey:${tournamentData?._id}`, "ok");
+      } catch {
+        /* storage unavailable — fine */
+      }
+      setCode("");
       onClose();
-      
-
-                        navigate(`/groupStageList/${tournamentData?._id}`);
-      // navigate("/score-board");
-    } else {
-      setError("Invalid code");
+      navigate(`/groupStageList/${tournamentData?._id}`);
+    } catch (err) {
+      setError(err?.response?.data?.message || "Invalid code");
+    } finally {
+      setChecking(false);
     }
   };
 
@@ -48,7 +56,7 @@ export default function VerifyCodeModal({ open, onClose}) {
         <h2 className="text-lg font-semibold text-white mb-1" style={{ fontFamily: "Outfit, sans-serif" }}>
           Enter 4-Digit Code
         </h2>
-        <p className="text-xs text-slate-400 mb-4">Ask the organiser for the tournament code.</p>
+        <p className="text-xs text-slate-400 mb-4">Enter the tournament Secret Key from the organiser.</p>
 
         <input
           type="password"
@@ -76,9 +84,10 @@ export default function VerifyCodeModal({ open, onClose}) {
           </button>
           <button
             onClick={handleVerify}
+            disabled={checking}
             className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-yellow-500 hover:from-emerald-600 hover:to-yellow-600 text-white text-sm font-semibold shadow-lg shadow-emerald-500/30 transition-all"
           >
-            Verify
+            {checking ? "Checking..." : "Verify"}
           </button>
         </div>
       </div>

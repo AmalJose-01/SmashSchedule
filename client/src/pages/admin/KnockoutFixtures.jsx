@@ -6,6 +6,7 @@ import { useKnockoutUpdateScore } from "../../hooks/useKnockoutUpdateScore";
 import { Calendar, CheckCircle, Clock, Flame, Save, Shuffle, Trophy } from "lucide-react";
 import AppBackground from "../../components/AppBackground";
 import PageHeader from "../../components/PageHeader";
+import KnockoutBracket from "../../components/KnockoutBracket";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { logOut } from "../../redux/slices/userSlice";
 import { useNavigate } from "react-router-dom";
@@ -33,6 +34,7 @@ export function getRoundName(round) {
 
 const KnockoutFixtures = () => {
   const [matches, setMatches] = useState([]);
+  const [view, setView] = useState("bracket"); // "bracket" | list view
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -189,7 +191,29 @@ const KnockoutFixtures = () => {
       />
 
       <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
-        {matches.length > 0 ? (
+        {matches.length > 0 && (
+          <div className="inline-flex p-1 rounded-xl bg-slate-900/60 border border-slate-700/50">
+            {[["bracket", "Bracket"], ["scores", "Enter Scores"]].map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setView(key)}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  view === key ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/30" : "text-slate-400 hover:text-white"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {matches.length > 0 && view === "bracket" ? (
+          <KnockoutBracket matches={matches} variant="admin" onMatchClick={(m) => {
+            setView("scores");
+            setTimeout(() => document.getElementById(`ko-${m._id}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 60);
+          }} />
+        ) : matches.length > 0 ? (
           Object.keys(groupedMatches).map((round) => {
             const roundName = getRoundName(Number(round));
             const isFinal = roundName === "Final";
@@ -266,6 +290,7 @@ const KnockoutMatchCard = ({ match, isFinal, onSetChange, onSave }) => {
 
   return (
     <div
+      id={`ko-${match._id}`}
       className={`p-4 rounded-xl border transition-all flex flex-col ${
         isFinal
           ? "bg-slate-900/50 border-amber-400/30"

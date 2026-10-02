@@ -262,7 +262,7 @@ const clubController = {
           {
             $project: {
               tournamentName: 1, numberOfPlayersQualifiedToKnockout: 1, date: 1, time: 1,
-              status: 1, registrationFee: 1, maximumParticipants: 1, uniqueKey: 1, matchType: 1, location: 1,
+              status: 1, registrationFee: 1, maximumParticipants: 1, matchType: 1, location: 1,
             },
           },
           // Registered entries: doubles teams + singles players

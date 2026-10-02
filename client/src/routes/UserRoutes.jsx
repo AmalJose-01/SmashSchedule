@@ -7,6 +7,7 @@ import GroupStageList from "../pages/user/GroupStageList";
 import KnockoutResult from "../pages/user/KnockoutResult";
 import ViewTournamentDetail from "../pages/user/ViewTournamentDetail";
 import SaveTeamRegistration from "../pages/user/SaveTeamRegistration";
+import JoinTournament from "../pages/user/JoinTournament";
 import { useSelector } from "react-redux";
 import Login from "../pages/admin/Login";
 import MemberRegistration from "../features/membership/users/pages/MemberRegistration";
@@ -68,6 +69,14 @@ const UserRoutes = () => {
       <Route
         path="/knockoutResult"
         element={<KnockoutResult />}
+      />
+      <Route
+        path="/join-tournament"
+        element={
+          <ProtectedRoute role="user">
+            <JoinTournament />
+          </ProtectedRoute>
+        }
       />
       <Route
         path="/save-teams"
