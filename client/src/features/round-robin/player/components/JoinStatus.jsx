@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, CheckCircle2, Loader2, UserPlus, XCircle, Lock, Swords } from "lucide-react";
+import { Users, CheckCircle2, Loader2, UserPlus, XCircle, Lock, Swords, CreditCard } from "lucide-react";
 import { useJoinRoundRobin, useLeaveRoundRobin } from "../services/playerRoundRobin.js";
+import { usePayRoundRobinEntryFee } from "../../../payments/services/stripePayments.js";
+
+const money = (n) => `A$${Number(n).toFixed(2)}`;
 
 // "8 of 20 left" style slot summary.
 export const SlotsText = ({ join, className = "" }) => {
@@ -35,6 +38,7 @@ const JoinStatus = ({ roundRobinId, join, size = "sm", status }) => {
   const navigate = useNavigate();
   const { mutate: joinRR, isPending: joining } = useJoinRoundRobin();
   const { mutate: leaveRR, isPending: leaving } = useLeaveRoundRobin();
+  const { mutate: payRR, isPending: paying } = usePayRoundRobinEntryFee();
   const [confirming, setConfirming] = useState(false);
   if (!join) return null;
   const lg = size === "lg";
@@ -65,9 +69,29 @@ const JoinStatus = ({ roundRobinId, join, size = "sm", status }) => {
           <CheckCircle2 className={lg ? "w-4 h-4" : "w-3 h-3"} /> Joined
         </span>
 
+        {/* Entry fee still owed → Pay (Stripe Checkout) */}
+        {join.paymentDue && join.canPayOnline && (
+          <button
+            type="button"
+            onClick={stop(() => payRR(roundRobinId))}
+            disabled={paying}
+            className={`inline-flex items-center gap-1.5 font-semibold text-slate-900 bg-gradient-to-r from-emerald-400 to-yellow-300 hover:from-emerald-300 hover:to-yellow-200 disabled:opacity-60 transition-all ${btn(size)}`}
+          >
+            {paying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CreditCard className="w-3.5 h-3.5" />} Pay {money(join.entryFee)}
+          </button>
+        )}
+        {join.paid && (
+          <span className={`font-semibold text-emerald-300 ${lg ? "text-sm" : "text-[11px]"}`}>Paid</span>
+        )}
+
         {join.canCancel ? (
           confirming ? (
-            <span className="inline-flex items-center gap-1.5">
+            <span className="inline-flex flex-wrap items-center gap-1.5">
+              {join.paid && join.entryFee > 0 && (
+                <span className={`text-amber-200 ${lg ? "text-xs" : "text-[11px]"}`}>
+                  Your {money(join.entryFee)} will be refunded.
+                </span>
+              )}
               <button
                 type="button"
                 onClick={stop(() => leaveRR(roundRobinId, { onSettled: () => setConfirming(false) }))}
@@ -115,7 +139,7 @@ const JoinStatus = ({ roundRobinId, join, size = "sm", status }) => {
       <button
         type="button"
         onClick={stop(() => joinRR(roundRobinId))}
-        disabled={!join.canJoin || joining}
+        disabled={!join.canJoin || joining || join.confirming || (join.entryFee > 0 && !join.canPayOnline)}
         title={join.canJoin ? "Join this round robin" : join.reasonText || ""}
         className={`inline-flex items-center justify-center gap-1.5 font-semibold transition-all ${btn(size)} ${
           join.canJoin
@@ -124,8 +148,23 @@ const JoinStatus = ({ roundRobinId, join, size = "sm", status }) => {
         }`}
       >
         {joining ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : join.canJoin ? <UserPlus className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-        Join
+        {join.confirming
+          ? "Confirming payment…"
+          : join.canJoin && join.entryFee > 0
+          ? join.joinPayment?.status === "PENDING" ? `Complete payment · ${money(join.entryFee)}` : `Join & pay ${money(join.entryFee)}`
+          : "Join"}
       </button>
+      {lg && join.canJoin && join.entryFee > 0 && (
+        <p className="text-xs text-slate-400">
+          {join.confirming
+            ? "Payment received — your registration is being confirmed. Refresh in a moment."
+            : join.joinPayment?.status === "REFUNDED" && join.joinPayment.failureReason
+            ? `${join.joinPayment.failureReason}. Your payment was refunded.`
+            : join.canPayOnline
+            ? `${join.isMember ? "Member" : "Non-member"} entry fee ${money(join.entryFee)}. You're registered once payment is complete.`
+            : "Online payment isn't set up for this club yet — contact the club to register."}
+        </p>
+      )}
       {lg && !join.canJoin && join.reasonText && <p className="text-xs text-slate-400">{join.reasonText}</p>}
     </div>
   );

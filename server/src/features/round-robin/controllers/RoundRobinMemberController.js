@@ -94,6 +94,9 @@ const RoundRobinMemberController = {
       if (!grade || !Object.prototype.hasOwnProperty.call(GRADE_DEFAULT_POINTS, grade)) {
         return res.status(400).json({ message: "Grade is required to approve a member" });
       }
+      if (typeof isMember !== "boolean") {
+        return res.status(400).json({ message: "Membership type (Member or Non-Member) is required to approve a member" });
+      }
       if (name !== undefined && !String(name).trim()) {
         return res.status(400).json({ message: "Name is required" });
       }
@@ -104,7 +107,7 @@ const RoundRobinMemberController = {
       if (name !== undefined) member.name = String(name).trim();
       member.grade = grade;
       member.points = points !== undefined && points !== "" ? points : GRADE_DEFAULT_POINTS[grade] ?? 0;
-      if (isMember !== undefined) member.isMember = isMember;
+      member.isMember = isMember;
       if (contact !== undefined) member.contact = contact;
       if (nationalMemberId !== undefined) member.nationalMemberId = nationalMemberId;
       if (dateOfBirth !== undefined) member.dateOfBirth = dateOfBirth || null;

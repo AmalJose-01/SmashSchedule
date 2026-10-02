@@ -10,6 +10,7 @@ import CreateTournament from "../pages/admin/CreateTournament";
 import AdminTournamentList from "../pages/admin/AdminTournamentList";
 import EditTournament from "../pages/admin/EditTournament";
 import EditTeam from "../pages/admin/EditTeam";
+import PlayerRegistration from "../pages/admin/PlayerRegistration";
 import Dashboard from "../pages/admin/Dashboard";
 import AdminMembershipDashboard from "../features/membership/admin/pages/AdminMembershipDashboard";
 import MembershipTypeManagement from "../features/membership-type/pages/MembershipTypeManagement";
@@ -21,6 +22,7 @@ import TournamentList from "../features/round-robin/admin/pages/TournamentList.j
 import CreateTournamentRR from "../features/round-robin/admin/pages/CreateTournament.jsx";
 import TournamentDetail from "../features/round-robin/admin/pages/TournamentDetail.jsx";
 import SquareSettings from "../features/round-robin/admin/pages/SquareSettings.jsx";
+import PaymentSettings from "../features/payments/pages/PaymentSettings.jsx";
 import ErrorBoundary from "../components/ErrorBoundary.jsx";
 import UserSignup from "../features/user-signup/pages/UserSignup.jsx";
 
@@ -86,6 +88,24 @@ const AdminRoutes = () => {
         element={
           <ProtectedRoute role="admin">
             <EditTournament />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Singles tournaments: register / edit a player */}
+      <Route
+        path="/register-player"
+        element={
+          <ProtectedRoute role="admin">
+            <PlayerRegistration />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/edit-player"
+        element={
+          <ProtectedRoute role="admin">
+            <PlayerRegistration />
           </ProtectedRoute>
         }
       />
@@ -217,6 +237,19 @@ const AdminRoutes = () => {
           <ProtectedRoute role="admin">
             <ErrorBoundary>
               <SquareSettings />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Payments lives under Club Profile; old path redirects */}
+      <Route path="/admin/payments" element={<Navigate to="/admin/club-profile/payments" replace />} />
+      <Route
+        path="/admin/club-profile/payments"
+        element={
+          <ProtectedRoute role="admin">
+            <ErrorBoundary>
+              <PaymentSettings />
             </ErrorBoundary>
           </ProtectedRoute>
         }

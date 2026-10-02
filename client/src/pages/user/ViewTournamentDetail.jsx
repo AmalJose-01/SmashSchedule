@@ -20,7 +20,8 @@ import {
   DollarSign,
   Key,
 } from "lucide-react";
-import Logout from "../../components/Logout";
+import AppBackground from "../../components/AppBackground";
+import PageHeader from "../../components/PageHeader";
 import { useTournamentInformation } from "../../hooks/useTournamentInformation";
 
 
@@ -37,17 +38,17 @@ const ViewTournamentDetail = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case "Scheduled":
-        return "bg-blue-100 text-blue-800";
+        return "bg-blue-500/15 border-blue-500/30 text-blue-300";
       case "Ongoing":
-        return "bg-green-100 text-green-800";
+        return "bg-emerald-500/15 border-emerald-500/30 text-emerald-300";
       case "GroupStage":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-yellow-500/15 border-yellow-500/30 text-yellow-300";
       case "KnockoutStage":
-        return "bg-orange-100 text-orange-800";
+        return "bg-orange-500/15 border-orange-500/30 text-orange-300";
       case "finished":
-        return "bg-gray-100 text-gray-800";
+        return "bg-slate-500/15 border-slate-500/30 text-slate-300";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-emerald-500/15 border-emerald-500/30 text-emerald-300";
     }
   };
 
@@ -78,206 +79,104 @@ const ViewTournamentDetail = () => {
 
   // Wait until tournamentDetail is loaded
   if (!tournamentDetail) {
-    return <div>Loading tournament...</div>;
+    return (
+      <AppBackground variant="user">
+        <div className="min-h-screen flex items-center justify-center text-slate-400">Loading tournament...</div>
+      </AppBackground>
+    );
   }
+
   // ---------------------------
   // RENDER UI
   // ---------------------------
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      {/* HEADER */}
-      <div className="flex justify-between items-center bg-white p-4  shadow-lg sticky top-0">
-        <div className="flex items-center gap-4">
-          <ListChecks
-            className="w-8 h-8 text-blue-600"
-            onClick={() => navigate("/")}
-          />
+    <AppBackground variant="user">
+      <PageHeader
+        variant="user"
+        title="Tournament Detail"
+        subtitle={tournamentDetail.tournamentName}
+        onBack={() => navigate(-1)}
+        profileMenu
+      />
 
-          <h2 className="text-xl font-semibold text-blue-800">
-            Tournament Detail
-          </h2>
-        </div>
-        
-{/* comment for the tournament registration button */}
-
-        {/* <div className="flex gap-2">
-          <button
-            onClick={() =>
-              navigate("/save-teams", {
-                replace: true,
-                state: {
-                  from: `/tournamentInfo`,
-                },
-              })
-            }
-            className={`${
-              tournamentDetail.status != "Create" ? "hidden" : ""
-            } flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors`}
-          >
-            <UserPlus className="w-5 h-5" />
-            <span className="hidden md:flex">{tournamentDetail.matchType === "Doubles" ? "Register Team" : "Register Player"}</span>
-          </button>
-         
-        </div> */}
-      </div>
-
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white p-3">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg shadow-lg p-8 mb-6 text-white m-4">
-          <div className="flex items-start justify-between flex-wrap gap-4">
-            <div>
-              <h1 className="text-3xl mb-2">
-                {tournamentDetail.tournamentName}
-              </h1>
-              <div className="flex items-center gap-4 flex-wrap">
-                <span
-                  className={`px-3 py-1 rounded-full text-sm ${getStatusColor(
-                    tournamentDetail.status
-                  )} bg-white`}
-                >
-                  {tournamentDetail.status}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Trophy className="w-4 h-4" />
-                  {tournamentDetail.matchType}
-                </span>
-                <span
-                  className={`px-3 py-1 rounded-full text-sm ${
-                    tournamentDetail.isPublic ? "bg-green-500" : "bg-gray-500"
-                  }`}
-                >
-                  {tournamentDetail.isPublic ? "Public" : "Private"}
-                </span>
-              </div>
-            </div>
-            
+      <div className="px-4 sm:px-6 py-6 max-w-5xl mx-auto space-y-6">
+        {/* Hero */}
+        <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/15 via-yellow-500/5 to-emerald-500/15 backdrop-blur-xl shadow-2xl p-6 sm:p-8">
+          <h1 className="text-2xl sm:text-3xl font-semibold text-white mb-3" style={{ fontFamily: "Outfit, sans-serif" }}>
+            {tournamentDetail.tournamentName}
+          </h1>
+          <div className="flex items-center gap-2 flex-wrap text-sm">
+            <span className={`px-3 py-1 rounded-full border font-medium ${getStatusColor(tournamentDetail.status)}`}>
+              {tournamentDetail.status}
+            </span>
+            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-slate-200">
+              <Trophy className="w-3.5 h-3.5 text-emerald-400" />
+              {tournamentDetail.matchType}
+            </span>
+            <span
+              className={`px-3 py-1 rounded-full border ${
+                tournamentDetail.isPublic
+                  ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"
+                  : "bg-slate-500/15 border-slate-500/30 text-slate-300"
+              }`}
+            >
+              {tournamentDetail.isPublic ? "Public" : "Private"}
+            </span>
           </div>
         </div>
 
-        {/*  */}
-        <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 m-4">
-          <div className="lg:col-span-2 space-y-6">
-            {/* Basic Information */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-blue-600" />
-                Tournament Information
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-start gap-3">
-                  <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <div className="text-sm text-gray-600">Date</div>
-                    <div>{tournamentDetail.date || "Not set"}</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Clock className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <div className="text-sm text-gray-600">Time</div>
-                    <div>{tournamentDetail.time || "Not set"}</div>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <div className="text-sm text-gray-600">Location</div>
-                    <div>{tournamentDetail.location || "Not set"}</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Users className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <div className="text-sm text-gray-600">
-                      Max Participants
-                    </div>
-                    <div>{tournamentDetail.maximumParticipants}</div>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <DollarSign className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <div className="text-sm text-gray-600">
-                      Registration Fee
-                    </div>
-                    <div>{tournamentDetail.registrationFee || "Not set"}</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Key className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <div className="text-sm text-gray-600">Secret Key</div>
-                    <div>{"****"}</div>
-                  </div>
-                </div>
-              </div>
-              {tournamentDetail.description && (
-                <div className="mt-4 pt-4 border-t">
-                  <div className="text-sm text-gray-600 mb-1">Description</div>
-                  <p className="text-gray-700">
-                    {tournamentDetail.description}
-                  </p>
-                </div>
-              )}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card icon={FileText} title="Tournament Information">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <InfoRow icon={Calendar} label="Date" value={tournamentDetail.date || "Not set"} />
+              <InfoRow icon={Clock} label="Time" value={tournamentDetail.time || "Not set"} />
+              <InfoRow icon={MapPin} label="Location" value={tournamentDetail.location || "Not set"} />
+              <InfoRow icon={Users} label="Max Participants" value={tournamentDetail.maximumParticipants} />
+              <InfoRow icon={DollarSign} label="Registration Fee" value={tournamentDetail.registrationFee || "Not set"} />
+              <InfoRow icon={Key} label="Secret Key" value="****" />
             </div>
-
-            {/* Tournament Format */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="mb-4 flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-blue-600" />
-                Tournament Format
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-start gap-3">
-                  <Layers className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <div className="text-sm text-gray-600">Play Type</div>
-                    <div>{getPlayTypeDisplay(tournamentDetail.playType)}</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Users className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <div className="text-sm text-gray-600">Match Type</div>
-                    <div>{tournamentDetail.matchType}</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Grid3x3 className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <div className="text-sm text-gray-600">Teams per Group</div>
-                    <div>{tournamentDetail.teamsPerGroup}</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Trophy className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <div className="text-sm text-gray-600">
-                      Qualified to Knockout
-                    </div>
-                    <div>
-                      {tournamentDetail.numberOfPlayersQualifiedToKnockout}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <div className="text-sm text-gray-600">
-                      Number of Courts
-                    </div>
-                    <div>{tournamentDetail.numberOfCourts}</div>
-                  </div>
-                </div>
+            {tournamentDetail.description && (
+              <div className="mt-4 pt-4 border-t border-slate-700/50">
+                <div className="text-xs text-slate-400 mb-1">Description</div>
+                <p className="text-sm text-slate-200 whitespace-pre-line">{tournamentDetail.description}</p>
               </div>
+            )}
+          </Card>
+
+          <Card icon={Trophy} title="Tournament Format">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <InfoRow icon={Layers} label="Play Type" value={getPlayTypeDisplay(tournamentDetail.playType)} />
+              <InfoRow icon={Users} label="Match Type" value={tournamentDetail.matchType} />
+              <InfoRow icon={Grid3x3} label="Teams per Group" value={tournamentDetail.teamsPerGroup} />
+              <InfoRow icon={Trophy} label="Qualified to Knockout" value={tournamentDetail.numberOfPlayersQualifiedToKnockout} />
+              <InfoRow icon={MapPin} label="Number of Courts" value={tournamentDetail.numberOfCourts} />
             </div>
-          </div>
+          </Card>
         </div>
       </div>
-    </div>
+    </AppBackground>
   );
 };
+
+// ── Dark glass card + info row (player area: emerald / yellow accents) ──
+const Card = ({ icon: Icon, title, children }) => (
+  <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-700/50 p-5 sm:p-6">
+    <h2 className="flex items-center gap-2 font-semibold text-white mb-4 pb-3 border-b border-slate-700/50">
+      <Icon className="w-5 h-5 text-emerald-400" />
+      {title}
+    </h2>
+    {children}
+  </div>
+);
+
+const InfoRow = ({ icon: Icon, label, value }) => (
+  <div className="flex items-start gap-3 min-w-0">
+    <Icon className="w-5 h-5 text-emerald-400/70 mt-0.5 flex-shrink-0" />
+    <div className="min-w-0">
+      <div className="text-xs text-slate-400">{label}</div>
+      <div className="text-sm text-slate-100 break-words">{value ?? "—"}</div>
+    </div>
+  </div>
+);
 
 export default ViewTournamentDetail;
