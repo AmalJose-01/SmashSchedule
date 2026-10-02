@@ -131,5 +131,8 @@ export const collectPaymentAPI = ({ tournamentId, playerId }) =>
 export const getPaymentStatusAPI = (paymentId) =>
   apiClient.get(`${BASE}/payments/${paymentId}/status`).then((r) => r.data);
 
+export const refundPaymentAPI = (paymentId) =>
+  apiClient.post(`${BASE}/payments/${paymentId}/refund`).then((r) => r.data);
+
 export const getTournamentPaymentsAPI = (tournamentId) =>
   apiClient.get(`${BASE}/tournaments/${tournamentId}/payments`).then((r) => r.data);

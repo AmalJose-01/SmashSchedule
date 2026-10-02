@@ -14,7 +14,7 @@ const buildAdminMailBody = ({
 
   <ul>
     <li>${playerOneName} (${playerOneEmail})</li>
-    <li>${playerTwoName} (${playerTwoEmail})</li>
+    ${playerTwoName ? `<li>${playerTwoName} (${playerTwoEmail})</li>` : ""}
   </ul>
   `;
 };
