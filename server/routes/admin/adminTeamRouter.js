@@ -38,4 +38,11 @@ router.get("/get-teams/:tournamentId", auth, adminTeamController.getTeams);
 router.delete("/delete-team/:teamId", auth, adminTeamController.deleteTeam);
 
 router.put("/update-teams", auth, adminTeamController.updateTeams);
+
+// Group-stage match schedule / score sheets PDF (same layout as round robin)
+router.get("/score-sheet-pdf/:tournamentId", auth, adminTeamController.downloadScoreSheetPdf);
+
+// Singles tournament players (collection "tournamentplayers")
+router.post("/players", auth, adminTeamController.createPlayers);
+router.put("/update-player", auth, adminTeamController.updatePlayer);
 module.exports = router;

@@ -12,6 +12,18 @@ export const saveTeamAPI = async (teamData) => {
 };
 
 
+// Singles: a player joins a tournament
+export const joinAsPlayerAPI = async (player) => {
+  const response = await apiClient.post(`/tournament/players`, player);
+  return response.data;
+};
+
+// Check a tournament's Secret Key on the server (to view results)
+export const verifyTournamentKeyAPI = async ({ tournamentId, key }) => {
+  const response = await apiClient.post(`/tournament/verify-key/${tournamentId}`, { key });
+  return response.data;
+};
+
 export const updateTeamAPI = async (teamData) => {
   try {
     const response = await apiClient.put(`/admin/update-teams`, teamData);
