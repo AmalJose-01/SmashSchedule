@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTournament } from "../../hooks/useTournament";
 import { setTournamentData } from "../../redux/slices/tournamentSlice";
 import { useDispatch } from "react-redux";
-import { Calendar, Settings, DollarSign } from "lucide-react";
-import ButtonWithIcon from "../../components/ButtonWithIcon";
+import { Calendar, DollarSign, Trophy } from "lucide-react";
+import AppBackground from "../../components/AppBackground";
+import PageHeader from "../../components/PageHeader";
 import VerifyCodeModal from "../../components/VerifyCodeModal";
 
 const TournamentList = () => {
@@ -24,146 +25,112 @@ const TournamentList = () => {
 
   const tournaments = handleTournamentList();
 
-  useEffect(() => {
-    console.log("Tournaments updated:", tournaments);
-  }, [tournaments]);
 
   const getStatusColor = (status) => {
     switch (status) {
       case "Create":
-        return "bg-green-100 text-green-800";
+        return "bg-emerald-500/15 border-emerald-500/30 text-emerald-300";
       case "Scheduled":
-        return "bg-blue-100 text-blue-800";
-      case "Ongoing":
-        return "bg-gray-100 text-gray-800";
+        return "bg-blue-500/15 border-blue-500/30 text-blue-300";
+      default:
+        return "bg-slate-500/15 border-slate-500/30 text-slate-300";
     }
   };
+
   // ---------------------------
   // RENDER UI
   // ---------------------------
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white ">
-      {/* HEADER */}
-      <div className="flex justify-between items-center bg-white p-4  shadow-lg sticky top-0">
-        <div className="flex items-center gap-4">
-          <Settings
-            className="w-8 h-8 text-blue-600"
-            onClick={() => navigate("/")}
-          />
+    <AppBackground variant="user">
+      <PageHeader
+        variant="user"
+        title="Tournaments"
+        subtitle="Upcoming tournaments"
+        onBack={() => navigate(-1)}
+        profileMenu
+      />
 
-          <h2 className="text-xl font-semibold text-blue-800">
-            Setup Tournament
-          </h2>
-        </div>
-      </div>
-
-      {/* Tournament List */}
-      {tournaments?.length > 0 ? (
-        <div className="bg-white rounded-3xl shadow-lg p-4 mt-4 ml-4 mr-4">
-          <h2 className="text-xl font-semibold mb-4">Upcoming Tournaments</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="px-4 sm:px-6 py-6 max-w-5xl mx-auto">
+        {tournaments?.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {tournaments.map((tournament) => (
               <div
                 key={tournament._id}
-                className="bg-gradient-to-b from-white to-gray-100 rounded-lg shadow-md p-3 hover:shadow-lg transition-all cursor-pointer border-2 border-transparent hover:border-blue-200"
-                onClick={() => {
-                  console.log("tournament", tournament);
-
-                  dispatch(setTournamentData(tournament));
-
-                  //navigate(`/groupStageList/${tournament._id}`);
-                }}
+                className="bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-700/50 hover:border-emerald-500/40 p-5 transition-all flex flex-col"
               >
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-xl">{tournament.tournamentName}</h3>
-                  <span
-                    className={`px-3 py-1 rounded-full text-sm ${getStatusColor(
-                      tournament.status
-                    )}`}
-                  >
+                <div className="flex justify-between items-start gap-3 mb-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-yellow-400 shadow-lg shadow-emerald-500/30 flex items-center justify-center">
+                      <Trophy className="w-5 h-5 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-white truncate">{tournament.tournamentName}</h3>
+                  </div>
+                  <span className={`flex-shrink-0 px-2.5 py-1 rounded-full border text-xs font-medium ${getStatusColor(tournament.status)}`}>
                     {tournament.status}
                   </span>
                 </div>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Calendar className="w-6 h-6" />
+
+                <div className="space-y-2 text-sm text-slate-300">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-emerald-400" />
                     <span>
-                      {tournament.date} at {tournament.time}
+                      {tournament.date || "Date TBA"}
+                      {tournament.time ? ` at ${tournament.time}` : ""}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-gray-600  bg-green-100 rounded-lg p-1">
-                    <DollarSign className="w-6 h-6 text-green-600" />
-                    <span>Registration Fee: {tournament.registrationFee}</span>
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-yellow-400" />
+                    <span>Registration Fee: {tournament.registrationFee || "Free"}</span>
                   </div>
                 </div>
-                <div className="mt-4 pt-4 border-t">
-                  <div className="flex gap-2">
+
+                <div className="mt-4 pt-4 border-t border-slate-700/50 flex gap-2">
+                  <button
+                    onClick={() => {
+                      dispatch(setTournamentData(tournament));
+                      navigate(`/tournamentInfo`);
+                    }}
+                    className="flex-1 px-4 py-2.5 rounded-xl border border-slate-600 bg-white/5 text-sm font-medium text-slate-200 hover:bg-white/10 hover:text-white transition-all"
+                  >
+                    View Details
+                  </button>
+                  {tournament.status === "Create" &&
+                    (tournament.registeredTeamsCount ?? 0) < (tournament.maximumParticipants || Infinity) && (
+                      <button
+                        onClick={() => {
+                          dispatch(setTournamentData(tournament));
+                          navigate(`/join-tournament`);
+                        }}
+                        className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-yellow-500 hover:from-emerald-600 hover:to-yellow-600 text-white text-sm font-semibold shadow-lg shadow-emerald-500/30 transition-all"
+                      >
+                        Join
+                      </button>
+                    )}
+                  {tournament.status !== "Create" && (
                     <button
-                      onClick={(e) => {
-                        dispatch(setTournamentData(tournament));
-
-                        navigate(`/tournamentInfo`);
-                      }}
-                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      View Details
-                    </button>
-{/* comment for the tournament registration button */}
-                    {/* {tournament.status === "Create"  &&
-                      tournament.registeredTeamsCount <
-                        tournament.maximumParticipants && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            dispatch(setTournamentData(tournament));
-                            navigate(`/save-teams`);
-
-                            // navigate("/teams", {
-                            //   replace: true,
-                            //   state: {
-                            //     from: `/tournamentList`,
-                            //   },
-                            // });
-                          }}
-                          className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                        >
-                          Register
-                        </button>
-                      )} */}
-                    <button
-                      // onClick={(e) => {
-                      //   dispatch(setTournamentData(tournament));
-
-                      //   navigate(`/groupStageList/${tournament._id}`);
-                      // }}
                       onClick={() => {
                         dispatch(setTournamentData(tournament));
                         setVerificationOpen(true);
                       }}
-                      className={`flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors ${
-                        tournament.status === "Create" ? "hidden" : ""
-                      }`}
+                      className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-yellow-500 hover:from-emerald-600 hover:to-yellow-600 text-white text-sm font-semibold shadow-lg shadow-emerald-500/30 transition-all"
                     >
                       View Score
                     </button>
-                  </div>
+                  )}
                 </div>
               </div>
             ))}
           </div>
-        </div>
-      ) : (
-        <div className="bg-white rounded-3xl shadow-lg p-6 max-h-96 overflow-y-auto mt-4 ml-4 mr-4">
-          <h2 className="text-xl font-semibold mb-4">
-            No tournaments available.
-          </h2>
-        </div>
-      )}
-      <VerifyCodeModal
-        open={openVerification}
-        onClose={() => setVerificationOpen(false)}
-      />
-    </div>
+        ) : (
+          <div className="text-center py-16 bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl">
+            <Trophy className="w-12 h-12 text-slate-500 mx-auto mb-3" />
+            <p className="text-slate-300 font-medium">No tournaments available.</p>
+          </div>
+        )}
+      </div>
+
+      <VerifyCodeModal open={openVerification} onClose={() => setVerificationOpen(false)} />
+    </AppBackground>
   );
 };
 

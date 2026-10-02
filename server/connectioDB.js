@@ -10,6 +10,10 @@ const connectToDatabase = async () => {
         // });
         await mongoose.connect(uri)
         console.log("Connected to MongoDB successfully");
+        // Rename the old "teams" collection to "tournamentteams".
+        await require("./helpers/renameTeamsCollection")();
+        // Uniqueness of teams/players is per tournament — drop any old global indexes.
+        await require("./helpers/syncTournamentIndexes")();
 
     }catch (error) {
         console.error("Error connecting to MongoDB:", error);

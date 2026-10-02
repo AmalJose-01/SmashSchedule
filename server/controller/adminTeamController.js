@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 
 const Team = require("../model/team.js");
+const TournamentPlayer = require("../model/tournamentPlayer.js");
+const { getRemainingSlots, fullMessage } = require("../helpers/participantLimit.js");
 const Tournament = require("../model/tournamentModel.js");
 const Group = require("../model/groupTournament.js");
 const { get } = require("mongoose");
@@ -14,7 +16,8 @@ const {
 } = require("../helpers/matchHelpers.js");
 const AdminUser = require("../model/adminUser.js");
 const sendEmail = require("../utils/sendEmail.js");
-const { generateGroupMatchPDF } = require("../utils/groupMatchPdf.js");
+// Same court scoresheet PDF layout as round robin
+const { buildScoreSheetPdf } = require("../src/features/round-robin/utils/matchSchedulePdf.js");
 const buildPlayerMailBody = require("../utils/playerMailTemplate.js");
 const buildAdminMailBody = require("../utils/adminMailTemplate.js");
 const sendRegistrationEmails = require("../routes/admin/sendRegistrationEmails.js");
@@ -23,6 +26,24 @@ const generateUnique4DigitKey = () => {
   return ((Date.now() % 9000) + 1000).toString();
 };
 const normalizePhone = (value) => value?.replace(/[^\d]/g, "");
+
+// Singles player from request/CSV data. Empty values become undefined so they
+// are not stored (the unique email/contact indexes only apply when present).
+const PLAYER_FIELDS = ["name", "email", "contact", "dob", "grade", "memberNo"];
+const buildPlayer = (p = {}, tournamentId) => {
+  const text = (v) => (v === undefined || v === null ? "" : String(v).trim());
+  const player = {
+    name: text(p.name),
+    email: text(p.email).toLowerCase(),
+    contact: normalizePhone(text(p.contact)),
+    dob: text(p.dob),
+    grade: text(p.grade).toUpperCase(),
+    memberNo: text(p.memberNo),
+  };
+  for (const f of PLAYER_FIELDS) if (!player[f]) player[f] = undefined;
+  if (player.name === undefined) player.name = "";
+  return tournamentId ? { ...player, tournamentId } : player;
+};
 
 
 const adminTeamController = {
@@ -210,6 +231,16 @@ const adminTeamController = {
         return true;
       });
 
+      // Never go over "Max Participants": extra teams are skipped.
+      const { max, remaining } = await getRemainingSlots(tournamentId);
+      if (remaining <= 0) {
+        return res.status(409).json({
+          message: fullMessage(max),
+          skippedTeams: teamsToInsertFiltered.map((t) => ({ ...t, reason: fullMessage(max) })),
+        });
+      }
+      const overLimitTeams = teamsToInsertFiltered.splice(remaining);
+
       try {
         // 2️⃣ Bulk insert (fast) with ordered: false → insert all non-duplicates
         savedTeams = await Team.insertMany(teamsToInsertFiltered, {
@@ -241,6 +272,7 @@ const adminTeamController = {
       }
 
       // Merge DB duplicates into skipped list
+      overLimitTeams.forEach((t) => skippedTeams.push({ ...t, reason: fullMessage(max) }));
 
       if (
         teamsToInsert.length === skippedTeams.length &&
@@ -376,19 +408,18 @@ const adminTeamController = {
         return res.status(400).json({ message: "Invalid teamId" });
       }
 
-      // 2️⃣ Check if tournament exists
-      const existingTournament = await Team.findById(teamId);
-
-      if (!existingTournament) {
-        return res.status(404).json({ message: "Tournament not found" });
+      // 2️⃣ Team (doubles) or player (singles)
+      const deletedTeam = await Team.findByIdAndDelete(teamId);
+      if (deletedTeam) {
+        return res.status(200).json({ message: "Team deleted successfully" });
       }
 
-      // 9️⃣ Delete tournament
-      await Team.findByIdAndDelete(teamId);
+      const deletedPlayer = await TournamentPlayer.findByIdAndDelete(teamId);
+      if (deletedPlayer) {
+        return res.status(200).json({ message: "Player deleted successfully" });
+      }
 
-      return res.status(200).json({
-        message: "Team deleted successfully",
-      });
+      return res.status(404).json({ message: "Team or player not found" });
     } catch (error) {
       console.error("deleteTeam error:", error);
       return res.status(500).json({
@@ -405,15 +436,273 @@ const adminTeamController = {
       const { tournamentId } = req.params;
 
       const teams = await Team.find({ tournamentId: tournamentId });
+
+      // Singles: players live in "tournamentplayers". They are returned in the
+      // same shape as teams (teamName = player name) so scheduling, groups and
+      // matches keep working unchanged. entryType tells the UI which is which.
+      const tournament = await Tournament.findById(tournamentId).select("matchType");
+      let entries = teams;
+      if (tournament && tournament.matchType !== "Doubles") {
+        const players = await TournamentPlayer.find({ tournamentId }).sort({ createdAt: 1 });
+        entries = [
+          ...players.map((p) => ({
+            _id: p._id,
+            entryType: "player",
+            teamName: p.name,
+            name: p.name,
+            email: p.email,
+            contact: p.contact,
+            dob: p.dob,
+            grade: p.grade,
+            memberNo: p.memberNo,
+            playerOneName: p.name,
+            playerOneEmail: p.email,
+            playerOneContact: p.contact,
+            playerOneDOB: p.dob,
+            tournamentId: p.tournamentId,
+          })),
+          ...teams, // older singles tournaments registered through the team form
+        ];
+      }
+
       res
         .status(200)
-        .json({ message: "Teams retrieved successfully", teams: teams });
+        .json({ message: "Teams retrieved successfully", teams: entries });
     } catch (error) {
       console.log("Get teams error", error);
       res.status(500).json({ message: "Server Error", error: error.message });
     }
   },
   // done
+
+  // GET /admin/score-sheet-pdf/:tournamentId
+  // Group-stage match schedule + fillable court scoresheets — same layout as
+  // the round robin "Download PDF".
+  downloadScoreSheetPdf: async (req, res) => {
+    try {
+      const { tournamentId } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(tournamentId)) {
+        return res.status(400).json({ message: "Invalid tournament id" });
+      }
+      const tournament = await Tournament.findOne({ _id: tournamentId, adminId: req.userId }).select("tournamentName");
+      if (!tournament) return res.status(404).json({ message: "Tournament not found" });
+
+      const groups = await Group.find({ tournamentId }).select("groupName teams");
+      const matches = await GroupMatch.find({ tournamentId }).select("teamsHome teamsAway court group matchName");
+      if (matches.length === 0) {
+        return res.status(400).json({ message: "No matches yet — start the tournament first" });
+      }
+
+      // teamId → name, from the groups (works for teams and singles players)
+      const nameById = new Map();
+      groups.forEach((g) => (g.teams || []).forEach((t) => nameById.set(String(t.teamId), t.name)));
+      const nameOf = (id, fallback) => nameById.get(String(id)) || fallback || "—";
+
+      const groupOrder = new Map(groups.map((g, i) => [String(g._id), i]));
+      const rows = matches
+        .slice()
+        .sort((a, b) => (groupOrder.get(String(a.group)) ?? 0) - (groupOrder.get(String(b.group)) ?? 0))
+        .map((m) => {
+          const [homeFromName, awayFromName] = String(m.matchName || "").split("-vs-");
+          return {
+            home: nameOf(m.teamsHome, homeFromName?.trim()),
+            away: nameOf(m.teamsAway, awayFromName?.trim()),
+            court: m.court,
+          };
+        });
+
+      const doc = buildScoreSheetPdf({
+        title: tournament.tournamentName,
+        subtitle: "Group Stage · Match Schedule",
+        numberOfSets: 3,
+        rows,
+      });
+      const safeName = tournament.tournamentName.replace(/[^a-z0-9]+/gi, "_");
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="${safeName}_Match_Schedule.pdf"`);
+      doc.pipe(res);
+      doc.end();
+    } catch (error) {
+      console.error("downloadScoreSheetPdf error", error);
+      return res.status(500).json({ message: "Server Error", error: error.message });
+    }
+  },
+
+  // ── Singles players (collection "tournamentplayers") ──────────────────────
+  // POST /admin/players  { tournamentId, players: [{ name, email, contact, dob }] }
+  // Used by "Register Player" (one player) and the Singles import (many).
+  createPlayers: async (req, res) => {
+    try {
+      const { players } = req.body;
+      if (!req.body.tournamentId || !mongoose.Types.ObjectId.isValid(req.body.tournamentId)) {
+        return res.status(400).json({ message: "tournamentId is required" });
+      }
+      // Every duplicate check below is scoped to THIS tournament only — the
+      // same person can play in any number of the admin's tournaments.
+      const tournamentId = new mongoose.Types.ObjectId(String(req.body.tournamentId));
+      if (!Array.isArray(players) || players.length === 0) {
+        return res.status(400).json({ message: "Players list is required" });
+      }
+
+      const tournament = await Tournament.findById(tournamentId).select("matchType");
+      if (!tournament) return res.status(404).json({ message: "Tournament not found" });
+      if (tournament.matchType === "Doubles") {
+        return res.status(400).json({ message: "This is a Doubles tournament — register teams instead" });
+      }
+
+      const skippedPlayers = [];
+      const seen = new Set();
+      const cleaned = [];
+      for (const p of players) {
+        const player = buildPlayer(p, tournamentId);
+        const label = { ...player, teamName: player.name || "(no name)" };
+        // Name, email and contact number are mandatory.
+        const missing = [
+          !player.name && "name",
+          !player.email && "email",
+          !player.contact && "contact number",
+        ].filter(Boolean);
+        if (missing.length) {
+          skippedPlayers.push({ ...label, reason: `Missing ${missing.join(" & ")}` });
+          continue;
+        }
+        // Identify by email / phone; players with neither are matched by name.
+        const keys = [player.email && `e:${player.email}`, player.contact && `c:${player.contact}`].filter(Boolean);
+        if (!keys.length) keys.push(`n:${player.name.toLowerCase()}`);
+        if (keys.some((k) => seen.has(k))) {
+          skippedPlayers.push({ ...label, reason: "Listed twice in the file" });
+          continue;
+        }
+        keys.forEach((k) => seen.add(k));
+        cleaned.push(player);
+      }
+
+      // Already registered in THIS tournament? (only players that have an email/phone)
+      const emails = cleaned.map((p) => p.email).filter(Boolean);
+      const contacts = cleaned.map((p) => p.contact).filter(Boolean);
+      const or = [];
+      if (emails.length) or.push({ email: { $in: emails } });
+      if (contacts.length) or.push({ contact: { $in: contacts } });
+      const nameOnly = cleaned.filter((p) => !p.email && !p.contact).map((p) => p.name);
+      if (nameOnly.length) {
+        const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        or.push({ name: { $in: nameOnly.map((n) => new RegExp(`^${esc(n)}$`, "i")) } });
+      }
+      const existing = or.length
+        ? await TournamentPlayer.find({ tournamentId, $or: or }).select("name email contact")
+        : [];
+      const takenEmails = new Set(existing.map((p) => p.email).filter(Boolean));
+      const takenContacts = new Set(existing.map((p) => p.contact).filter(Boolean));
+      const takenNames = new Set(existing.map((p) => p.name.toLowerCase()));
+
+      const toInsert = cleaned.filter((p) => {
+        const dup =
+          (p.email && takenEmails.has(p.email)) ||
+          (p.contact && takenContacts.has(p.contact)) ||
+          (!p.email && !p.contact && takenNames.has(p.name.toLowerCase()));
+        if (dup) skippedPlayers.push({ ...p, teamName: p.name, reason: "Already registered in this tournament" });
+        return !dup;
+      });
+
+      if (toInsert.length === 0) {
+        return res.status(409).json({
+          message: "No new players to insert",
+          skippedPlayers,
+          skippedTeams: skippedPlayers, // same list, for older UI code
+        });
+      }
+
+      // Never go over "Max Participants": extra rows are skipped.
+      const { max, remaining } = await getRemainingSlots(tournamentId);
+      if (remaining <= 0) {
+        toInsert.forEach((p) => skippedPlayers.push({ ...p, teamName: p.name, reason: fullMessage(max) }));
+        return res.status(409).json({
+          message: fullMessage(max),
+          skippedPlayers,
+          skippedTeams: skippedPlayers,
+        });
+      }
+      const overLimit = toInsert.splice(remaining);
+      overLimit.forEach((p) => skippedPlayers.push({ ...p, teamName: p.name, reason: fullMessage(max) }));
+
+      // Save one by one so each player gets a clear reason if it fails.
+      const saved = [];
+      for (const p of toInsert) {
+        try {
+          saved.push(await TournamentPlayer.create(p));
+        } catch (err) {
+          let reason = err.message;
+          if (err.code === 11000) {
+            const field = Object.keys(err.keyPattern || {}).find((k) => k !== "tournamentId") || "email/contact";
+            reason = `${field === "contact" ? "Contact number" : "Email"} already registered in this tournament`;
+            console.warn("createPlayers duplicate key", err.keyPattern, err.keyValue);
+          } else if (err.name === "ValidationError") {
+            reason = Object.values(err.errors).map((e) => e.message).join(", ");
+          }
+          skippedPlayers.push({ ...p, teamName: p.name, reason });
+        }
+      }
+
+      if (saved.length === 0) {
+        return res.status(409).json({ message: "No new players to insert", skippedPlayers, skippedTeams: skippedPlayers });
+      }
+
+      return res.status(201).json({
+        message: "Players registered",
+        insertedCount: saved.length,
+        skippedCount: skippedPlayers.length,
+        insertedPlayers: saved,
+        skippedPlayers,
+        skippedTeams: skippedPlayers,
+      });
+    } catch (error) {
+      console.error("createPlayers error", error);
+      return res.status(500).json({ message: "Server Error", error: error.message });
+    }
+  },
+
+  // PUT /admin/update-player  { _id, tournamentId, name, email, contact, dob }
+  updatePlayer: async (req, res) => {
+    try {
+      const { _id, tournamentId } = req.body;
+      if (!_id || !tournamentId) {
+        return res.status(400).json({ message: "Player and tournamentId are required" });
+      }
+      const player = buildPlayer(req.body, tournamentId);
+      if (!player.name || !player.email || !player.contact) {
+        return res.status(400).json({ message: "Name, email and contact number are required" });
+      }
+
+      const or = [];
+      if (player.email) or.push({ email: player.email });
+      if (player.contact) or.push({ contact: player.contact });
+      const clash = or.length
+        ? await TournamentPlayer.findOne({ tournamentId, _id: { $ne: _id }, $or: or }).select("_id")
+        : null;
+      if (clash) {
+        return res.status(409).json({ message: "Another player in this tournament already uses that email or contact" });
+      }
+
+      // Set the filled fields, remove the ones that were cleared.
+      const $set = {};
+      const $unset = {};
+      for (const f of PLAYER_FIELDS) {
+        if (player[f] !== undefined) $set[f] = player[f];
+        else $unset[f] = "";
+      }
+      const updatedPlayer = await TournamentPlayer.findOneAndUpdate(
+        { _id, tournamentId },
+        { $set, ...(Object.keys($unset).length ? { $unset } : {}) },
+        { new: true }
+      );
+      if (!updatedPlayer) return res.status(404).json({ message: "Player not found" });
+
+      return res.status(200).json({ message: "Player updated successfully", updatedPlayer });
+    } catch (error) {
+      console.error("updatePlayer error", error);
+      return res.status(500).json({ message: "Server Error", error: error.message });
+    }
+  },
 
   createTournament: async (req, res) => {
     console.log("createTournament called  ", req.body);
@@ -531,6 +820,14 @@ const adminTeamController = {
         return res
           .status(400)
           .json({ message: "Tournament with this ID not found" });
+      }
+
+      // Max Participants can't go below the number already registered.
+      const { current } = await getRemainingSlots(_id);
+      if (Number(maximumParticipants) < current) {
+        return res.status(400).json({
+          message: `Max Participants can't be less than the ${current} already registered`,
+        });
       }
 
       console.log("existingTournament   ", existingTournament);
@@ -849,21 +1146,13 @@ const adminTeamController = {
 
       
 
-      console.log("Generating PDF...", tournamentMatches);
-
-      const pdfUrl = await generateGroupMatchPDF({
-        tournamentName: "existingTournament.tournamentName",
-        tournamentGroup: tournamentGroup,
-        tournamentMatches: tournamentMatches,
-      });
-      console.log("PDF generated at URL:", pdfUrl);
-
+      // The score sheet PDF is now generated on demand
+      // (GET /admin/score-sheet-pdf/:tournamentId) instead of on every load.
       res.status(200).json({
         message: "Tournament details retrieved successfully",
         groups: tournamentGroup,
         matches: tournamentMatches,
         knockoutStatus: knockoutStatus,
-        pdfUrl: pdfUrl,
       });
     } catch (error) {
       console.log("Get tournament details error", error);
@@ -1140,6 +1429,10 @@ const adminTeamController = {
 
       // 8️⃣ Delete groups
       await Group.deleteMany({ tournamentId });
+
+      // Registered teams (doubles) and players (singles)
+      await Team.deleteMany({ tournamentId });
+      await TournamentPlayer.deleteMany({ tournamentId });
 
       // 9️⃣ Delete tournament
       await Tournament.findByIdAndDelete(tournamentId);

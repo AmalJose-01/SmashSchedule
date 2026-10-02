@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 
 const Team = require("../model/team.js");
+const { getRemainingSlots, fullMessage } = require("../helpers/participantLimit.js");
+const adminTeamController = require("./adminTeamController.js");
 const Tournament = require("../model/tournamentModel.js");
 const Group = require("../model/groupTournament.js");
 const { get } = require("mongoose");
@@ -52,6 +54,16 @@ const teamController = {
       ) {
         return res.status(400).json({ message: "All fields are required" });
       }
+      // Registration only while the tournament hasn't started.
+      const openTournament = await Tournament.findById(tournamentId).select("status matchType");
+      if (!openTournament) return res.status(404).json({ message: "Tournament not found" });
+      if (openTournament.status !== "Create") {
+        return res.status(400).json({ message: "Registration for this tournament is closed" });
+      }
+      if (openTournament.matchType !== "Doubles") {
+        return res.status(400).json({ message: "This is a Singles tournament — register as a player" });
+      }
+
       // Check for existing emails or contacts
       const existingTeam = await Team.findOne({
         tournamentId,
@@ -66,6 +78,12 @@ const teamController = {
         return res
           .status(400)
           .json({ message: "Email or Contact already exists" });
+      }
+
+      // Never go over "Max Participants".
+      const { max, remaining } = await getRemainingSlots(tournamentId);
+      if (remaining <= 0) {
+        return res.status(409).json({ message: fullMessage(max) });
       }
       const newTeam = await Team.create({
         teamName,
@@ -154,6 +172,51 @@ const teamController = {
     }
   },
 
+  // POST /tournament/players  { tournamentId, name, email, contact, dob }
+  // A player joins a Singles tournament (stored in "tournamentplayers").
+  // Uses the same rules as the admin import: per-tournament duplicates and
+  // Max Participants.
+  joinAsPlayer: async (req, res) => {
+    try {
+      const { tournamentId, name, email, contact, dob } = req.body;
+      if (!mongoose.Types.ObjectId.isValid(String(tournamentId || ""))) {
+        return res.status(400).json({ message: "Invalid tournament" });
+      }
+      const tournament = await Tournament.findById(tournamentId).select("status");
+      if (!tournament) return res.status(404).json({ message: "Tournament not found" });
+      if (tournament.status !== "Create") {
+        return res.status(400).json({ message: "Registration for this tournament is closed" });
+      }
+      // Delegate to the shared player logic with exactly one player.
+      req.body = { tournamentId, players: [{ name, email, contact, dob }] };
+      return adminTeamController.createPlayers(req, res);
+    } catch (error) {
+      console.error("joinAsPlayer error", error);
+      return res.status(500).json({ message: "Server Error", error: error.message });
+    }
+  },
+
+  // POST /tournament/verify-key/:tournamentId  { key }
+  // Checks the tournament's Secret Key on the server (the key itself is never
+  // sent to the browser).
+  verifyTournamentKey: async (req, res) => {
+    try {
+      const { tournamentId } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(tournamentId)) {
+        return res.status(400).json({ message: "Invalid tournament" });
+      }
+      const tournament = await Tournament.findById(tournamentId).select("uniqueKey");
+      if (!tournament) return res.status(404).json({ message: "Tournament not found" });
+      const ok = String(req.body?.key || "").trim() === String(tournament.uniqueKey);
+      // 400 (not 401): the app treats 401 as "session expired" and logs out.
+      if (!ok) return res.status(400).json({ message: "Invalid code" });
+      return res.status(200).json({ message: "Code verified", ok: true });
+    } catch (error) {
+      console.error("verifyTournamentKey error", error);
+      return res.status(500).json({ message: "Server Error", error: error.message });
+    }
+  },
+
   getTournaments: async (req, res) => {
     try {
       const tournaments = await Tournament.aggregate([
@@ -166,25 +229,35 @@ const teamController = {
             status: 1,
             registrationFee: 1,
             maximumParticipants: 1,
-            uniqueKey: 1,
+            matchType: 1,
           },
         },
         {
           $lookup: {
-            from: "teams", // must be collection name
+            from: "tournamentteams", // must be collection name (renamed from "teams")
             localField: "_id",
             foreignField: "tournamentId",
             as: "teams",
           },
         },
         {
+          // Singles players are in their own collection
+          $lookup: {
+            from: "tournamentplayers",
+            localField: "_id",
+            foreignField: "tournamentId",
+            as: "players",
+          },
+        },
+        {
           $addFields: {
-            registeredTeamsCount: { $size: "$teams" },
+            registeredTeamsCount: { $add: [{ $size: "$teams" }, { $size: "$players" }] },
           },
         },
         {
           $project: {
-            teams: 0, // remove teams array from response
+            teams: 0, // remove arrays from response
+            players: 0,
           },
         },
       ]);
@@ -208,15 +281,17 @@ const teamController = {
 
       const tournament = await Tournament.findOne({
         _id: tournamentId,
-      }).select("-adminId -createdAt -updatedAt -groups");
+      }).select("-adminId -createdAt -updatedAt -groups -uniqueKey");
 
       console.log(
         "Tournaments fetched===========================================================================:",
         tournament
       );
+      // Places taken (teams + singles players) so the player app knows if it's full.
+      const registeredCount = tournament ? (await getRemainingSlots(tournamentId)).current : 0;
       res.status(200).json({
         message: "Tournaments retrieved successfully",
-        tournaments: tournament,
+        tournaments: tournament ? { ...tournament.toObject(), registeredCount } : tournament,
       });
     } catch (error) {
       console.log("Get tournaments error", error);
