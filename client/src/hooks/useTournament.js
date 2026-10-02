@@ -5,7 +5,7 @@ import { logOut } from "../redux/slices/userSlice";
 import { useQuery } from "@tanstack/react-query";
 import { getAdminTournamentListAPI } from "../services/admin/adminTeamServices";
 import { getTournamentListAPI } from "../services/teamServices";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 
 export const useTournament = (userType) => {
   const dispatch = useDispatch();
@@ -18,10 +18,7 @@ export const useTournament = (userType) => {
     staleTime: 10 * 60 * 1000,
     cacheTime: 30 * 60 * 1000,
     refetchOnWindowFocus: false,
-    // Refetch when the list page opens IF the data is stale — e.g. after a
-    // tournament is created/edited/deleted (those invalidate this query).
-    // Normal back-and-forth navigation still uses the cache (staleTime).
-    refetchOnMount: true,
+    refetchOnMount: false,
 
     onError: (error) => {
       toast.dismiss();
@@ -60,20 +57,7 @@ export const useTournament = (userType) => {
    
   };
 
-  // Memoised list: same array reference until the query data changes,
-  // so pages don't re-render/recompute for nothing.
-  const tournaments = useMemo(() => data?.tournaments ?? [], [data]);
-
-  // 401 handling as a side effect (not during render).
-  useEffect(() => {
-    if (error?.status === 401) {
-      dispatch(logOut());
-      toast.error(error.response?.data?.message || "Session expired");
-    }
-  }, [error, dispatch]);
-
   return {
-    tournaments,
     handleTournamentList,
     isTournamentLoading: isLoading,
     tournamentListError: error,

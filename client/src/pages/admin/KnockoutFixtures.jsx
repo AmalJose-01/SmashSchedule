@@ -1,21 +1,22 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useGetKnockoutList } from "../../hooks/useGetKnockoutList";
+import ButtonWithIcon from "../../components/ButtonWithIcon";
 import { createKnockoutScheduleAPI } from "../../services/admin/adminTeamServices";
 import { useKnockoutUpdateScore } from "../../hooks/useKnockoutUpdateScore";
-import { Calendar, CheckCircle, Clock, Flame, Save, Shuffle, Trophy } from "lucide-react";
-import AppBackground from "../../components/AppBackground";
-import PageHeader from "../../components/PageHeader";
+import { Calendar, Table, Trophy } from "lucide-react";
+import Logout from "../../components/Logout";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { logOut } from "../../redux/slices/userSlice";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { clearUnneededThirdSet, isThirdSetNeeded } from "../../../utils/helpers/matchUtils";
+import { isMatchDecided } from "../../../utils/helpers/matchUtils";
+import StatusBadge from "../../components/StatusBadge";
+import { motion } from "framer-motion";
+import winnerGif from "../../assets/fireworks.gif";
 
 export function getRoundName(round) {
   switch (round) {
-    case 0:
-      return "Round of 32";
     case 1:
       return "Round of 16";
     case 2:
@@ -84,7 +85,7 @@ const KnockoutFixtures = () => {
   });
 
   const handleCreateKnockout = async () => {
-    if (mutation.isPending) return;
+    if (mutation.isLoading) return;
 
     try {
       const data = await mutation.mutateAsync(tournamentData);
@@ -107,8 +108,8 @@ const KnockoutFixtures = () => {
       prev.map((match) => {
         if (match._id !== matchId) return match;
 
-        const updatedScores = clearUnneededThirdSet(
-          match.scores.map((set, idx) => (idx === setIndex ? { ...set, [teamType]: value } : set))
+        const updatedScores = match.scores.map((set, idx) =>
+          idx === setIndex ? { ...set, [teamType]: value } : set
         );
 
         return { ...match, scores: updatedScores };
@@ -165,195 +166,337 @@ const KnockoutFixtures = () => {
   };
 
   return (
-    <AppBackground>
-      <PageHeader
-        title="Knockout Stage"
-        subtitle={tournamentData?.tournamentName}
-        onBack={() =>
-          tournamentData?._id ? navigate(`/match/${tournamentData._id}`) : navigate("/setup-tournament")
-        }
-        actions={
-          matches.length === 0 && (
-            <button
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white ">
+      {/* Header */}
+      <div className="flex justify-between items-center bg-white p-4  shadow-lg sticky top-0">
+        <div className="flex items-center gap-4">
+          <Table
+            className="w-8 h-8 text-blue-600"
+            onClick={() => navigate("/")}
+          />
+
+          <h2 className="text-xl font-semibold text-blue-800">
+            Knockout Stage
+          </h2>
+        </div>
+
+        <div className={`flex gap-2`}>
+          <div className={`${matches.length > 0 ? "hidden" : ""}`}>
+            <ButtonWithIcon
+              title="Shuffle Knockout Team"
+              icon="shuffle"
+              buttonBGColor="bg-green-600"
+              textColor="text-white"
               onClick={handleCreateKnockout}
-              disabled={mutation.isPending}
-              className="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white px-3 sm:px-4 h-10 rounded-xl font-semibold text-sm shadow-lg shadow-cyan-500/30 transition-all disabled:opacity-50"
-            >
-              <Shuffle className="w-4 h-4" />
-              <span className="hidden sm:inline">
-                {mutation.isPending ? "Creating..." : "Shuffle Knockout Teams"}
-              </span>
-            </button>
-          )
-        }
-      />
-
-      <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
-        {matches.length > 0 ? (
-          Object.keys(groupedMatches).map((round) => {
-            const roundName = getRoundName(Number(round));
-            const isFinal = roundName === "Final";
-            return (
-              <section
-                key={round}
-                className={`bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-xl border overflow-hidden ${
-                  isFinal ? "border-amber-400/40 shadow-amber-500/10" : "border-slate-700/50"
-                }`}
-              >
-                {/* ROUND HEADER */}
-                <div
-                  className={`px-5 py-4 border-b border-slate-700/50 ${
-                    isFinal
-                      ? "bg-gradient-to-r from-amber-500/25 via-yellow-500/10 to-amber-500/25"
-                      : "bg-gradient-to-r from-cyan-500/20 via-blue-500/10 to-emerald-500/20"
-                  }`}
-                >
-                  <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <Trophy className={`w-5 h-5 ${isFinal ? "text-amber-300" : "text-cyan-400"}`} />
-                    {roundName}
-                    <span className="ml-auto text-xs font-normal text-slate-400">
-                      {groupedMatches[round].length} match{groupedMatches[round].length !== 1 ? "es" : ""}
-                    </span>
-                  </h2>
-                </div>
-
-                <div className="p-4 sm:p-5">
-                  <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-300">
-                    <Calendar className="w-4 h-4 text-cyan-400" />
-                    Matches
-                  </h3>
-                  <div
-                    className={`grid grid-cols-1 gap-3 ${
-                      isFinal ? "max-w-2xl mx-auto" : "sm:grid-cols-2 lg:grid-cols-3"
-                    }`}
-                  >
-                    {groupedMatches[round].map((match) => (
-                      <KnockoutMatchCard
-                        key={match._id}
-                        match={match}
-                        isFinal={isFinal}
-                        onSetChange={handleSetChange}
-                        onSave={updateScore}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </section>
-            );
-          })
-        ) : (
-          <div className="text-center py-16 bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl">
-            <Trophy className="w-12 h-12 text-slate-500 mx-auto mb-3" />
-            <p className="text-slate-300 font-medium mb-1">Knockout fixtures not available.</p>
-            <p className="text-sm text-slate-400">Use “Shuffle Knockout Teams” to create them.</p>
+            />
           </div>
-        )}
+
+          <Logout />
+        </div>
       </div>
-    </AppBackground>
-  );
-};
 
-// ── One knockout match (dark card). Final gets a gold style + winner banner.
-const KnockoutMatchCard = ({ match, isFinal, onSetChange, onSave }) => {
-  // Set 3 only opens when sets 1 & 2 are finished and split 1–1.
-  const thirdSetOpen = isThirdSetNeeded(match.scores);
-  const winnerName =
-    match.status === "finished" && match.winner
-      ? match.winner === "home"
-        ? match.teamsHome.teamName
-        : match.teamsAway.teamName
-      : null;
+      {/* ROUNDS + MATCHES */}
+      {matches.length > 0 ? (
+        <div className="grid grid-cols-1 gap-6 bg-white p-6 rounded-3xl shadow-lg">
+          {Object.keys(groupedMatches).map((round) => (
+            <div key={round} className="space rounded-3xl shadow-lg ">
+              {/* ROUND HEADER */}
+           
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 rounded-t-3xl">
+                               <h2 className="text-2xl text-white flex items-center gap-2">
+                               <Trophy className="w-6 h-6" />
+                              {getRoundName(Number(round))}
+                            </h2>
+                            </div>
 
-  return (
-    <div
-      className={`p-4 rounded-xl border transition-all flex flex-col ${
-        isFinal
-          ? "bg-slate-900/50 border-amber-400/30"
-          : "bg-slate-900/40 border-slate-700/50 hover:border-cyan-500/40"
-      }`}
-    >
-      {isFinal && winnerName && (
-        <div className="mb-4 rounded-xl bg-gradient-to-r from-amber-500/20 via-yellow-400/20 to-amber-500/20 border border-amber-400/40 p-4 text-center">
-          <Trophy className="w-10 h-10 text-amber-300 mx-auto mb-2" />
-          <div className="text-xs uppercase tracking-widest text-amber-300/80">Champion</div>
-          <div className="text-2xl sm:text-4xl font-bold text-white mt-1" style={{ fontFamily: "Outfit, sans-serif" }}>
-            {winnerName}
-          </div>
+                             <h3 className="mb-4 flex items-center gap-2 text-gray-700 m-4">
+                      <Calendar className="w-5 h-5" />
+                      Matches
+                    </h3>
+
+              {getRoundName(Number(round)) === "Final" ? (
+                <div className="grid md:grid-cols-1 gap-4 p-6">
+                  {groupedMatches[round].map((match) => (
+                    <div
+                      key={match._id}
+                                            className="card p-4 border border-gray-200 rounded-xl bg-blue-50 hover:bg-blue-100 transition flex flex-col items-center justify-center"
+
+                      // className={`w-full p-4 shadow rounded-xl border text-white ${
+                      //   match.status === "finished"
+                      //     ? "bg-gradient-to-r from-red-400 via-green-300 to-purple-200 "
+                      //     : "bg-slate-200"
+                      // }`}
+                      // style={{
+                      //   backgroundImage:
+                      //     match.status === "finished"
+                      //       ? `url(${winnerGif})`
+                      //       : "none",
+                      // }}
+                    >
+                      {match.status === "finished" && match.winner && (
+                        <div className="flex items-center gap-2 justify-center mb-10">
+                          <Trophy className="w-10 h-10 text-green-600" />
+                          <h1 className="text-6xl font-bold">
+                            Winner:{" "}
+                            {match.winner === "home"
+                              ? match.teamsHome.teamName
+                              : match.teamsAway.teamName}
+                          </h1>
+                        </div>
+                      )}
+
+                     <div className="w-full flex items-center justify-center mb-3 gap-5">
+                        <div className="flex items-center justify-center ">
+                          <div
+                            className={`font-bold ${
+                              match.status === "finished"
+                                ? "text-gray-800"
+                                : "text-gray-800"
+                            } text-center text-lg`}
+                          >
+                            {match.teamsHome.teamName} vs{" "}
+                            {match.teamsAway.teamName}
+                          </div>
+                        </div>
+                        <StatusBadge status={match.status} />
+                      </div>
+
+                      {/* SCORES INPUT */}
+                      <div className="flex flex-col gap-3 items-center">
+                        {match.scores.map((set, idx) => {
+                          const matchFinished = isMatchDecided(
+                            match.scores.slice(0, 2)
+                          );
+
+                          let disableHome = true;
+                          let disableAway = true;
+
+                          const isSameScore =
+                            set.home === set.away &&
+                            set.home > 0 &&
+                            set.away > 0;
+
+                          // Determine winner
+                          const homeScoreTotal = match.scores.reduce(
+                            (sum, set) => sum + set.home,
+                            0
+                          );
+                          const awayScoreTotal = match.scores.reduce(
+                            (sum, set) => sum + set.away,
+                            0
+                          );
+
+                          const winner =
+                            matchFinished && homeScoreTotal > awayScoreTotal
+                              ? "home"
+                              : matchFinished && awayScoreTotal > homeScoreTotal
+                              ? "away"
+                              : null;
+
+                          return (
+                            <div
+                              key={set._id}
+                              className="flex items-center gap-2"
+                            >
+                              <input
+                                type="number"
+                                min={0}
+                                max={21}
+                                className={`w-20 md:w-40 p-1 border rounded text-center text-black ${
+                                  isSameScore
+                                    ? "border-red-500"
+                                    : "border-gray-500"
+                                }`}
+                                value={set.home === 0 ? "" : set.home}
+                                disabled={
+                                  idx === 2 && matchFinished
+                                    ? disableHome
+                                    : false
+                                }
+                                onChange={(e) => {
+                                  let value = Math.min(
+                                    21,
+                                    Math.max(0, Number(e.target.value))
+                                  );
+                                  handleSetChange(
+                                    match._id,
+                                    idx,
+                                    "home",
+                                    value
+                                  );
+                                }}
+                              />
+                              <span>:</span>
+                              <input
+                                type="number"
+                                min={0}
+                                max={21}
+                                className={`w-20 md:w-40 p-1 border rounded text-center text-black ${
+                                  isSameScore
+                                    ? "border-red-500"
+                                    : "border-gray-500"
+                                }`}
+                                value={set.away === 0 ? "" : set.away}
+                                disabled={
+                                  idx === 2 && matchFinished
+                                    ? disableAway
+                                    : false
+                                }
+                                onChange={(e) => {
+                                  let value = Math.min(
+                                    21,
+                                    Math.max(0, Number(e.target.value))
+                                  );
+                                  handleSetChange(
+                                    match._id,
+                                    idx,
+                                    "away",
+                                    value
+                                  );
+                                }}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Update Score Button */}
+                      <div className="mt-2 items-center flex justify-center">
+                        <button
+                          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                          onClick={() => updateScore(match._id)}
+                        >
+                          Update Score
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 gap-4">
+                  {groupedMatches[round].map((match) => (
+                    <div
+                      key={match._id}
+                      className="card p-4 border border-gray-200 rounded-xl bg-blue-50 hover:bg-blue-100 transition flex flex-col items-center justify-center"
+                    >
+                     <div className="w-full flex items-center justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="font-semibold text-gray-800">
+                            {match.teamsHome.teamName} vs{" "}
+                            {match.teamsAway.teamName}
+                          </div>
+                        </div>
+                        <StatusBadge status={match.status} />
+                      </div>
+
+                      {/* SCORES INPUT */}
+                      <div className="flex flex-col gap-3 items-center">
+                        {match.scores.map((set, idx) => {
+                          const matchFinished = isMatchDecided(
+                            match.scores.slice(0, 2)
+                          );
+
+                          let disableHome = true;
+                          let disableAway = true;
+
+                          const isSameScore =
+                            set.home === set.away &&
+                            set.home > 0 &&
+                            set.away > 0;
+
+                          return (
+                            <div
+                              key={set._id}
+                              className="flex items-center gap-2"
+                            >
+                              <input
+                                type="number"
+                                min={0}
+                                max={21}
+                                className={`w-20 md:w-40 p-1 border rounded text-center text-black ${
+                                  isSameScore
+                                    ? "border-red-500"
+                                    : "border-gray-500"
+                                }`}
+                                value={set.home === 0 ? "" : set.home}
+                                disabled={
+                                  idx === 2 && matchFinished
+                                    ? disableHome
+                                    : false
+                                }
+                                onChange={(e) => {
+                                  let value = Math.min(
+                                    21,
+                                    Math.max(0, Number(e.target.value))
+                                  );
+                                  handleSetChange(
+                                    match._id,
+                                    idx,
+                                    "home",
+                                    value
+                                  );
+                                }}
+                              />
+                              <span>-</span>
+                              <input
+                                type="number"
+                                min={0}
+                                max={21}
+                                className={`w-20 md:w-40 p-1 border rounded text-center text-black ${
+                                  isSameScore
+                                    ? "border-red-500"
+                                    : "border-gray-500"
+                                }`}
+                                value={set.away === 0 ? "" : set.away}
+                                disabled={
+                                  idx === 2 && matchFinished
+                                    ? disableAway
+                                    : false
+                                }
+                                onChange={(e) => {
+                                  let value = Math.min(
+                                    21,
+                                    Math.max(0, Number(e.target.value))
+                                  );
+                                  handleSetChange(
+                                    match._id,
+                                    idx,
+                                    "away",
+                                    value
+                                  );
+                                }}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Update Score Button */}
+                      <div className="mt-2 items-center flex justify-center">
+                        <button
+                          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                          onClick={() => updateScore(match._id)}
+                        >
+                          Update Score
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* MATCH CARDS */}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-white rounded-3xl shadow-lg p-6 max-h-96 overflow-y-auto mt-4 ml-4 mr-4">
+          <h2 className="text-xl font-semibold mb-4">
+            Knockout fixtures not available.
+          </h2>
         </div>
       )}
-
-      <div className="flex items-start justify-between gap-2 mb-3">
-        <div className={`min-w-0 font-semibold text-white break-words ${isFinal ? "text-base sm:text-lg" : "text-sm"}`}>
-          {match.teamsHome.teamName}
-          <span className="text-slate-500 font-normal"> vs </span>
-          {match.teamsAway.teamName}
-        </div>
-        <MatchStatus status={match.status} />
-      </div>
-
-      <div className="space-y-2">
-        {match.scores.map((set, idx) => {
-          const isSameScore = set.home === set.away && set.home > 0 && set.away > 0;
-          const locked = idx === 2 && !thirdSetOpen;
-          const scoreCls = `w-full min-w-0 bg-slate-900/60 border rounded-lg py-1.5 text-center text-sm text-white [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:opacity-40 ${
-            isSameScore ? "border-red-500" : "border-slate-600"
-          }`;
-          const onScore = (side) => (e) =>
-            onSetChange(match._id, idx, side, Math.min(21, Math.max(0, Number(e.target.value))));
-
-          return (
-            <div key={set._id} className="flex items-center gap-2">
-              <span className="w-10 flex-shrink-0 text-[11px] uppercase tracking-wide text-slate-500">
-                Set {idx + 1}
-              </span>
-              <input
-                type="number"
-                min={0}
-                max={21}
-                className={scoreCls}
-                value={set.home === 0 ? "" : set.home}
-                disabled={locked}
-                onChange={onScore("home")}
-              />
-              <span className="text-slate-500">:</span>
-              <input
-                type="number"
-                min={0}
-                max={21}
-                className={scoreCls}
-                value={set.away === 0 ? "" : set.away}
-                disabled={locked}
-                onChange={onScore("away")}
-              />
-            </div>
-          );
-        })}
-      </div>
-
-      <button
-        className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 text-sm font-medium hover:bg-emerald-500/20 transition-all"
-        onClick={() => onSave(match._id)}
-      >
-        <Save className="w-4 h-4" />
-        Update Score
-      </button>
     </div>
-  );
-};
-
-// Dark status pill
-const MatchStatus = ({ status }) => {
-  const s = status?.toLowerCase();
-  const [cls, Icon, label] =
-    s === "finished"
-      ? ["bg-emerald-500/15 border-emerald-500/30 text-emerald-300", CheckCircle, "Finished"]
-      : s === "ongoing"
-        ? ["bg-cyan-500/15 border-cyan-500/30 text-cyan-300", Flame, "Live"]
-        : ["bg-slate-500/15 border-slate-500/30 text-slate-300", Clock, "Scheduled"];
-  return (
-    <span className={`flex-shrink-0 px-2.5 py-1 rounded-full border text-[11px] font-medium flex items-center gap-1 ${cls}`}>
-      <Icon className="w-3 h-3" /> {label}
-    </span>
   );
 };
 

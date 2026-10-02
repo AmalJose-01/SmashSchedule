@@ -7,7 +7,6 @@ const {
   determineKnockoutWinnerAndStatus,
   buildCrossGroupKnockoutPairs,
 } = require("../helpers/matchHelpers.js");
-const { selectKnockoutQualifiers, roundNumberForSize } = require("../helpers/knockoutQualifiers.js");
 
 function getRoundNumber(numTeams) {
   switch (numTeams) {
@@ -85,26 +84,106 @@ const adminKnockoutController = {
       const { _id, numberOfPlayersQualifiedToKnockout } = req.body;
       const groups = await Group.find({ tournamentId: _id });
 
-      // Don't create a second bracket if one already exists.
-      if (await KnockoutMatch.exists({ tournamentId: _id })) {
-        return res.status(409).json({ message: "Knockout fixtures already created" });
-      }
+      // 2. Pick top teams based on totalPoints or pointsDiff
+      let qualifiedTeams = [];
+      let remainingTeams = []; // store non-qualified teams to fill odd slots
 
-      // 2. Top N per group, then fill up to a full bracket (16, 8, 4...)
-      //    with the next-best teams — see helpers/knockoutQualifiers.js.
-      const { qualified: qualifiedTeams, size } = selectKnockoutQualifiers(
-        groups,
-        numberOfPlayersQualifiedToKnockout
-      );
-      if (size < 2) {
-        return res.status(400).json({ message: "Not enough teams for a knockout stage" });
+      groups.forEach((group) => {
+        // Merge standings with team names.
+        const mergedStandings = group.standings.map((standing) => {
+          const team = group.teams.find(
+            (t) => t.teamId.toString() === standing.teamId.toString()
+          );
+          return {
+            ...standing,
+            name: team ? team.name : "Unknown Team",
+            teamId: team ? team.teamId : null,
+            totalPoints: standing.totalPoints || 0, // ensure numeric value
+            pointsDiff: standing.pointsDiff || 0,
+          };
+        });
+
+        const sortedTeams = mergedStandings.slice().sort((a, b) => {
+          if (b.totalPoints !== a.totalPoints) {
+            return b.totalPoints - a.totalPoints;
+          }
+          return b.pointsDiff - a.pointsDiff;
+        });
+        // Pick top N teams from each group, tagging each with its GROUP
+        // and its 1-based RANK within that group (1 = winner, 2 = runner-up,
+        // ...) — buildCrossGroupKnockoutPairs below needs both to seed
+        // Round 1 as "Group A winner vs Group B runner-up" instead of a
+        // random draw.
+        const topTeams = sortedTeams
+          .slice(0, numberOfPlayersQualifiedToKnockout)
+          .map((team, idx) => ({
+            name: team.name,
+            teamId: team.teamId,
+            groupName: group.groupName,
+            rank: idx + 1,
+            totalPoints: team.totalPoints,
+            pointsDiff: team.pointsDiff,
+          }));
+        qualifiedTeams.push(...topTeams);
+
+        // Take exactly the next top team from each group
+        const nextTeam = sortedTeams[numberOfPlayersQualifiedToKnockout];
+        if (nextTeam) {
+          remainingTeams.push({
+            name: nextTeam.name,
+            teamId: nextTeam.teamId,
+            groupName: group.groupName,
+            rank: numberOfPlayersQualifiedToKnockout + 1,
+            totalPoints: nextTeam.totalPoints,
+            pointsDiff: nextTeam.pointsDiff,
+          });
+        }
+      });
+
+
+  const targetSize = getKnockoutSize(qualifiedTeams.length);
+
+        console.log("targetSize", targetSize);
+
+
+      console.log("Qualified Team1", qualifiedTeams);
+      console.log("remainingTeams", remainingTeams);
+
+      // 2. Ensure even number of teams
+
+      // Ensure Qualified Teams Are Even AND Minimum 8
+      // while (
+      //   qualifiedTeams.length % 2 !== 0 || // odd count → must add 1
+      //   qualifiedTeams.length < 8 // less than 8 → must add more
+      // )
+
+      while (qualifiedTeams.length < targetSize && remainingTeams.length > 0) {
+        if (remainingTeams.length === 0) break; // nothing left to add, stop safely
+
+        // sort remaining best → worst
+        remainingTeams.sort((a, b) => {
+          if (b.totalPoints !== a.totalPoints)
+            return b.totalPoints - a.totalPoints;
+          return b.pointsDiff - a.pointsDiff;
+        });
+
+        const nextBest = remainingTeams.shift(); // take the BEST available
+
+        qualifiedTeams.push({
+          name: nextBest.name,
+          teamId: nextBest.teamId,
+          groupName: nextBest.groupName,
+          rank: nextBest.rank,
+          totalPoints: nextBest.totalPoints,
+          pointsDiff: nextBest.pointsDiff,
+        });
       }
 
       console.log("Qualified Team Final", qualifiedTeams);
 
       // 3. Create KnockoutTeam entries
 
-      const roundNumber = roundNumberForSize(qualifiedTeams.length);
+      const roundNumber = getRoundNumber(qualifiedTeams.length);
 
       const knockoutTeamPromises = qualifiedTeams.map((team) =>
         KnockoutTeam.create({

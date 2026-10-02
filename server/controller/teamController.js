@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 
 const Team = require("../model/team.js");
-const { getRemainingSlots, fullMessage } = require("../helpers/participantLimit.js");
 const Tournament = require("../model/tournamentModel.js");
 const Group = require("../model/groupTournament.js");
 const { get } = require("mongoose");
@@ -67,12 +66,6 @@ const teamController = {
         return res
           .status(400)
           .json({ message: "Email or Contact already exists" });
-      }
-
-      // Never go over "Max Participants".
-      const { max, remaining } = await getRemainingSlots(tournamentId);
-      if (remaining <= 0) {
-        return res.status(409).json({ message: fullMessage(max) });
       }
       const newTeam = await Team.create({
         teamName,
@@ -178,30 +171,20 @@ const teamController = {
         },
         {
           $lookup: {
-            from: "tournamentteams", // must be collection name (renamed from "teams")
+            from: "teams", // must be collection name
             localField: "_id",
             foreignField: "tournamentId",
             as: "teams",
           },
         },
         {
-          // Singles players are in their own collection
-          $lookup: {
-            from: "tournamentplayers",
-            localField: "_id",
-            foreignField: "tournamentId",
-            as: "players",
-          },
-        },
-        {
           $addFields: {
-            registeredTeamsCount: { $add: [{ $size: "$teams" }, { $size: "$players" }] },
+            registeredTeamsCount: { $size: "$teams" },
           },
         },
         {
           $project: {
-            teams: 0, // remove arrays from response
-            players: 0,
+            teams: 0, // remove teams array from response
           },
         },
       ]);

@@ -1,21 +1,9 @@
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { importTeamAPI, savePlayersAPI } from "../services/admin/adminTeamServices";
+import { importTeamAPI } from "../services/admin/adminTeamServices";
 import { useDispatch } from "react-redux";
 import { logOut } from "../redux/slices/userSlice";
 import { useNavigate } from "react-router-dom";
-
-// "Already registered in this tournament: A, B · Missing name: (no name)"
-const summariseSkipped = (list = []) => {
-  const byReason = {};
-  for (const s of list) {
-    const reason = s.reason || "Skipped";
-    (byReason[reason] ||= []).push(s.teamName || s.name || "?");
-  }
-  return Object.entries(byReason)
-    .map(([reason, names]) => `${reason}: ${names.join(", ")}`)
-    .join(" · ");
-};
 
 export const useImportTeam = (input) => {
   const queryClient = useQueryClient();
@@ -24,8 +12,7 @@ export const useImportTeam = (input) => {
 
   const mutation = useMutation({
     mutationKey: ["importTeam"],
-    // Singles payloads ({ players }) go to the players API, teams as before.
-    mutationFn: (payload) => (payload?.players ? savePlayersAPI(payload) : importTeamAPI(payload)),
+    mutationFn: importTeamAPI,
     onMutate: () => toast.loading("Import teams..."),
     onSuccess: () => {
       toast.dismiss();
@@ -44,11 +31,14 @@ export const useImportTeam = (input) => {
         return;
       } else if (
         error?.response?.status === 409 &&
-        (error?.response?.data?.message === "No new teams to insert" ||
-          error?.response?.data?.message === "No new players to insert")
+        error?.response?.data?.message === "No new teams to insert"
       ) {
         if (error?.response?.data?.skippedTeams.length > 0) {
-          toast.error(`Nothing imported. ${summariseSkipped(error.response.data.skippedTeams)}`, { duration: 10000 });
+          const skippedTeams = error.response.data.skippedTeams;
+          const teamNames = skippedTeams
+            .map((team) => team.teamName)
+            .join(", ");
+          toast.error(`These teams were skipped (already exist): ${teamNames}`);
           return;
         } else {
           toast.error("No new teams to insert");
@@ -81,12 +71,15 @@ export const useImportTeam = (input) => {
         success: (res) => {
           let skippedCount = res.skippedCount || 0;
           if (skippedCount > 0) {
+            const skippedTeams = res.skippedTeams || [];
+            const teamNames = skippedTeams
+              .map((team) => team.teamName)
+              .join(", ");
             toast.success(
-              `Imported ${res.insertedCount ?? ""}. ${skippedCount} skipped — ${summariseSkipped(res.skippedTeams)}`,
-              { duration: 10000 }
+              `Teams imported successfully! ${skippedCount} teams were skipped (already exist): ${teamNames}`
             );
           } else {
-            toast.success("Imported successfully!");
+            toast.success("Teams imported successfully!");
           }
           return res;
         },

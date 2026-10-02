@@ -2,20 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { MapPin } from "lucide-react";
 import "./AddressSearch.css";
 
-// Optional props (other pages keep the default look):
-//   className    – replace the input's classes (e.g. the dark field style)
-//   onTextChange – called with the raw text as the user types
-//   defaultValue – initial text in the box
-const DEFAULT_INPUT_CLS =
-  "w-full px-4 py-2 pl-10 border border-gray-300 rounded-md text-sm font-sans focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-gray-100 disabled:text-gray-500";
-
-const AddressSearch = ({
-  onAddressSelect,
-  placeholder = "Search address...",
-  className,
-  onTextChange,
-  defaultValue,
-}) => {
+const AddressSearch = ({ onAddressSelect, placeholder = "Search address..." }) => {
   const inputRef = useRef(null);
   const [autocomplete, setAutocomplete] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -140,9 +127,7 @@ const AddressSearch = ({
           ref={inputRef}
           type="text"
           placeholder={isLoading ? "Loading..." : placeholder}
-          className={className ?? DEFAULT_INPUT_CLS}
-          defaultValue={defaultValue}
-          onChange={onTextChange ? (e) => onTextChange(e.target.value) : undefined}
+          className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-md text-sm font-sans focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-gray-100 disabled:text-gray-500"
           disabled={isLoading}
         />
       </div>
