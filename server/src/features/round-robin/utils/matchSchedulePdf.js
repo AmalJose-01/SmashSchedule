@@ -20,20 +20,39 @@ const PDFDocument = require("pdfkit");
  * @returns {PDFDocument} an un-ended pdfkit document — caller pipes it and calls .end()
  */
 const generateMatchSchedulePdf = ({ tournament, matches }) => {
-  const doc = new PDFDocument({ margin: 40, size: "A4" });
-
-  const numberOfSets = tournament.numberOfSets || 3;
-
-  const teamName = (m, side) => {
-    const playerId = side === "home" ? m.player1Id : m.player2Id;
-    const partnerId = side === "home" ? m.player1PartnerId : m.player2PartnerId;
+  const playerName = (playerId, partnerId) => {
     const name = playerId?.name ?? "—";
     return partnerId?.name ? `${name} / ${partnerId.name}` : name;
   };
 
   // Real, playable matches only — BYE matches have no opponent and no real
   // court assignment, so they don't belong on a printed court scoresheet.
-  const playableMatches = matches.filter((m) => !m.isBye && m.court && m.court !== "BYE");
+  const rows = matches
+    .filter((m) => !m.isBye && m.court && m.court !== "BYE")
+    .map((m) => ({
+      home: playerName(m.player1Id, m.player1PartnerId),
+      away: playerName(m.player2Id, m.player2PartnerId),
+      court: m.court,
+    }));
+
+  return buildScoreSheetPdf({
+    title: tournament.tournamentName,
+    numberOfSets: tournament.numberOfSets || 3,
+    rows,
+  });
+};
+
+/**
+ * Shared court scoresheet layout (round robin + group/knockout tournaments).
+ * rows: [{ home, away, court }] — plain team/player names and a court label.
+ * Matches without a court are listed under "No court assigned".
+ * @returns {PDFDocument} un-ended pdfkit document — caller pipes + .end()
+ */
+const buildScoreSheetPdf = ({ title, subtitle = "Match Schedule", numberOfSets = 3, rows }) => {
+  const doc = new PDFDocument({ margin: 40, size: "A4" });
+
+  const teamName = (m, side) => (side === "home" ? m.home : m.away) || "—";
+  const playableMatches = rows.map((r) => ({ ...r, court: r.court || "No court assigned" }));
 
   // Group by court label (e.g. "Court 1"), sorted numerically so "Court 2"
   // sorts before "Court 10".
@@ -54,8 +73,8 @@ const generateMatchSchedulePdf = ({ tournament, matches }) => {
   const rightEdge = () => doc.page.width - doc.page.margins.right;
 
   // ── Page 1: title + a flat list of every match and its court ──────────
-  doc.fontSize(20).fillColor("#000").text(tournament.tournamentName, { align: "center" });
-  doc.fontSize(12).fillColor("#666").text("Match Schedule", { align: "center" });
+  doc.fontSize(20).fillColor("#000").text(title, { align: "center" });
+  doc.fontSize(12).fillColor("#666").text(subtitle, { align: "center" });
   doc
     .fontSize(9)
     .fillColor("#999")
@@ -169,4 +188,4 @@ const generateMatchSchedulePdf = ({ tournament, matches }) => {
   return doc;
 };
 
-module.exports = { generateMatchSchedulePdf };
+module.exports = { generateMatchSchedulePdf, buildScoreSheetPdf };

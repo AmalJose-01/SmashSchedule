@@ -15,6 +15,7 @@ import Success from "./pages/common/Success.jsx";
 import ViewTournamentDetail from "./pages/user/ViewTournamentDetail.jsx";
 import Login from "./pages/admin/Login.jsx";
 import LoginSelector from "./pages/common/LoginSelector.jsx";
+import PaymentResult from "./features/payments/pages/PaymentResult.jsx";
 
 const CheckoutPage = lazy(() => import("./pages/admin/CheckoutPage.jsx"));
 
@@ -29,6 +30,8 @@ function App() {
             <Route path="/" element={<LoginSelector />} />
             {/* <Route path="/" element={<Success />} /> */}
                         <Route path="/success" element={<Success />} />
+            {/* Stripe Checkout return page (public: players may pay from a QR scan) */}
+            <Route path="/payment/result" element={<PaymentResult />} />
 
 
             <Route path="/teams" element={<TeamSetup />} />
