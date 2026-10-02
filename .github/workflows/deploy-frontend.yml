@@ -58,6 +58,7 @@ jobs:
           case "${{ github.ref_name }}" in
             main) URL="https://smashschedule-1.onrender.com/api/v1" ;;
             qa)   URL="https://smashschedule-qa.onrender.com/api/v1" ;;
+            dev)  URL="https://devrallix.onrender.com/api/v1" ;;
             *)
               URL="${{ vars.VITE_API_URL || secrets.VITE_API_URL }}"
               if [ -z "$URL" ]; then
