@@ -94,6 +94,18 @@ const TournamentList = () => {
                   >
                     View Details
                   </button>
+                  {tournament.status === "Create" &&
+                    (tournament.registeredTeamsCount ?? 0) < (tournament.maximumParticipants || Infinity) && (
+                      <button
+                        onClick={() => {
+                          dispatch(setTournamentData(tournament));
+                          navigate(`/join-tournament`);
+                        }}
+                        className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-yellow-500 hover:from-emerald-600 hover:to-yellow-600 text-white text-sm font-semibold shadow-lg shadow-emerald-500/30 transition-all"
+                      >
+                        Join
+                      </button>
+                    )}
                   {tournament.status !== "Create" && (
                     <button
                       onClick={() => {

@@ -10,7 +10,6 @@ import AddressSearch from "../../../../components/AddressSearch";
 import AppBackground from "../../../../components/AppBackground.jsx";
 import PageHeader from "../../../../components/PageHeader.jsx";
 import ClubKeyCard from "../components/ClubKeyCard.jsx";
-import { useStripeStatus } from "../../../payments/services/stripePayments.js";
 import "./ClubProfile.css";
 
 const ClubProfile = () => {
@@ -18,8 +17,6 @@ const ClubProfile = () => {
   const logoInputRef = useRef(null);
   // const { data: squareStatusData } = useGetSquareStatus();
   // const squareStatus = squareStatusData?.data;
-  const { data: stripeStatusData } = useStripeStatus();
-  const payouts = stripeStatusData?.data;
 
   const {
     club,
@@ -286,46 +283,6 @@ const ClubProfile = () => {
               </div>
             </div>
           )}
-        </div>
-
-        {/* ===== PAYMENTS (Stripe Connect payouts) ===== */}
-        <div className="cp-section-card">
-          <h2 className="cp-section-title">💳 Payments</h2>
-          <div className="cp-info-grid">
-            <div className="cp-info-item">
-              <label>Payouts</label>
-              <span>
-                {payouts?.ready ? (
-                  <span className="cp-complete-badge complete">✓ Active</span>
-                ) : payouts?.connected ? (
-                  <span className="cp-complete-badge incomplete">⚠ Setup not finished</span>
-                ) : (
-                  <span className="cp-complete-badge incomplete">⚠ Not set up</span>
-                )}
-              </span>
-            </div>
-            <div className="cp-info-item">
-              <label>Bank account</label>
-              <span>
-                {payouts?.bank ? (
-                  `${payouts.bank.bankName || "Bank"}${payouts.bank.routingNumber ? ` · BSB ${payouts.bank.routingNumber}` : ""} · ••••${payouts.bank.last4}`
-                ) : (
-                  <span className="empty">—</span>
-                )}
-              </span>
-            </div>
-            <div className="cp-info-item">
-              <label>Platform fee</label>
-              <span>{((payouts?.platformFeeBps ?? 100) / 100).toLocaleString("en-AU", { maximumFractionDigits: 2 })}% per payment</span>
-            </div>
-          </div>
-          <button
-            className="btn-edit-profile"
-            style={{ marginTop: 12 }}
-            onClick={() => navigate("/admin/club-profile/payments")}
-          >
-            {payouts?.ready ? "Manage payouts →" : "Set up payouts →"}
-          </button>
         </div>
 
         {/* ===== SQUARE PAYMENTS =====

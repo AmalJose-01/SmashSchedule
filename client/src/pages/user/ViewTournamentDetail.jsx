@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 
-import {  useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { setTournamentData } from "../../redux/slices/tournamentSlice";
+import VerifyCodeModal from "../../components/VerifyCodeModal";
 import {
   ListChecks,
   Edit,
@@ -34,6 +36,8 @@ const ViewTournamentDetail = () => {
 
   const tournament = useSelector((state) => state.tournament.tournamentData);
   const [tournamentDetail, setTournamentDetail] = useState(null);
+  const [openVerification, setVerificationOpen] = useState(false);
+  const dispatch = useDispatch();
   const { tournamentInfo } = useTournamentInformation(tournament._id, "");
   const getStatusColor = (status) => {
     switch (status) {
@@ -86,6 +90,23 @@ const ViewTournamentDetail = () => {
     );
   }
 
+  // Join while registration is open (status "Create") and there's room;
+  // results (behind the Secret Key) once the tournament has started.
+  const registered = tournamentDetail.registeredCount ?? 0;
+  const maxPlace = Number(tournamentDetail.maximumParticipants) || 0;
+  const isOpen = tournamentDetail.status === "Create";
+  const isFull = maxPlace > 0 && registered >= maxPlace;
+  const isDoubles = tournamentDetail.matchType === "Doubles";
+  const keyVerified = (() => {
+    try {
+      return sessionStorage.getItem(`tournamentKey:${tournamentDetail._id}`) === "ok";
+    } catch {
+      return false;
+    }
+  })();
+  const viewResults = () =>
+    keyVerified ? navigate(`/groupStageList/${tournamentDetail._id}`) : setVerificationOpen(true);
+
   // ---------------------------
   // RENDER UI
   // ---------------------------
@@ -125,6 +146,47 @@ const ViewTournamentDetail = () => {
           </div>
         </div>
 
+        {/* Actions */}
+        <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-700/50 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
+          <div className="text-sm">
+            {isOpen ? (
+              isFull ? (
+                <span className="text-amber-300">Registration is full ({registered}/{maxPlace}).</span>
+              ) : (
+                <span className="text-slate-300">
+                  Registration is open · <span className="text-white font-semibold">{registered}/{maxPlace || "—"}</span>{" "}
+                  {isDoubles ? "teams" : "players"} registered
+                </span>
+              )
+            ) : (
+              <span className="text-slate-300">Matches have started — view the scores with the tournament Secret Key.</span>
+            )}
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            {isOpen && !isFull && (
+              <button
+                onClick={() => {
+                  dispatch(setTournamentData({ ...tournament, ...tournamentDetail }));
+                  navigate("/join-tournament");
+                }}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-yellow-500 hover:from-emerald-600 hover:to-yellow-600 text-white text-sm font-semibold shadow-lg shadow-emerald-500/30 transition-all"
+              >
+                <UserPlus className="w-4 h-4" />
+                {isDoubles ? "Register Team" : "Join Tournament"}
+              </button>
+            )}
+            {!isOpen && (
+              <button
+                onClick={viewResults}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-yellow-500 hover:from-emerald-600 hover:to-yellow-600 text-white text-sm font-semibold shadow-lg shadow-emerald-500/30 transition-all"
+              >
+                <Key className="w-4 h-4" />
+                View Results
+              </button>
+            )}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card icon={FileText} title="Tournament Information">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -133,7 +195,7 @@ const ViewTournamentDetail = () => {
               <InfoRow icon={MapPin} label="Location" value={tournamentDetail.location || "Not set"} />
               <InfoRow icon={Users} label="Max Participants" value={tournamentDetail.maximumParticipants} />
               <InfoRow icon={DollarSign} label="Registration Fee" value={tournamentDetail.registrationFee || "Not set"} />
-              <InfoRow icon={Key} label="Secret Key" value="****" />
+              <InfoRow icon={Users} label="Registered" value={`${registered} / ${maxPlace || "—"}`} />
             </div>
             {tournamentDetail.description && (
               <div className="mt-4 pt-4 border-t border-slate-700/50">
@@ -154,6 +216,7 @@ const ViewTournamentDetail = () => {
           </Card>
         </div>
       </div>
+      <VerifyCodeModal open={openVerification} onClose={() => setVerificationOpen(false)} />
     </AppBackground>
   );
 };
