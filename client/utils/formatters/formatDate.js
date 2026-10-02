@@ -19,9 +19,9 @@ export const formatDate = (value) => {
     return value;
   }
 
-  // DD/MM/YYYY, DD.MM.YYYY or DD-MM-YYYY (also single-digit day/month)
-  if (/^\d{1,2}[/.-]\d{1,2}[/.-]\d{4}$/.test(String(value).trim())) {
-    const [dd, mm, yyyy] = String(value).trim().split(/[/.-]/);
+  // DD/MM/YYYY or D/M/YYYY
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(value)) {
+    const [dd, mm, yyyy] = value.split("/");
     // Pad single digits with leading 0
     const day = dd.padStart(2, "0");
     const month = mm.padStart(2, "0");

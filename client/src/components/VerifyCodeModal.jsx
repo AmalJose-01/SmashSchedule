@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { KeyRound } from "lucide-react";
 
 export default function VerifyCodeModal({ open, onClose}) {
   const [code, setCode] = useState("");
@@ -31,52 +30,30 @@ export default function VerifyCodeModal({ open, onClose}) {
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm"
-      onClick={onClose}
-      role="presentation"
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-xs rounded-2xl border border-slate-700/60 bg-slate-800/90 backdrop-blur-xl shadow-2xl p-6 text-center"
-      >
-        <div className="mx-auto mb-4 w-12 h-12 rounded-full flex items-center justify-center bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
-          <KeyRound className="w-6 h-6" />
-        </div>
-        <h2 className="text-lg font-semibold text-white mb-1" style={{ fontFamily: "Outfit, sans-serif" }}>
-          Enter 4-Digit Code
-        </h2>
-        <p className="text-xs text-slate-400 mb-4">Ask the organiser for the tournament code.</p>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+      <div className="bg-white rounded-xl p-6 w-80">
+        <h2 className="text-lg font-semibold mb-4">Enter 4-Digit Code</h2>
 
         <input
           type="password"
-          inputMode="numeric"
-          autoFocus
           maxLength={4}
           value={code}
-          onChange={(e) => {
-            setCode(e.target.value.replace(/\D/g, ""));
-            setError("");
-          }}
-          onKeyDown={(e) => e.key === "Enter" && handleVerify()}
-          className={`w-full text-center text-2xl tracking-[0.5em] bg-slate-900/60 border rounded-xl py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 ${
-            error ? "border-red-500" : "border-slate-600"
-          }`}
+          onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+          className="w-full text-center text-2xl tracking-widest border rounded-lg p-2"
         />
-        {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
 
-        <div className="flex gap-3 mt-5">
+        {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+
+        <div className="flex gap-2 mt-4">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-slate-600 bg-white/5 text-sm font-medium text-slate-200 hover:bg-white/10 transition-all"
+            className="flex-1 border rounded-lg py-2"
           >
             Cancel
           </button>
           <button
             onClick={handleVerify}
-            className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-yellow-500 hover:from-emerald-600 hover:to-yellow-600 text-white text-sm font-semibold shadow-lg shadow-emerald-500/30 transition-all"
+            className="flex-1 bg-blue-600 text-white rounded-lg py-2"
           >
             Verify
           </button>

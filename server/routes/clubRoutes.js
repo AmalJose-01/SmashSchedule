@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const clubController = require("../controller/clubController");
 const PlayerRoundRobinController = require("../src/features/round-robin/controllers/PlayerRoundRobinController");
-const StripeEntryFeeController = require("../src/features/payments/stripe/StripeEntryFeeController");
 const auth = require("../middleware/auth");
 const multer = require("multer");
 
@@ -29,7 +28,6 @@ router.get("/:clubId/events", auth, clubController.getClubEvents);
 router.get("/round-robin/:id", auth, PlayerRoundRobinController.getRoundRobinView);
 router.post("/round-robin/:id/join", auth, PlayerRoundRobinController.joinRoundRobin);
 router.delete("/round-robin/:id/join", auth, PlayerRoundRobinController.leaveRoundRobin);
-router.post("/round-robin/:id/pay", auth, StripeEntryFeeController.payAsPlayer); // player self-pays entry fee (Stripe Checkout)
 router.get("/:clubId", clubController.getClubById);
 
 module.exports = router;
