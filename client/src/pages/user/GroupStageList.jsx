@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { useTournamentDetail } from "../../hooks/useTournamentDetail";
 
 import { useParams } from "react-router-dom";
+import ButtonWithIcon from "../../components/ButtonWithIcon";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Award,
@@ -14,11 +15,10 @@ import {
   BarChart2,
   MapPin,
   Flame,
-  CheckCircle,
-  Clock,
 } from "lucide-react";
-import AppBackground from "../../components/AppBackground";
-import PageHeader from "../../components/PageHeader";
+import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+import { div } from "framer-motion/client";
+import StatusBadge from "../../components/StatusBadge";
 
 const GroupStageList = () => {
   const location = useLocation();
@@ -104,41 +104,44 @@ const toggleExpand = (groupId) => {
 
   if (!groups) {
     return (
-      <AppBackground variant="user">
-        <div className="min-h-screen flex items-center justify-center text-slate-400">Loading tournament data...</div>
-      </AppBackground>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-gray-600 text-lg">Loading tournament data...</div>
+      </div>
     );
   }
 
   return (
-    <AppBackground variant="user">
-      <PageHeader
-        variant="user"
-        title="Group Stage"
-        subtitle="Matches, scores and standings"
-        onBack={() => navigate(-1)}
-        profileMenu
-        actions={
-          <button
-            onClick={handleGotoKnockout}
-            className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-yellow-500 hover:from-emerald-600 hover:to-yellow-600 text-white px-3 sm:px-4 h-10 rounded-xl font-semibold text-sm shadow-lg shadow-emerald-500/30 transition-all"
-          >
-            <Award className="w-4 h-4" />
-            <span className="hidden sm:inline">Knockout</span>
-          </button>
-        }
-      />
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white ">
+      {/* Header */}
+      <div className="flex justify-between items-center bg-white p-4  shadow-lg sticky top-0">
+        <div className="flex items-center gap-4">
+          <Table
+            className="w-8 h-8 text-blue-600"
+            onClick={() => navigate("/")}
+          />
 
-      <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto space-y-6">
+          <h2 className="text-xl font-semibold text-blue-800">Group Stage</h2>
+        </div>
+
+        <ButtonWithIcon
+          title="Go to Knockout"
+          icon="go"
+          buttonBGColor="bg-green-600"
+          textColor="text-white"
+          onClick={handleGotoKnockout}
+        />
+      </div>
+
+      <div className="p-4">
         {/* Group Filter */}
-        <div className="bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-3 sm:p-4 flex items-center gap-3">
-          <label className="flex items-center gap-2 text-sm font-medium text-slate-300 whitespace-nowrap">
-            <Target className="w-4 h-4 text-emerald-400" />
-            Group
+        <div className="mb-6 bg-white rounded-lg shadow-md p-4 flex items-center gap-4 m-4">
+          <label className="flex items-center gap-2">
+            <Target className="w-5 h-5 text-blue-600" />
+            <span>Filter by Group:</span>
           </label>
-          <div className="relative flex-1 sm:flex-none">
+          <div className="relative">
             <select
-              className="w-full sm:w-48 appearance-none bg-slate-900/50 border border-slate-600 rounded-xl px-3.5 py-2.5 pr-10 text-sm text-white [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
+              className="appearance-none px-4 py-2 pr-10 border-2 border-blue-200 rounded-lg focus:outline-none focus:border-blue-500 bg-white cursor-pointer "
               value={selectedGroup}
               onChange={(e) => setSelectedGroup(e.target.value)}
             >
@@ -149,91 +152,170 @@ const toggleExpand = (groupId) => {
                 </option>
               ))}
             </select>
-            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ChevronDown className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
         </div>
 
+        {/* Group Stage */}
         {groups.length > 0 ? (
-          <div className={`grid grid-cols-1 ${groups.length > 1 && selectedGroup === "all" ? "xl:grid-cols-2" : ""} gap-6`}>
+          <div
+            className={`grid grid-cols-1  ${
+              groups.length > 1 && selectedGroup === "all"
+                ? "md:grid-cols-2"
+                : "md:grid-cols-1"
+            }    gap-6 ml-4 mr-4 mb-6`}
+          >
             {groups
-              .filter((gp) => selectedGroup === "all" || selectedGroup === gp.groupName)
+              .filter(
+                (gp) =>
+                  selectedGroup === "all" || selectedGroup === gp.groupName
+              )
               .map((gp) => {
                 const groupMatches = matches.filter((m) => m.group === gp._id);
-                const wide = !(groups.length > 1 && selectedGroup === "all");
 
                 return (
+                   <div key={gp._id} className="flex flex-col">
                   <div
                     key={gp._id}
-                    className="bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-700/50 overflow-hidden"
+                    className="bg-white rounded-3xl shadow-lg   overflow-x-auto"
                   >
-                    <div className="px-5 py-4 bg-gradient-to-r from-emerald-500/20 via-yellow-500/5 to-emerald-500/20 border-b border-slate-700/50">
-                      <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                        <Trophy className="w-5 h-5 text-emerald-400" />
+                    <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6">
+                      <h2 className="text-2xl text-white flex items-center gap-2">
+                        <Trophy className="w-6 h-6" />
                         {gp.groupName}
-                        <span className="ml-auto text-xs font-normal text-slate-400">
-                          {groupMatches.length} match{groupMatches.length !== 1 ? "es" : ""}
-                        </span>
                       </h2>
                     </div>
 
-                    {/* Standings */}
-                    <div className="p-4 sm:p-5">
-                      <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-300">
-                        <BarChart2 className="w-4 h-4 text-emerald-400" />
+                    {/* Matches */}
+                    <h3 className="mb-4 flex items-center gap-2 text-gray-700 m-4">
+                      <Calendar className="w-5 h-5" />
+                      Matches
+                    </h3>
+
+                    {/* Schedule And court */}
+                    <div
+                      className={`mb-6 grid grid-cols-1  ${
+                        groups.length > 1 ? "lg:grid-cols-2" : "lg:grid-cols-3"
+                      }   ${
+                        groups.length > 1 ? "md:grid-cols-2" : "md:grid-cols-2"
+                      }   gap-4 m-4`}
+                    >
+                      {groupMatches.map((m) => (
+                        <div
+                          key={m._id}
+                          className="card p-4 border border-gray-200 rounded-xl bg-blue-50 hover:bg-blue-100 transition flex flex-col items-center justify-center"
+                        >
+                          <div className="font-semibold text-sm text-gray-800 text-center">
+                            {m.matchName}
+                          </div>
+                          <div className="text-sm text-gray-600 mt-1">
+                            {m.court}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Points Table */}
+
+                    <div>
+                      <h3 className="mb-3 flex items-center gap-2 text-gray-700 m-4">
+                        <Award className="w-5 h-5" />
                         Standings
                       </h3>
-                      <div className="overflow-x-auto rounded-xl border border-slate-700/50">
-                        <table className="w-full text-sm">
-                          <thead className="bg-slate-900/60 text-slate-400 text-xs uppercase tracking-wide">
+
+                      <div className="overflow-x-auto rounded-lg border-2 border-gray-200 m-4">
+                        <table className="w-full">
+                          <thead className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
                             <tr>
-                              <th className="p-3 text-left">#</th>
-                              <th className="p-3 text-left">Team</th>
-                              <th className="p-3">M</th>
-                              <th className="p-3">W</th>
-                              <th className="p-3">L</th>
-                              <th className="p-3">PF</th>
-                              <th className="p-3">PA</th>
-                              <th className="p-3">PD</th>
-                              <th className="p-3 text-emerald-300">Pts</th>
+                              <th className="p-3 text-left text-sm">#</th>
+                              <th className="p-3 text-sm">Team</th>
+                              <th className="p-3 text-sm">M</th>
+                              <th className="p-3 text-sm">W</th>
+                              <th className="p-3 text-sm">L</th>
+                              <th className="p-3 text-sm">PF</th>
+                              <th className="p-3 text-sm">PA</th>
+                              <th className="p-3 text-sm">PD</th>
+                              <th className="p-3  text-sm  text-green-600">
+                                Pts
+                              </th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-700/50">
+                          <tbody>
                             {gp.standings
                               .slice()
-                              .sort((a, b) =>
-                                b.totalPoints !== a.totalPoints
-                                  ? b.totalPoints - a.totalPoints
-                                  : b.pointsFor - b.pointsAgainst - (a.pointsFor - a.pointsAgainst)
-                              )
+                              .sort((a, b) => {
+                                // Sort by totalPoints descending
+                                if (b.totalPoints !== a.totalPoints) {
+                                  return b.totalPoints - a.totalPoints;
+                                }
+                                // If totalPoints are equal, sort by points difference descending
+                                const diffA = a.pointsFor - a.pointsAgainst;
+                                const diffB = b.pointsFor - b.pointsAgainst;
+                                return diffB - diffA;
+                              })
+
                               .map((t, idx) => {
-                                const teamObj = gp.teams.find((team) => team.teamId === t.teamId);
+                                // Find the team object that matches the teamId
+                                const teamObj = gp.teams.find(
+                                  (team) => team.teamId === t.teamId
+                                );
                                 const isQualified = idx < 2;
-                                const pd = t.pointsFor - t.pointsAgainst;
+
                                 return (
-                                  <tr key={idx} className={`text-slate-200 ${isQualified ? "bg-emerald-500/5" : ""}`}>
+                                  <tr
+                                    key={idx}
+                                    className={`border-b hover:bg-blue-50 transition-colors ${
+                                      isQualified ? "bg-green-50" : ""
+                                    }`}
+                                  >
                                     <td className="p-3">
                                       <span
-                                        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${
-                                          isQualified ? "bg-emerald-500 text-white" : "bg-slate-700 text-slate-300"
+                                        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+                                          isQualified
+                                            ? "bg-green-600 text-white"
+                                            : "bg-gray-200 text-gray-600"
                                         }`}
                                       >
                                         {idx + 1}
                                       </span>
                                     </td>
-                                    <td className="p-3 whitespace-nowrap">{teamObj?.name || t.teamId}</td>
-                                    <td className="p-3 text-center">{t.matchesPlayed}</td>
-                                    <td className="p-3 text-center">{t.wins}</td>
-                                    <td className="p-3 text-center">{t.losses}</td>
-                                    <td className="p-3 text-center">{t.pointsFor}</td>
-                                    <td className="p-3 text-center">{t.pointsAgainst}</td>
-                                    <td className="p-3 text-center">
-                                      <span className={pd >= 0 ? "text-emerald-400" : "text-red-400"}>
-                                        {pd > 0 ? "+" : ""}
-                                        {pd}
+
+                                    <td className="p-2 text-sm">
+                                      {teamObj?.name || t.teamId}
+                                    </td>
+                                    <td className="p-2 text-center text-sm">
+                                      {t.matchesPlayed}
+                                    </td>
+                                    <td className="p-2 text-center text-sm">
+                                      {t.wins}
+                                    </td>
+                                    <td className="p-2 text-center text-sm">
+                                      {t.losses}
+                                    </td>
+                                    <td className="p-2 text-center text-sm">
+                                      {t.pointsFor}
+                                    </td>
+                                    <td className="p-2 text-center text-sm">
+                                      {t.pointsAgainst}
+                                    </td>
+
+                                    <td className="p-3 text-center text-sm">
+                                      <span
+                                        className={
+                                          t.pointsFor - t.pointsAgainst >= 0
+                                            ? "text-green-600"
+                                            : "text-red-600"
+                                        }
+                                      >
+                                        {t.pointsFor - t.pointsAgainst > 0
+                                          ? "+"
+                                          : ""}
+                                        {t.pointsFor - t.pointsAgainst}
                                       </span>
                                     </td>
-                                    <td className="p-3 text-center">
-                                      <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-500/30 text-emerald-200 font-semibold">
+
+                                    <td className="p-3 text-center text-sm">
+                                      <span className="px-2 py-1 bg-blue-600 text-white rounded">
                                         {t.totalPoints}
                                       </span>
                                     </td>
@@ -244,94 +326,138 @@ const toggleExpand = (groupId) => {
                         </table>
                       </div>
                       {gp.standings.length > 0 && (
-                        <p className="text-xs text-slate-400 mt-2 flex items-center gap-1.5">
-                          <Trophy className="w-3.5 h-3.5 text-emerald-400" />
-                          Top 2 qualify for the knockout stage
+                        <p className="text-xs text-gray-500 mt-2 flex items-center gap-1 m-4">
+                          <Trophy className="w-3 h-3 text-green-600" />
+                          Top 2 teams qualify for knockout stage
                         </p>
                       )}
                     </div>
 
-                    {/* Matches + scores (read only) */}
-                    <div className="px-4 sm:px-5 pb-5">
-                      <button
-                        type="button"
-                        onClick={() => toggleExpand(gp._id)}
-                        className="w-full flex items-center justify-between py-2 text-sm font-semibold text-slate-300 hover:text-white"
-                      >
-                        <span className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-emerald-400" />
-                          Matches & Scores
-                        </span>
-                        <ChevronDown
-                          className={`w-4 h-4 transition-transform ${expandedGroupId === gp._id ? "rotate-180" : ""}`}
-                        />
-                      </button>
+                    {/* Schedule And court */}
+                    <div
+                      className="flex justify-between items-center cursor-pointer m-4"
+                      // onClick={toggleExpand}
+                      onClick={() => toggleExpand(gp._id)}
+                    >
+                      <div className="flex gap-2">
+                        <BarChart2 className="w-5 h-5" />
 
-                      {expandedGroupId === gp._id && (
-                        <div className={`mt-2 grid grid-cols-1 sm:grid-cols-2 ${wide ? "lg:grid-cols-3" : ""} gap-3`}>
-                          {groupMatches.map((m) => {
-                            const played = (m.scores?.[0]?.sets || []).filter((st) => st.home > 0 || st.away > 0);
-                            return (
-                              <div key={m._id} className="p-4 rounded-xl bg-slate-900/40 border border-slate-700/50">
-                                <div className="flex items-start justify-between gap-2 mb-2">
-                                  <div className="min-w-0">
-                                    <div className="font-semibold text-sm text-white break-words">{m.matchName}</div>
-                                    <div className="text-xs text-slate-400 flex items-center gap-1.5 mt-1">
-                                      <MapPin className="w-3.5 h-3.5" />
-                                      {m.court || "Court TBA"}
-                                    </div>
-                                  </div>
-                                  <MatchStatus status={m.status} />
-                                </div>
-                                {played.length > 0 ? (
-                                  <div className="flex flex-wrap gap-2 mt-2">
-                                    {played.map((st, i) => (
-                                      <span
-                                        key={st._id || i}
-                                        className="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-xs text-slate-200 tabular-nums"
-                                      >
-                                        <span className="text-slate-500 mr-1">S{i + 1}</span>
-                                        {st.home} – {st.away}
-                                      </span>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <p className="text-xs text-slate-500 mt-2">No score yet</p>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
+                        <h2 className="text-md font-semibold mb-4">
+                          {/* {isExpanded ? "Hide Score" : "View Score"} */}
+                            {expandedGroupId === gp._id ? "Hide Score" : "View Score"}
+
+                        </h2>
+                      </div>
+
+                      {groupMatches.length > 0 && (
+                        <span className="text-gray-600">
+                          {expandedGroupId === gp._id ? <FaChevronUp /> : <FaChevronDown />}
+                        </span>
                       )}
                     </div>
+
+                    {expandedGroupId === gp._id  && (
+                      <div>
+                        {/* Matches */}
+                        <h3 className="mb-4 flex items-center gap-2 text-gray-700 m-4">
+                          <Calendar className="w-5 h-5" />
+                          Matches
+                        </h3>
+
+                        <div
+                          className={`mb-6 grid grid-cols-1  ${
+                            groups.length > 1
+                              ? "lg:grid-cols-2"
+                              : "lg:grid-cols-3"
+                          }   ${
+                            groups.length > 1
+                              ? "md:grid-cols-2"
+                              : "md:grid-cols-2"
+                          }   gap-4 m-4`}
+                        >
+                          {groupMatches.map((m) => (
+                            <div
+                              key={m._id}
+                              className="card  bg-blue-50 p-4 rounded-xl border-2 border-blue-100 hover:shadow-lg transition-all"
+                            >
+                              <div className="w-full flex items-center justify-between mb-3">
+                                <div className="flex-1">
+                                  <div className="font-semibold text-gray-800">
+                                    {m.matchName}
+                                  </div>
+                                  <div className="text-sm text-gray-600 flex items-center gap-2 mt-1">
+                                    <MapPin className="w-4 h-4" />
+                                    {m.court === "" ? "Court" : m.court}
+                                  </div>
+                                </div>
+                                {/* {getStatusBadge(m.status)} */}
+                                                        <StatusBadge status={m.status} />
+
+                              </div>
+
+                              <div className="mt-2 space-y-1 items-center justify-center">
+                                {m.scores[0].sets.map((set, idx) => {
+                                  const isSameScore =
+                                    set.home === set.away &&
+                                    set.home > 0 &&
+                                    set.away > 0; // check if scores are equal
+
+                                  const disableHome = true;
+                                  const disableAway = true;
+
+                                  return (
+                                    <div
+                                      key={set._id}
+                                      className="flex space-x-2 items-center justify-center"
+                                    >
+                                      <div className="flex flex-row">
+                                        <input
+                                          type="number"
+                                          min={0}
+                                          max={21} // maximum score allowed
+                                          className={`w-full p-1 border rounded text-center mr-2 ${
+                                            isSameScore
+                                              ? "border-red-500"
+                                              : "border-gray-500"
+                                          } `}
+                                          value={set.home === 0 ? "" : set.home}
+                                          disabled={disableHome}
+                                        />
+                                        <span>:</span>
+                                        <input
+                                          type="number"
+                                          min={0}
+                                          max={21}
+                                          className={`w-max-full p-1 border rounded text-center ml-2 ${
+                                            isSameScore
+                                              ? "border-red-500"
+                                              : "border-gray-500"
+                                          } `}
+                                          value={set.away === 0 ? "" : set.away}
+                                          disabled={disableAway}
+                                        />
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
+                   </div>
                 );
               })}
           </div>
         ) : (
-          <div className="text-center py-16 bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl">
-            <Trophy className="w-12 h-12 text-slate-500 mx-auto mb-3" />
-            <p className="text-slate-300 font-medium">No groups available.</p>
+          <div className="bg-white rounded-3xl shadow-lg p-6 max-h-96 overflow-y-auto mt-4 ml-4 mr-4">
+            <h2 className="text-xl font-semibold mb-4">No groups available.</h2>
           </div>
         )}
       </div>
-    </AppBackground>
-  );
-};
-
-// Dark status pill
-const MatchStatus = ({ status }) => {
-  const s = status?.toLowerCase();
-  const [cls, Icon, label] =
-    s === "finished"
-      ? ["bg-emerald-500/15 border-emerald-500/30 text-emerald-300", CheckCircle, "Finished"]
-      : s === "ongoing"
-        ? ["bg-yellow-500/15 border-yellow-500/30 text-yellow-300", Flame, "Live"]
-        : ["bg-slate-500/15 border-slate-500/30 text-slate-300", Clock, "Scheduled"];
-  return (
-    <span className={`flex-shrink-0 px-2.5 py-1 rounded-full border text-[11px] font-medium flex items-center gap-1 ${cls}`}>
-      <Icon className="w-3 h-3" /> {label}
-    </span>
+    </div>
   );
 };
 

@@ -14,17 +14,6 @@ export const importTeamAPI = async (teamData) => {
 };
 
 
-// Singles tournament players ("tournamentplayers")
-export const savePlayersAPI = async (payload) => {
-  const response = await apiClient.post(`/admin/players`, payload);
-  return response.data;
-};
-
-export const updatePlayerAPI = async (player) => {
-  const response = await apiClient.put(`/admin/update-player`, player);
-  return response.data;
-};
-
 export const getTeamListAPI = async (tournamentId) => {
   console.log("getTeamListAPI called"); // <--- should log when triggered
 try {

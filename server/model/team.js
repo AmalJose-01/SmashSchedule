@@ -71,8 +71,6 @@ teamSchema.index(
 
 
 
-// Collection renamed from "teams" to "tournamentteams"
-// (existing data is moved on server start — see helpers/renameTeamsCollection.js).
-const Team = mongoose.model("Team", teamSchema, "tournamentteams");
+const Team = mongoose.model("Team", teamSchema);
 
 module.exports = Team;
