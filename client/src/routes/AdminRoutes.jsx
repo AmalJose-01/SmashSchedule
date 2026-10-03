@@ -22,6 +22,7 @@ import TournamentList from "../features/round-robin/admin/pages/TournamentList.j
 import CreateTournamentRR from "../features/round-robin/admin/pages/CreateTournament.jsx";
 import TournamentDetail from "../features/round-robin/admin/pages/TournamentDetail.jsx";
 import SquareSettings from "../features/round-robin/admin/pages/SquareSettings.jsx";
+import PaymentSettings from "../features/payments/pages/PaymentSettings.jsx";
 import ErrorBoundary from "../components/ErrorBoundary.jsx";
 import UserSignup from "../features/user-signup/pages/UserSignup.jsx";
 
@@ -236,6 +237,19 @@ const AdminRoutes = () => {
           <ProtectedRoute role="admin">
             <ErrorBoundary>
               <SquareSettings />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Payments lives under Club Profile; old path redirects */}
+      <Route path="/admin/payments" element={<Navigate to="/admin/club-profile/payments" replace />} />
+      <Route
+        path="/admin/club-profile/payments"
+        element={
+          <ProtectedRoute role="admin">
+            <ErrorBoundary>
+              <PaymentSettings />
             </ErrorBoundary>
           </ProtectedRoute>
         }
