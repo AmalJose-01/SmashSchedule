@@ -231,6 +231,7 @@ const SquarePaymentController = {
       // Keep only the most recent payment per player
       const latestByPlayer = {};
       for (const payment of payments) {
+        if (!payment.playerId) continue; // unpaid self-join — no registration yet
         const key = payment.playerId.toString();
         if (!latestByPlayer[key]) latestByPlayer[key] = payment;
       }

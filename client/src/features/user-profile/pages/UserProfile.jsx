@@ -5,6 +5,7 @@ import AppBackground from "../../../components/AppBackground.jsx";
 import PageHeader from "../../../components/PageHeader.jsx";
 import { useGetMyUserDetail, useSaveMyUserDetail } from "../services/userDetail.queries.js";
 import { isValidPhone, INVALID_PHONE_MESSAGE } from "../../../utils/phone.js";
+import DeleteAccountCard from "../components/DeleteAccountCard.jsx";
 
 // Same personal fields as the admin Member Bank form, minus grade & points.
 const GENDERS = ["Male", "Female", "Other", "Prefer not to say"];
@@ -192,6 +193,8 @@ const UserProfile = () => {
                 </div>
               )}
             </div>
+
+            <DeleteAccountCard />
           </>
         )}
       </div>
