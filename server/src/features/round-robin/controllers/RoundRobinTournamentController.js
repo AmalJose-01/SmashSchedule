@@ -337,8 +337,21 @@ const RoundRobinTournamentController = {
       // hit a number. Players with no same-grade shortfall partner are left
       // short and reported back in the response.
       const allPlayerDocs = await RoundRobinPlayer.find({ tournamentId: id }).select("name grade");
+      // playerId -> groupId, used by the makeup pass (prefer same-group
+      // partners for filler matches) and the bye pass (standings attribution).
+      const playerGroupIdMap = new Map();
+      groups.forEach((group) => {
+        (group.players || []).forEach((p) => {
+          if (p.playerId) playerGroupIdMap.set(String(p.playerId), String(group._id));
+        });
+      });
       const { matches: makeupMatches, stillShortPlayerIds } = generateMakeupMatches(
-        allPlayerDocs.map((p) => ({ playerId: p._id, name: p.name, grade: p.grade })),
+        allPlayerDocs.map((p) => ({
+          playerId: p._id,
+          name: p.name,
+          grade: p.grade,
+          groupId: playerGroupIdMap.get(String(p._id)) || null,
+        })),
         rawMatches,
         makeupTarget,
         tournament.matchType,
@@ -354,13 +367,6 @@ const RoundRobinTournamentController = {
       // Attribute each bye to the player's own group (so it lands in that
       // group's standings, same as a real win would) via a playerId →
       // groupId lookup built from the groups fetched above.
-      const playerGroupIdMap = new Map();
-      groups.forEach((group) => {
-        (group.players || []).forEach((p) => {
-          if (p.playerId) playerGroupIdMap.set(String(p.playerId), String(group._id));
-        });
-      });
-
       const { matches: byeMatches } = generateByeMatches(
         allPlayerDocs.map((p) => ({ playerId: p._id, name: p.name })),
         [...rawMatches, ...makeupMatches],

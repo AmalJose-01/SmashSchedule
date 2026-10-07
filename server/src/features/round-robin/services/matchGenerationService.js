@@ -577,6 +577,91 @@ const generateMakeupMatches = (
 
   const isShort = (p) => (counts.get(idOf(p)) || 0) < target;
 
+  // ---- Doubles filler support -------------------------------------------
+  const pairKey = (x, y) => [idOf(x), idOf(y)].sort().join("|");
+  const groupOf = (p) => (p.groupId != null ? String(p.groupId) : null);
+  const partnered = new Set();
+  const faced = new Map();
+  const lastPlayedOrder = new Map(); // playerId -> index of the last match they played
+  existingMatches.forEach((m, idx) => {
+    const side1 = [m.player1Id, m.player1PartnerId].filter(Boolean).map(String);
+    const side2 = [m.player2Id, m.player2PartnerId].filter(Boolean).map(String);
+    if (side1.length === 2) partnered.add([...side1].sort().join("|"));
+    if (side2.length === 2) partnered.add([...side2].sort().join("|"));
+    side1.forEach((a) => side2.forEach((b) => {
+      const k = [a, b].sort().join("|");
+      faced.set(k, (faced.get(k) || 0) + 1);
+    }));
+    side1.concat(side2).forEach((pid) => lastPlayedOrder.set(pid, idx));
+  });
+  let lastExistingIdx = existingMatches.length - 1;
+
+  const combinations = (arr, k) => {
+    const out = [];
+    const rec = (start, combo) => {
+      if (combo.length === k) return out.push([...combo]);
+      for (let i = start; i < arr.length; i++) {
+        combo.push(arr[i]);
+        rec(i + 1, combo);
+        combo.pop();
+      }
+    };
+    rec(0, []);
+    return out;
+  };
+
+  // Picks the best foursome = shortPool + (4 - shortPool.length) fillers.
+  // Hard rule: no repeated partnership. Preferences (in order): court balance
+  // within +/-2, short players partnered with a high non-short player (not
+  // each other), fillers who are highest graded and not already over the
+  // target, partners from the same group, fillers who didn't just play the
+  // last match, and fewest repeat opponents.
+  const buildFillerMatch = (shortPool) => {
+    const need = 4 - shortPool.length;
+    const shortIds = new Set(shortPool.map(idOf));
+    const candidates = allPlayers
+      .filter((p) => !shortIds.has(idOf(p)))
+      .sort((a, b) => pointsOf(b) - pointsOf(a) || (counts.get(idOf(a)) || 0) - (counts.get(idOf(b)) || 0))
+      .slice(0, 14);
+    if (candidates.length < need) return null;
+
+    let best = null;
+    let bestScore = Infinity;
+    combinations(candidates, need).forEach((fillers) => {
+      const [a, b, c, d] = [...shortPool, ...fillers];
+      [
+        [[a, b], [c, d]],
+        [[a, c], [b, d]],
+        [[a, d], [b, c]],
+      ].forEach(([teamA, teamB]) => {
+        if (partnered.has(pairKey(...teamA)) || partnered.has(pairKey(...teamB))) return;
+        const diff = Math.abs(
+          pointsOf(teamA[0]) + pointsOf(teamA[1]) - (pointsOf(teamB[0]) + pointsOf(teamB[1]))
+        );
+        let score = 0;
+        if (diff > 2) score += 1000 + diff * 10;
+        else score += diff * 3;
+        [teamA, teamB].forEach(([x, y]) => {
+          if (shortIds.has(idOf(x)) && shortIds.has(idOf(y))) score += 200; // short players should get a filler partner
+          const gx = groupOf(x);
+          const gy = groupOf(y);
+          if (gx && gy && gx !== gy) score += 20;
+        });
+        fillers.forEach((f) => {
+          score -= pointsOf(f) * 15; // highest graded fillers first
+          if ((counts.get(idOf(f)) || 0) > target) score += 300; // avoid a 5th game when a 4th will do
+          if (lastPlayedOrder.get(idOf(f)) === lastExistingIdx) score += 40; // just played — give them a rest
+        });
+        teamA.forEach((x) => teamB.forEach((y) => (score += (faced.get(pairKey(x, y)) || 0) * 2)));
+        if (score < bestScore) {
+          bestScore = score;
+          best = [teamA, teamB];
+        }
+      });
+    });
+    return best;
+  };
+
   if (matchType === "Doubles") {
     // One balanced foursome per pass, pulled from the WHOLE shortfall pool
     // (every grade together) rather than one grade's own bucket. Sorting
@@ -615,6 +700,28 @@ const generateMakeupMatches = (
       const [teamA, teamB] = bestSplit;
       pushMatch([idOf(teamA[0]), idOf(teamA[1])], [idOf(teamB[0]), idOf(teamB[1])]);
       progressed = true;
+    }
+
+    // FILLER PASS: 1-3 shortfall players left over (e.g. the two players who
+    // drew the bye in a 2 x 7-player group tournament) can't form a foursome
+    // on their own. Instead of handing them a BYE, build one more real match
+    // and fill the empty seats with the HIGHEST-graded players who have NOT
+    // partnered the short player before (Rule #7 — strongest players earn the
+    // extra game; Rule #2 — never repeat a partnership).
+    let fillerProgress = true;
+    while (fillerProgress) {
+      fillerProgress = false;
+      const shortPool = allPlayers.filter(isShort).sort((a, b) => pointsOf(b) - pointsOf(a));
+      if (shortPool.length === 0 || shortPool.length >= 4) break;
+      const filler = buildFillerMatch(shortPool);
+      if (!filler) break;
+      const [teamA, teamB] = filler;
+      pushMatch(teamA.map(idOf), teamB.map(idOf));
+      lastExistingIdx = existingMatches.length + matches.length - 1;
+      teamA.concat(teamB).forEach((p) => lastPlayedOrder.set(idOf(p), lastExistingIdx));
+      [teamA, teamB].forEach(([x, y]) => partnered.add(pairKey(x, y)));
+      teamA.forEach((x) => teamB.forEach((y) => faced.set(pairKey(x, y), (faced.get(pairKey(x, y)) || 0) + 1)));
+      fillerProgress = true;
     }
   } else {
     // Singles: same whole-pool, points-sorted approach — pair off whoever
