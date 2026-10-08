@@ -189,8 +189,10 @@ const AdminRoutes = () => {
         }
       />
 
+      {/* Member management moved to the main Dashboard; old path redirects */}
+      <Route path="/round-robin/members" element={<Navigate to="/members" replace />} />
       <Route
-        path="/round-robin/members"
+        path="/members"
         element={
           <ProtectedRoute role="admin">
             <ErrorBoundary>

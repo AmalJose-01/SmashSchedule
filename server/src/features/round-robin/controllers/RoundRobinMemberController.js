@@ -174,6 +174,36 @@ const RoundRobinMemberController = {
     }
   },
 
+  // Mark many members as Member / Non-Member at once.
+  // Body: { memberIds: string[], isMember: boolean }
+  bulkSetMembership: async (req, res) => {
+    try {
+      const { memberIds, isMember } = req.body;
+      if (!Array.isArray(memberIds) || memberIds.length === 0) {
+        return res.status(400).json({ message: "memberIds must be a non-empty array" });
+      }
+      if (typeof isMember !== "boolean") {
+        return res.status(400).json({ message: "isMember must be true or false" });
+      }
+      const ids = memberIds.filter((id) => mongoose.Types.ObjectId.isValid(id));
+      if (ids.length === 0) {
+        return res.status(400).json({ message: "No valid member ids provided" });
+      }
+
+      const result = await RoundRobinMember.updateMany(
+        { _id: { $in: ids }, adminId: req.userId },
+        { $set: { isMember } }
+      );
+      return res.status(200).json({
+        message: "Membership updated",
+        data: { matched: result.matchedCount, modified: result.modifiedCount },
+      });
+    } catch (error) {
+      console.log("bulkSetMembership error:", error);
+      return res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+  },
+
   deleteMember: async (req, res) => {
     try {
       const { memberId } = req.params;

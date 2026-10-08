@@ -28,6 +28,7 @@ router.get("/tournaments/:id/standings", auth, RoundRobinMatchController.getStan
 // Member Bank Management
 router.post("/members", auth, RoundRobinMemberController.createMember);
 router.post("/members/bulk-import", auth, RoundRobinMemberController.bulkImportMembers);
+router.patch("/members/bulk-membership", auth, RoundRobinMemberController.bulkSetMembership);
 router.get("/members", auth, RoundRobinMemberController.getMembers);
 router.get("/members/pending", auth, RoundRobinMemberController.getPendingMembers); // before /members/:memberId
 router.patch("/members/:memberId/approve", auth, RoundRobinMemberController.approveMember);

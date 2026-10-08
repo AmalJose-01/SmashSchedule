@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Trophy, Building2, AlertTriangle } from "lucide-react"; // Users was only used by the now-hidden Membership Management card below
+import { Trophy, Building2, AlertTriangle, Users } from "lucide-react";
 import { useGetMyClubProfile } from "../../features/club-profile/admin/services/clubProfile.queries.js";
 import AppBackground from "../../components/AppBackground";
 import PageHeader from "../../components/PageHeader";
@@ -71,9 +71,16 @@ const Dashboard = () => {
 
           <RoundRobinCard isClubComplete={isClubComplete} />
 
+          <DashboardTile
+            icon={Users}
+            gradient="from-purple-400 to-indigo-500"
+            title="Manage Members"
+            description="Maintain your global player bank. Add, edit, or bulk import members."
+            onClick={() => navigate("/members")}
+          />
+
           {/* Membership Module — hidden for now (not currently used). The
-          /admin-membership route is left intact, so this card (and the
-          Users icon import above) can be restored later if membership
+          /admin-membership route is left intact, so this card can be restored later if membership
           management comes back into use.
           <div
             className="bg-white rounded-3xl shadow-lg p-8 cursor-pointer hover:shadow-xl transition-shadow duration-300 border border-gray-200"
