@@ -272,7 +272,7 @@ const clubController = {
           { $project: { teams: 0, players: 0 } },
         ]),
         RoundRobinTournament.find({ adminId: club.adminId })
-          .select("tournamentName matchType status startDate endDate registrationDeadline numberOfSlots numberOfCourts adminId entryFeeMember entryFeeNonMember acceptOnlinePayment")
+          .select("tournamentName matchType status startDate endDate registrationDeadline numberOfSlots numberOfCourts adminId")
           .sort({ startDate: -1, createdAt: -1 })
           .lean(),
       ]);

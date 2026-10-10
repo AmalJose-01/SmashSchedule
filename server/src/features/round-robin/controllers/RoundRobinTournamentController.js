@@ -36,7 +36,6 @@ const RoundRobinTournamentController = {
         entryFee,
         entryFeeMember,
         entryFeeNonMember,
-        acceptOnlinePayment,
         numberOfSets,
         setWinningPoint,
         winningPointGap,
@@ -93,7 +92,6 @@ const RoundRobinTournamentController = {
         entryFee: entryFee ?? 0,
         entryFeeMember: entryFeeMember ?? 0,
         entryFeeNonMember: entryFeeNonMember ?? 0,
-        acceptOnlinePayment: acceptOnlinePayment === true || acceptOnlinePayment === "true",
         numberOfSets: numberOfSets ?? 3,
         setWinningPoint: setWinningPoint ?? 21,
         winningPointGap: winningPointGap ?? 1,
@@ -154,7 +152,7 @@ const RoundRobinTournamentController = {
         "tournamentName", "matchType", "format", "description", "numberOfCourts", "numberOfSlots",
         "numberOfGroups", "playersPerGroup", "numberOfMatchesPerMember", "startDate", "endDate", "registrationDeadline",
         "groupingStrategy", "gradeOrder", "pointsForWin", "pointsForLoss", "status", "entryFee",
-        "entryFeeMember", "entryFeeNonMember", "acceptOnlinePayment",
+        "entryFeeMember", "entryFeeNonMember",
         "numberOfSets", "setWinningPoint", "winningPointGap",
       ];
 
@@ -183,11 +181,6 @@ const RoundRobinTournamentController = {
           tournament[field] = req.body[field];
         }
       });
-      // Always store the switch as a real true/false in the DB.
-      if (req.body.acceptOnlinePayment !== undefined) {
-        tournament.acceptOnlinePayment =
-          req.body.acceptOnlinePayment === true || req.body.acceptOnlinePayment === "true";
-      }
 
       await tournament.save();
       return res.status(200).json({ message: "Tournament updated", data: tournament });
