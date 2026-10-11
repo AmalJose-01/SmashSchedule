@@ -10,6 +10,7 @@ const router = express.Router();
 
 // Tournament Management
 router.post("/tournaments", auth, RoundRobinTournamentController.createTournament);
+router.post("/tournaments/bulk-create", auth, RoundRobinTournamentController.bulkCreateFromTemplate);
 router.get("/tournaments", auth, RoundRobinTournamentController.getTournaments);
 router.get("/tournaments/:id", auth, RoundRobinTournamentController.getTournamentById);
 router.put("/tournaments/:id", auth, RoundRobinTournamentController.updateTournament);

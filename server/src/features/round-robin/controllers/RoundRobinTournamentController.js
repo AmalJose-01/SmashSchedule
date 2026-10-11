@@ -105,6 +105,87 @@ const RoundRobinTournamentController = {
     }
   },
 
+  // Bulk-create recurring tournaments by copying only the configuration of an
+  // existing tournament (no players, groups or matches). The client works out
+  // the dates in the admin's local timezone and sends one entry per occurrence.
+  // Body: { sourceTournamentId, occurrences: [{ tournamentName, startDate, endDate?, registrationDeadline }] }
+  bulkCreateFromTemplate: async (req, res) => {
+    try {
+      const MAX_OCCURRENCES = 400;
+      const { sourceTournamentId, occurrences } = req.body;
+
+      if (!mongoose.Types.ObjectId.isValid(sourceTournamentId)) {
+        return res.status(400).json({ message: "A valid source tournament is required" });
+      }
+      if (!Array.isArray(occurrences) || occurrences.length === 0) {
+        return res.status(400).json({ message: "No dates to create" });
+      }
+      if (occurrences.length > MAX_OCCURRENCES) {
+        return res.status(400).json({ message: `You can create at most ${MAX_OCCURRENCES} tournaments at once` });
+      }
+
+      const source = await RoundRobinTournament.findOne({ _id: sourceTournamentId, adminId: req.userId }).lean();
+      if (!source) {
+        return res.status(404).json({ message: "Source tournament not found" });
+      }
+
+      const now = new Date();
+      const docs = [];
+      for (const [i, occ] of occurrences.entries()) {
+        const start = new Date(occ?.startDate);
+        const deadline = new Date(occ?.registrationDeadline);
+        const end = occ?.endDate ? new Date(occ.endDate) : null;
+        if (Number.isNaN(start.getTime()) || Number.isNaN(deadline.getTime()) || (end && Number.isNaN(end.getTime()))) {
+          return res.status(400).json({ message: `Invalid dates for entry ${i + 1}` });
+        }
+        if (deadline <= now) {
+          return res.status(400).json({ message: `Registration deadline for entry ${i + 1} is in the past` });
+        }
+        const name = String(occ?.tournamentName || "").trim();
+        if (!name) {
+          return res.status(400).json({ message: `Tournament name for entry ${i + 1} is required` });
+        }
+
+        docs.push({
+          adminId: req.userId,
+          tournamentName: name,
+          matchType: source.matchType,
+          format: source.format || "Balanced",
+          description: source.description || "",
+          numberOfCourts: source.numberOfCourts,
+          numberOfSlots: source.numberOfSlots,
+          numberOfGroups: source.numberOfGroups,
+          playersPerGroup: source.playersPerGroup,
+          numberOfMatchesPerMember: source.numberOfMatchesPerMember,
+          startDate: start,
+          endDate: end || undefined,
+          registrationDeadline: deadline,
+          groupingStrategy: source.groupingStrategy,
+          gradeOrder: source.gradeOrder,
+          pointsForWin: source.pointsForWin,
+          pointsForLoss: source.pointsForLoss,
+          entryFee: source.entryFee,
+          entryFeeMember: source.entryFeeMember,
+          entryFeeNonMember: source.entryFeeNonMember,
+          acceptOnlinePayment: source.acceptOnlinePayment,
+          numberOfSets: source.numberOfSets,
+          setWinningPoint: source.setWinningPoint,
+          winningPointGap: source.winningPointGap,
+          status: "Draft",
+        });
+      }
+
+      const created = await RoundRobinTournament.insertMany(docs);
+      return res.status(201).json({
+        message: `${created.length} tournament${created.length !== 1 ? "s" : ""} created`,
+        data: { count: created.length, ids: created.map((t) => t._id) },
+      });
+    } catch (error) {
+      console.log("bulkCreateFromTemplate error:", error);
+      return res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+  },
+
   getTournaments: async (req, res) => {
     try {
       const tournaments = await RoundRobinTournament.find({ adminId: req.userId }).sort({ createdAt: -1 });
