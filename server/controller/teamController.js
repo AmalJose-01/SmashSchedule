@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
+const jwt = require("jsonwebtoken");
 
 const Team = require("../model/team.js");
+const TournamentPlayer = require("../model/tournamentPlayer.js");
 const { getRemainingSlots, fullMessage } = require("../helpers/participantLimit.js");
 const adminTeamController = require("./adminTeamController.js");
 const Tournament = require("../model/tournamentModel.js");
@@ -22,6 +24,27 @@ const buildAdminMailBody = require("../utils/adminMailTemplate.js");
 
 
 // Create a new team
+// The tournament page is public, but when a player is logged in we tell the
+// page whether they're already registered (matched by their account email).
+const isAlreadyRegistered = async (req, tournamentId) => {
+  try {
+    const header = req.headers.authorization || "";
+    if (!header.startsWith("Bearer ")) return false;
+    const decoded = jwt.verify(header.split(" ")[1], process.env.SECURITY_KEY_JWT);
+    const account = await AdminUser.findById(decoded.id).select("emailID").lean();
+    const email = String(account?.emailID || "").trim().toLowerCase();
+    if (!email) return false;
+    const exact = new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i");
+    const [team, player] = await Promise.all([
+      Team.exists({ tournamentId, $or: [{ playerOneEmail: exact }, { playerTwoEmail: exact }] }),
+      TournamentPlayer.exists({ tournamentId, email: exact }),
+    ]);
+    return !!(team || player);
+  } catch {
+    return false; // missing/expired token etc. → just treat as not registered
+  }
+};
+
 const teamController = {
   createTeam: async (req, res) => {
     try {
@@ -100,64 +123,61 @@ const teamController = {
         return res.status(500).json({ message: "Failed to create team" });
       }
 
-      const tournamentDetail = await Tournament.findOne({
-        _id: tournamentId,
-      }).select("tournamentName adminId uniqueKey date time location");
-
-      const AdminUserDetail = await AdminUser.findOne({
-        _id: tournamentDetail.adminId,
-      }).select("emailID");
-
-      // ==========================
-      // 📧 SEND EMAILS
-      // ==========================
-
-
-      
-      // 1️⃣ Email to Players
-      const playerMailSubject = "✅ Team Registration Successful";
-      const adminMailSubject = "📢 New Team Registered";
-
-      const { clubName } = await getMailContext(tournamentId);
-      const bodyFor = (playerName) =>
-        buildPlayerMailBody({ teamName, playerName, tournamentDetail, clubName });
-
-      await Promise.all([
-        sendEmail({
-          to: playerOneEmail,
-          subject: playerMailSubject,
-          html: bodyFor(playerOneName),
-        }),
-        sendEmail({
-          to: playerTwoEmail,
-          subject: playerMailSubject,
-          html: bodyFor(playerTwoName),
-        }),
-      ]);
-
-      if (AdminUserDetail?.emailID) {
-        const adminMailSubject = "📢 New Team Registered";
-
-        const adminMailBody = buildAdminMailBody({
-          teamName,
-          tournamentId,
-          playerOneName,
-          playerOneEmail,
-          playerTwoName,
-          playerTwoEmail
-        });
-
-        await sendEmail({
-          to: AdminUserDetail.emailID,
-          subject: adminMailSubject,
-          html: adminMailBody
-        });
-      }
-     
-
+      // Reply right away — the player shouldn't wait on the mail server.
       res
         .status(201)
         .json({ message: "Team created successfully", team: newTeam });
+
+      // 📧 Confirmation emails run in the background. sendEmail never throws,
+      // and this try/catch keeps any other failure from affecting the response.
+      (async () => {
+        try {
+          const tournamentDetail = await Tournament.findOne({
+            _id: tournamentId,
+          }).select("tournamentName adminId uniqueKey date time location");
+
+          const AdminUserDetail = await AdminUser.findOne({
+            _id: tournamentDetail.adminId,
+          }).select("emailID");
+
+          const playerMailSubject = "✅ Team Registration Successful";
+          const adminMailSubject = "📢 New Team Registered";
+
+          const { clubName } = await getMailContext(tournamentId);
+          const bodyFor = (playerName) =>
+            buildPlayerMailBody({ teamName, playerName, tournamentDetail, clubName });
+
+          await Promise.all([
+            sendEmail({
+              to: playerOneEmail,
+              subject: playerMailSubject,
+              html: bodyFor(playerOneName),
+            }),
+            sendEmail({
+              to: playerTwoEmail,
+              subject: playerMailSubject,
+              html: bodyFor(playerTwoName),
+            }),
+          ]);
+
+          if (AdminUserDetail?.emailID) {
+            await sendEmail({
+              to: AdminUserDetail.emailID,
+              subject: adminMailSubject,
+              html: buildAdminMailBody({
+                teamName,
+                tournamentId,
+                playerOneName,
+                playerOneEmail,
+                playerTwoName,
+                playerTwoEmail,
+              }),
+            });
+          }
+        } catch (err) {
+          console.error("Registration email error:", err.message);
+        }
+      })();
     } catch (error) {
       console.log("Create module error", error);
       res.status(500).json({ message: "Server Error", error: error.message });
@@ -275,9 +295,10 @@ const teamController = {
 
       // Places taken (teams + singles players) so the player app knows if it's full.
       const registeredCount = tournament ? (await getRemainingSlots(tournamentId)).current : 0;
+      const alreadyRegistered = tournament ? await isAlreadyRegistered(req, tournamentId) : false;
       res.status(200).json({
         message: "Tournaments retrieved successfully",
-        tournaments: tournament ? { ...tournament.toObject(), registeredCount } : tournament,
+        tournaments: tournament ? { ...tournament.toObject(), registeredCount, alreadyRegistered } : tournament,
       });
     } catch (error) {
       console.log("Get tournaments error", error);

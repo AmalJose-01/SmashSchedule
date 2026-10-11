@@ -16,6 +16,9 @@ const getTransporter = () => {
       secure: port === 465, // 465 = implicit SSL/TLS
       // One shared connection, one email at a time: cPanel mail servers often
       // drop extra simultaneous connections (shows up as a TLS "wrong version" error).
+      connectionTimeout: 10000, // give up on a dead mail server after 10s
+      greetingTimeout: 10000,
+      socketTimeout: 20000,
       pool: true,
       maxConnections: 1,
       maxMessages: 50,
