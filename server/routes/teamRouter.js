@@ -11,6 +11,9 @@ router.post("/players", teamController.joinAsPlayer);
 // Check the tournament Secret Key (to view results)
 router.post("/verify-key/:tournamentId", teamController.verifyTournamentKey);
 
+// Registration-fee payment status (after Stripe redirects back)
+router.get("/payments/:paymentId/status", teamController.getPaymentStatus);
+
 router.get("/get-tournaments", teamController.getTournaments);
 router.get("/get-tournamentDetails/:tournamentId", teamController.getTournamentDetails);
   router.get("/get-tournament-information/:tournamentId", teamController.getTournamentInformation);

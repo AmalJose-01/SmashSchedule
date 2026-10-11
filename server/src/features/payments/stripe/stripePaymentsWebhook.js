@@ -1,9 +1,11 @@
 const express = require("express");
 const RoundRobinPayment = require("../../round-robin/models/RoundRobinPayment");
+const TournamentPayment = require("../../../../model/tournamentPayment");
 const Club = require("../../../../model/club");
 const { stripe } = require("./stripeClient");
 const { syncAccountToClub } = require("./StripeConnectController");
 const { finalizeSelfJoin } = require("./entryFeeCheckoutService");
+const { markTournamentPaymentPaid } = require("./tournamentCheckoutService");
 
 const router = express.Router();
 
@@ -34,6 +36,14 @@ const findPaymentForSession = (session) =>
     ],
   });
 
+// Team / singles tournament registration fees (sessions carry tournamentPaymentId).
+const findTournamentPaymentForSession = (session) =>
+  session.metadata?.tournamentPaymentId
+    ? TournamentPayment.findOne({
+        $or: [{ stripeCheckoutSessionId: session.id }, { _id: session.metadata.tournamentPaymentId }],
+      })
+    : null;
+
 const handlers = {
   "account.updated": async (account) => {
     await syncAccountToClub(account);
@@ -53,6 +63,12 @@ const handlers = {
   },
 
   "checkout.session.async_payment_succeeded": async (session, event) => {
+    const tournamentPayment = await findTournamentPaymentForSession(session);
+    if (tournamentPayment) {
+      // Only now is the team / player added to the tournament.
+      await markTournamentPaymentPaid(tournamentPayment, { paymentIntent: session.payment_intent, event });
+      return;
+    }
     const payment = await findPaymentForSession(session);
     if (!payment || payment.status === "REFUNDED") return;
     if (payment.status !== "COMPLETED") {
@@ -67,6 +83,14 @@ const handlers = {
   },
 
   "checkout.session.async_payment_failed": async (session) => {
+    const tournamentPayment = await findTournamentPaymentForSession(session);
+    if (tournamentPayment) {
+      if (tournamentPayment.status === "PENDING") {
+        tournamentPayment.status = "FAILED";
+        await tournamentPayment.save();
+      }
+      return;
+    }
     const payment = await findPaymentForSession(session);
     if (payment?.status === "PENDING") {
       payment.status = "FAILED";
@@ -75,6 +99,14 @@ const handlers = {
   },
 
   "checkout.session.expired": async (session) => {
+    const tournamentPayment = await findTournamentPaymentForSession(session);
+    if (tournamentPayment) {
+      if (tournamentPayment.status === "PENDING") {
+        tournamentPayment.status = "CANCELED";
+        await tournamentPayment.save();
+      }
+      return;
+    }
     const payment = await findPaymentForSession(session);
     if (payment?.status === "PENDING") {
       payment.status = "CANCELED";
@@ -84,6 +116,13 @@ const handlers = {
 
   "charge.refunded": async (charge) => {
     if (!charge.payment_intent) return;
+    const tournamentPayment = await TournamentPayment.findOne({ stripePaymentIntentId: charge.payment_intent });
+    if (tournamentPayment) {
+      tournamentPayment.refundedCents = charge.amount_refunded;
+      if (charge.refunded) tournamentPayment.status = "REFUNDED";
+      await tournamentPayment.save();
+      return;
+    }
     const payment = await RoundRobinPayment.findOne({ stripePaymentIntentId: charge.payment_intent });
     if (!payment) return;
     payment.refundedCents = charge.amount_refunded;

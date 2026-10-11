@@ -2,6 +2,9 @@ const mongoose = require("mongoose");
 
 const Team = require("../model/team.js");
 const TournamentPlayer = require("../model/tournamentPlayer.js");
+const TournamentPayment = require("../model/tournamentPayment.js");
+const { getPayableClub } = require("../src/features/payments/stripe/entryFeeCheckoutService.js");
+const { refundRegistrationFee } = require("../src/features/payments/stripe/tournamentCheckoutService.js");
 const { getRemainingSlots, fullMessage } = require("../helpers/participantLimit.js");
 const Tournament = require("../model/tournamentModel.js");
 const Group = require("../model/groupTournament.js");
@@ -45,6 +48,17 @@ const buildPlayer = (p = {}, tournamentId) => {
   return tournamentId ? { ...player, tournamentId } : player;
 };
 
+
+// "Accept online payment" needs a real fee and a club that can take card payments.
+const onlinePaymentError = async (adminId, registrationFee) => {
+  const fee = Number(String(registrationFee ?? "").replace(/[^0-9.]/g, ""));
+  if (!Number.isFinite(fee) || fee < 1) return "Online payment needs a registration fee of at least A$1.00";
+  const { ready } = await getPayableClub(adminId);
+  if (!ready) return "Finish setting up card payments (Payment Settings) before turning on online payment";
+  return null;
+};
+
+const isOn = (v) => v === true || v === "true";
 
 const adminTeamController = {
  
@@ -465,6 +479,21 @@ const adminTeamController = {
         ];
       }
 
+      // Online registration fees: tag each entry that was paid by card.
+      const payments = await TournamentPayment.find({
+        tournamentId,
+        status: { $in: ["COMPLETED", "REFUNDED"] },
+        $or: [{ teamId: { $exists: true } }, { playerId: { $exists: true } }],
+      }).select("teamId playerId status amount");
+      const paymentByEntry = new Map(payments.map((p) => [String(p.teamId || p.playerId), p]));
+      entries = entries.map((e) => {
+        const obj = typeof e.toObject === "function" ? e.toObject() : e;
+        const pay = paymentByEntry.get(String(obj._id));
+        return pay
+          ? { ...obj, paymentStatus: pay.status, paymentId: pay._id, paidAmount: pay.amount }
+          : obj;
+      });
+
       res
         .status(200)
         .json({ message: "Teams retrieved successfully", teams: entries });
@@ -721,6 +750,7 @@ const adminTeamController = {
         matchType,
         description,
         registrationFee,
+        acceptOnlinePayment,
       } = req.body;
 
       if (
@@ -733,6 +763,12 @@ const adminTeamController = {
         !registrationFee
       ) {
         return res.status(400).json({ message: "All fields are required" });
+      }
+
+      const onlinePayment = isOn(acceptOnlinePayment);
+      if (onlinePayment) {
+        const problem = await onlinePaymentError(req.userId, registrationFee);
+        if (problem) return res.status(400).json({ message: problem });
       }
 
       const existingTournament = await Tournament.findOne({
@@ -762,6 +798,7 @@ const adminTeamController = {
         description,
         status: "Create",
         registrationFee,
+        acceptOnlinePayment: onlinePayment,
         uniqueKey,
       });
 
@@ -797,6 +834,7 @@ const adminTeamController = {
         matchType,
         description,
         registrationFee,
+        acceptOnlinePayment,
       } = req.body;
 
       if (
@@ -846,6 +884,14 @@ const adminTeamController = {
       existingTournament.matchType = matchType;
       existingTournament.description = description;
       existingTournament.registrationFee = registrationFee;
+      if (acceptOnlinePayment !== undefined) {
+        const onlinePayment = isOn(acceptOnlinePayment);
+        if (onlinePayment) {
+          const problem = await onlinePaymentError(req.userId, registrationFee);
+          if (problem) return res.status(400).json({ message: problem });
+        }
+        existingTournament.acceptOnlinePayment = onlinePayment;
+      }
 
       const newTeam = await existingTournament.save();
 
@@ -863,6 +909,22 @@ const adminTeamController = {
       res.status(500).json({ message: "Server Error", error: error.message });
     }
   },
+  // POST /admin/tournament-payments/:paymentId/refund
+  refundTournamentPayment: async (req, res) => {
+    try {
+      const { paymentId } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(paymentId)) return res.status(400).json({ message: "Invalid payment id" });
+      const payment = await TournamentPayment.findOne({ _id: paymentId, adminId: req.userId });
+      if (!payment) return res.status(404).json({ message: "Payment not found" });
+      await refundRegistrationFee(payment);
+      return res.status(200).json({ message: "Refund issued", data: { status: payment.status } });
+    } catch (error) {
+      if (error?.status) return res.status(error.status).json({ message: error.message });
+      console.error("refundTournamentPayment error", error);
+      return res.status(500).json({ message: "Refund failed", error: error.message });
+    }
+  },
+
   // done
 
   createMatches: async (req, res) => {

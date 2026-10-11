@@ -265,3 +265,9 @@ export const verifyUserAPI = async (data) => {
 
 
 
+
+// Refund a registration fee that was paid online (full refund).
+export const refundTournamentPaymentAPI = async (paymentId) => {
+  const response = await apiClient.post(`/admin/tournament-payments/${paymentId}/refund`);
+  return response.data;
+};

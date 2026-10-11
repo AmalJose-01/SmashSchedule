@@ -39,6 +39,8 @@ const tournamentSchema = new mongoose.Schema(
     },
     description: { type: String },
     registrationFee: { type: String ,  required: true },
+    // Players pay the registration fee by card when they register (Stripe Connect).
+    acceptOnlinePayment: { type: Boolean, default: false },
     uniqueKey:  { type: String },
 
   },

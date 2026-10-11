@@ -17,32 +17,43 @@ const {
   determineWinner,
 } = require("../helpers/matchHelpers.js");
 const AdminUser = require("../model/adminUser.js");
-const sendEmail = require("../utils/sendEmail.js");
-const buildPlayerMailBody = require("../utils/playerMailTemplate.js");
-const getMailContext = require("../utils/mailContext.js");
-const buildAdminMailBody = require("../utils/adminMailTemplate.js");
+const TournamentPayment = require("../model/tournamentPayment.js");
+const sendTeamRegistrationEmails = require("../utils/teamRegistrationEmails.js");
+const {
+  tournamentFee,
+  createRegistrationCheckout,
+  refreshTournamentPayment,
+} = require("../src/features/payments/stripe/tournamentCheckoutService.js");
 
 
 // Create a new team
 // The tournament page is public, but when a player is logged in we tell the
 // page whether they're already registered (matched by their account email).
-const isAlreadyRegistered = async (req, tournamentId) => {
+// Case-insensitive exact match for an email (used on Team / TournamentPlayer).
+const emailRegex = (email) => new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i");
+
+// Email of the signed-in player (optional Bearer token), or "" if not signed in.
+const getViewerEmail = async (req) => {
   try {
     const header = req.headers.authorization || "";
-    if (!header.startsWith("Bearer ")) return false;
+    if (!header.startsWith("Bearer ")) return "";
     const decoded = jwt.verify(header.split(" ")[1], process.env.SECURITY_KEY_JWT);
     const account = await AdminUser.findById(decoded.id).select("emailID").lean();
-    const email = String(account?.emailID || "").trim().toLowerCase();
-    if (!email) return false;
-    const exact = new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i");
-    const [team, player] = await Promise.all([
-      Team.exists({ tournamentId, $or: [{ playerOneEmail: exact }, { playerTwoEmail: exact }] }),
-      TournamentPlayer.exists({ tournamentId, email: exact }),
-    ]);
-    return !!(team || player);
+    return String(account?.emailID || "").trim().toLowerCase();
   } catch {
-    return false; // missing/expired token etc. → just treat as not registered
+    return ""; // missing/expired token etc. → just treat as not registered
   }
+};
+
+const isAlreadyRegistered = async (req, tournamentId) => {
+  const email = await getViewerEmail(req);
+  if (!email) return false;
+  const exact = emailRegex(email);
+  const [team, player] = await Promise.all([
+    Team.exists({ tournamentId, $or: [{ playerOneEmail: exact }, { playerTwoEmail: exact }] }),
+    TournamentPlayer.exists({ tournamentId, email: exact }),
+  ]);
+  return !!(team || player);
 };
 
 const teamController = {
@@ -76,7 +87,9 @@ const teamController = {
         return res.status(400).json({ message: "All fields are required" });
       }
       // Registration only while the tournament hasn't started.
-      const openTournament = await Tournament.findById(tournamentId).select("status matchType");
+      const openTournament = await Tournament.findById(tournamentId).select(
+        "status matchType tournamentName adminId registrationFee acceptOnlinePayment"
+      );
       if (!openTournament) return res.status(404).json({ message: "Tournament not found" });
       if (openTournament.status !== "Create") {
         return res.status(400).json({ message: "Registration for this tournament is closed" });
@@ -106,6 +119,24 @@ const teamController = {
       if (remaining <= 0) {
         return res.status(409).json({ message: fullMessage(max) });
       }
+
+      // "Accept online payment": the team is only registered after the card
+      // payment succeeds (see tournamentCheckoutService.finalizeRegistration).
+      if (tournamentFee(openTournament) > 0) {
+        const payment = await createRegistrationCheckout({
+          tournament: openTournament,
+          kind: "team",
+          registration: req.body,
+        });
+        return res.status(200).json({
+          message: "Payment required",
+          requiresPayment: true,
+          checkoutUrl: payment.checkoutUrl,
+          paymentId: payment._id,
+          amount: payment.amount,
+        });
+      }
+
       const newTeam = await Team.create({
         teamName,
         playerOneName,
@@ -128,57 +159,17 @@ const teamController = {
         .status(201)
         .json({ message: "Team created successfully", team: newTeam });
 
-      // 📧 Confirmation emails run in the background. sendEmail never throws,
-      // and this try/catch keeps any other failure from affecting the response.
-      (async () => {
-        try {
-          const tournamentDetail = await Tournament.findOne({
-            _id: tournamentId,
-          }).select("tournamentName adminId uniqueKey date time location");
-
-          const AdminUserDetail = await AdminUser.findOne({
-            _id: tournamentDetail.adminId,
-          }).select("emailID");
-
-          const playerMailSubject = "✅ Team Registration Successful";
-          const adminMailSubject = "📢 New Team Registered";
-
-          const { clubName } = await getMailContext(tournamentId);
-          const bodyFor = (playerName) =>
-            buildPlayerMailBody({ teamName, playerName, tournamentDetail, clubName });
-
-          await Promise.all([
-            sendEmail({
-              to: playerOneEmail,
-              subject: playerMailSubject,
-              html: bodyFor(playerOneName),
-            }),
-            sendEmail({
-              to: playerTwoEmail,
-              subject: playerMailSubject,
-              html: bodyFor(playerTwoName),
-            }),
-          ]);
-
-          if (AdminUserDetail?.emailID) {
-            await sendEmail({
-              to: AdminUserDetail.emailID,
-              subject: adminMailSubject,
-              html: buildAdminMailBody({
-                teamName,
-                tournamentId,
-                playerOneName,
-                playerOneEmail,
-                playerTwoName,
-                playerTwoEmail,
-              }),
-            });
-          }
-        } catch (err) {
-          console.error("Registration email error:", err.message);
-        }
-      })();
+      // 📧 Confirmation emails run in the background (never throws).
+      sendTeamRegistrationEmails({
+        tournamentId,
+        teamName,
+        playerOneName,
+        playerOneEmail,
+        playerTwoName,
+        playerTwoEmail,
+      });
     } catch (error) {
+      if (error?.status) return res.status(error.status).json({ message: error.message });
       console.log("Create module error", error);
       res.status(500).json({ message: "Server Error", error: error.message });
     }
@@ -194,16 +185,67 @@ const teamController = {
       if (!mongoose.Types.ObjectId.isValid(String(tournamentId || ""))) {
         return res.status(400).json({ message: "Invalid tournament" });
       }
-      const tournament = await Tournament.findById(tournamentId).select("status");
+      const tournament = await Tournament.findById(tournamentId).select(
+        "status matchType tournamentName adminId registrationFee acceptOnlinePayment"
+      );
       if (!tournament) return res.status(404).json({ message: "Tournament not found" });
       if (tournament.status !== "Create") {
         return res.status(400).json({ message: "Registration for this tournament is closed" });
+      }
+
+      // "Accept online payment": the player is only registered after the card
+      // payment succeeds (see tournamentCheckoutService.finalizeRegistration).
+      if (tournamentFee(tournament) > 0) {
+        if (!name || !email || !contact) {
+          return res.status(400).json({ message: "Name, email and contact number are required" });
+        }
+        const payment = await createRegistrationCheckout({
+          tournament,
+          kind: "player",
+          registration: { name, email, contact, dob },
+        });
+        return res.status(200).json({
+          message: "Payment required",
+          requiresPayment: true,
+          checkoutUrl: payment.checkoutUrl,
+          paymentId: payment._id,
+          amount: payment.amount,
+        });
       }
       // Delegate to the shared player logic with exactly one player.
       req.body = { tournamentId, players: [{ name, email, contact, dob }] };
       return adminTeamController.createPlayers(req, res);
     } catch (error) {
+      if (error?.status) return res.status(error.status).json({ message: error.message });
       console.error("joinAsPlayer error", error);
+      return res.status(500).json({ message: "Server Error", error: error.message });
+    }
+  },
+
+  // GET /tournament/payments/:paymentId/status
+  // The payment result page polls this after Stripe redirects back. It asks
+  // Stripe directly, so the registration completes even if the webhook is late.
+  getPaymentStatus: async (req, res) => {
+    try {
+      const { paymentId } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(paymentId)) return res.status(400).json({ message: "Invalid payment" });
+      const payment = await TournamentPayment.findById(paymentId);
+      if (!payment) return res.status(404).json({ message: "Payment not found" });
+      try {
+        await refreshTournamentPayment(payment);
+      } catch (err) {
+        console.log("tournament payment refresh warning:", err?.message || err);
+      }
+      return res.status(200).json({
+        data: {
+          status: payment.status,
+          registered: !!(payment.teamId || payment.playerId),
+          refunded: payment.status === "REFUNDED",
+          reason: payment.status === "REFUNDED" ? payment.failureReason : undefined,
+        },
+      });
+    } catch (error) {
+      console.error("getPaymentStatus error", error);
       return res.status(500).json({ message: "Server Error", error: error.message });
     }
   },
@@ -273,6 +315,21 @@ const teamController = {
           },
         },
       ]);
+
+      // Tell the list which tournaments the signed-in player is already in.
+      const email = await getViewerEmail(req);
+      if (email && tournaments.length) {
+        const exact = emailRegex(email);
+        const ids = tournaments.map((t) => t._id);
+        const [teams, players] = await Promise.all([
+          Team.find({ tournamentId: { $in: ids }, $or: [{ playerOneEmail: exact }, { playerTwoEmail: exact }] }).select("tournamentId").lean(),
+          TournamentPlayer.find({ tournamentId: { $in: ids }, email: exact }).select("tournamentId").lean(),
+        ]);
+        const mine = new Set([...teams, ...players].map((r) => String(r.tournamentId)));
+        tournaments.forEach((t) => {
+          t.alreadyRegistered = mine.has(String(t._id));
+        });
+      }
 
       res.status(200).json({
         message: "Tournaments retrieved successfully",

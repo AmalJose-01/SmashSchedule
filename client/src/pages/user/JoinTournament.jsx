@@ -118,6 +118,8 @@ const JoinTournament = () => {
   });
 
   const goBack = () => navigate("/tournamentInfo", { replace: true });
+  const payOnline = tournament?.acceptOnlinePayment === true && Number(tournament?.registrationFee) > 0;
+  const feeLabel = payOnline ? `A$${Number(tournament.registrationFee).toFixed(2)}` : "";
 
   const { mutateAsync, isPending } = useMutation({
     mutationFn: (values) =>
@@ -128,7 +130,14 @@ const JoinTournament = () => {
             tournamentId: tournament._id,
           })
         : joinAsPlayerAPI({ ...values, tournamentId: tournament._id }),
-    onSuccess: () => {
+    onSuccess: (res) => {
+      // Online payment: nothing is registered yet — Stripe takes the payment
+      // first, then brings the player back to the result page.
+      if (res?.requiresPayment && res?.checkoutUrl) {
+        toast.loading("Taking you to secure payment…");
+        window.location.assign(res.checkoutUrl);
+        return;
+      }
       toast.success(isDoubles ? "Your team is registered!" : "You're registered!");
       queryClient.invalidateQueries({ queryKey: ["tournamentDetail", tournament._id] });
       goBack();
@@ -184,6 +193,14 @@ const JoinTournament = () => {
           </Card>
         )}
 
+        {payOnline && (
+          <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+            Registration fee: <span className="font-semibold">{feeLabel}</span>
+            {isDoubles ? " per team" : ""}. You'll pay securely by card next, and you're{" "}
+            {isDoubles ? "registered" : "added"} as soon as the payment goes through.
+          </div>
+        )}
+
         <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
           <button
             type="button"
@@ -199,7 +216,13 @@ const JoinTournament = () => {
             className="flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-yellow-500 hover:from-emerald-600 hover:to-yellow-600 text-white px-6 py-2.5 rounded-xl font-semibold text-sm shadow-lg shadow-emerald-500/30 transition-all disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
-            {isPending ? "Registering..." : isDoubles ? "Register Team" : "Join Tournament"}
+            {isPending
+              ? payOnline ? "Preparing payment..." : "Registering..."
+              : payOnline
+              ? `Continue to payment · ${feeLabel}`
+              : isDoubles
+              ? "Register Team"
+              : "Join Tournament"}
           </button>
         </div>
       </form>

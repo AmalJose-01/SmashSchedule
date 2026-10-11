@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useTournament } from "../../hooks/useTournament";
 import { setTournamentData } from "../../redux/slices/tournamentSlice";
 import { useDispatch } from "react-redux";
-import { Calendar, DollarSign, Trophy } from "lucide-react";
+import { Calendar, CheckCircle2, DollarSign, Trophy } from "lucide-react";
 import AppBackground from "../../components/AppBackground";
 import PageHeader from "../../components/PageHeader";
 import VerifyCodeModal from "../../components/VerifyCodeModal";
@@ -94,7 +94,13 @@ const TournamentList = () => {
                   >
                     View Details
                   </button>
-                  {tournament.status === "Create" &&
+                  {tournament.status === "Create" && tournament.alreadyRegistered && (
+                    <span className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-sm font-semibold text-emerald-300">
+                      <CheckCircle2 className="w-4 h-4" />
+                      Already registered
+                    </span>
+                  )}
+                  {tournament.status === "Create" && !tournament.alreadyRegistered &&
                     (tournament.registeredTeamsCount ?? 0) < (tournament.maximumParticipants || Infinity) && (
                       <button
                         onClick={() => {

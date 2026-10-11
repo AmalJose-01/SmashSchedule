@@ -207,7 +207,12 @@ const ViewTournamentDetail = () => {
               <InfoRow icon={Clock} label="Time" value={tournamentDetail.time || "Not set"} />
               <InfoRow icon={MapPin} label="Location" value={tournamentDetail.location || "Not set"} />
               <InfoRow icon={Users} label="Max Participants" value={tournamentDetail.maximumParticipants} />
-              <InfoRow icon={DollarSign} label="Registration Fee" value={tournamentDetail.registrationFee || "Not set"} />
+              <InfoRow icon={DollarSign} label="Registration Fee" value={
+                  tournamentDetail.acceptOnlinePayment && Number(tournamentDetail.registrationFee) > 0
+                    ? `A$${Number(tournamentDetail.registrationFee).toFixed(2)} · pay online by card`
+                    : tournamentDetail.registrationFee || "Not set"
+                }
+              />
               <InfoRow icon={Users} label="Registered" value={`${registered} / ${maxPlace || "—"}`} />
             </div>
             {tournamentDetail.description && (

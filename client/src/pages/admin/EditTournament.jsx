@@ -24,6 +24,8 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { logOut } from "../../redux/slices/userSlice";
 import { useEffect, useState } from "react";
+import OnlinePaymentToggle from "../../features/payments/components/OnlinePaymentToggle";
+import { useStripeStatus } from "../../features/payments/services/stripePayments";
 
 import { useLocation } from "react-router-dom";
 
@@ -60,6 +62,11 @@ const EditTournament = () => {
   const [playTypeValue, setPlayTypeValue] = useState(
     tournamentDetail?.playType || "group"
   ); // state to hold selected value
+  const [acceptOnlinePayment, setAcceptOnlinePayment] = useState(
+    tournamentDetail?.acceptOnlinePayment === true
+  );
+  const { data: stripeStatus } = useStripeStatus();
+  const payoutsReady = !!stripeStatus?.data?.chargesEnabled;
 
   // ---------------------------
   // FORM VALIDATION (YUP)
@@ -146,10 +153,13 @@ const EditTournament = () => {
   };
 
   const onSubmit = async (data) => {
-    console.log("Save Data:", data);
+    if (acceptOnlinePayment && !(Number(data.registrationFee) >= 1)) {
+      toast.error("Online payment needs a registration fee of at least A$1.00");
+      return;
+    }
 
     try {
-      await mutateAsync(data);
+      await mutateAsync({ ...data, acceptOnlinePayment });
     } catch (err) {
       // handled in onError
     }
@@ -235,6 +245,13 @@ const EditTournament = () => {
                 />
               </Field>
             </div>
+
+            <OnlinePaymentToggle
+              checked={acceptOnlinePayment}
+              onChange={setAcceptOnlinePayment}
+              payoutsReady={payoutsReady}
+              matchType={matchTypeValue}
+            />
           </section>
 
           {/* ── Tournament Format ── */}

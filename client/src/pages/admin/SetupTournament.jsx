@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { getTeamListAPI } from "../../services/admin/adminTeamServices";
+import { getTeamListAPI, refundTournamentPaymentAPI } from "../../services/admin/adminTeamServices";
 import ConfirmModal from "../../components/AlertView";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -49,6 +49,7 @@ const SetupTournament = () => {
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const queryClient = useQueryClient();
 
   const tournament = useSelector((state) => state.tournament.tournamentData);
   const [tournamentDetail, setTournamentDetail] = useState(null);
@@ -113,6 +114,16 @@ const SetupTournament = () => {
         return playType;
     }
   };
+
+  // Refund an entry that was paid online
+  const refundMutation = useMutation({
+    mutationFn: refundTournamentPaymentAPI,
+    onSuccess: () => {
+      toast.success("Refund issued");
+      queryClient.invalidateQueries({ queryKey: ["teams"] });
+    },
+    onError: (err) => toast.error(err?.response?.data?.message || "Refund failed"),
+  });
 
   // ---------------------------
   // FETCH TEAMS
@@ -543,10 +554,35 @@ const SetupTournament = () => {
                               {team.grade}
                             </span>
                           )}
+                          {team.paymentStatus === "COMPLETED" && (
+                            <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
+                              Paid online
+                            </span>
+                          )}
+                          {team.paymentStatus === "REFUNDED" && (
+                            <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-amber-500/15 border border-amber-500/30 text-amber-300">
+                              Refunded
+                            </span>
+                          )}
                         </div>
 
                         {isCreate && (
                           <div className="flex gap-1 flex-shrink-0">
+                            {team.paymentStatus === "COMPLETED" && (
+                              <button
+                                aria-label="Refund"
+                                disabled={refundMutation.isPending}
+                                className="px-2 rounded-lg text-[11px] font-medium text-amber-300 hover:bg-amber-500/10 transition-colors disabled:opacity-40"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (window.confirm(`Refund A$${Number(team.paidAmount).toFixed(2)} to ${team.teamName}? This can't be undone.`)) {
+                                    refundMutation.mutate(team.paymentId);
+                                  }
+                                }}
+                              >
+                                Refund
+                              </button>
+                            )}
                             <button
                               aria-label="Edit"
                               className="p-2 rounded-lg text-slate-400 hover:text-cyan-300 hover:bg-cyan-500/10 transition-colors"

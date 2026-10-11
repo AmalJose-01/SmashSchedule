@@ -24,6 +24,8 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { logOut } from "../../redux/slices/userSlice";
 import { useEffect, useState } from "react";
+import OnlinePaymentToggle from "../../features/payments/components/OnlinePaymentToggle";
+import { useStripeStatus } from "../../features/payments/services/stripePayments";
 
 // Same dark field style as the round robin create page.
 const inputCls = (err) =>
@@ -51,6 +53,10 @@ const CreateTournament = () => {
   const queryClient = useQueryClient();
   const [matchTypeValue, setMatchTypeValue] = useState("Singles"); // state to hold selected value
   const [playTypeValue, setPlayTypeValue] = useState("group"); // state to hold selected value
+  const [acceptOnlinePayment, setAcceptOnlinePayment] = useState(false);
+  // Online payment only exists once the club's Stripe payouts are active.
+  const { data: stripeStatus } = useStripeStatus();
+  const payoutsReady = !!stripeStatus?.data?.chargesEnabled;
 
   // ---------------------------
   // FORM VALIDATION (YUP)
@@ -134,10 +140,14 @@ const CreateTournament = () => {
   };
 
   const onSubmit = async (data) => {
-    console.log("Save Data:", data);
+    const online = payoutsReady && acceptOnlinePayment;
+    if (online && !(Number(data.registrationFee) >= 1)) {
+      toast.error("Online payment needs a registration fee of at least A$1.00");
+      return;
+    }
 
     try {
-      await mutateAsync(data);
+      await mutateAsync({ ...data, acceptOnlinePayment: online });
     } catch (err) {
       // handled in onError
     }
@@ -219,6 +229,13 @@ const CreateTournament = () => {
                 />
               </Field>
             </div>
+
+            <OnlinePaymentToggle
+              checked={acceptOnlinePayment}
+              onChange={setAcceptOnlinePayment}
+              payoutsReady={payoutsReady}
+              matchType={matchTypeValue}
+            />
           </section>
 
           {/* ── Tournament Format ── */}

@@ -35,6 +35,11 @@ router.delete(
   adminTeamController.deleteTournament
 );
 router.get("/get-teams/:tournamentId", auth, adminTeamController.getTeams);
+router.post(
+  "/tournament-payments/:paymentId/refund",
+  auth,
+  adminTeamController.refundTournamentPayment
+);
 router.delete("/delete-team/:teamId", auth, adminTeamController.deleteTeam);
 
 router.put("/update-teams", auth, adminTeamController.updateTeams);
