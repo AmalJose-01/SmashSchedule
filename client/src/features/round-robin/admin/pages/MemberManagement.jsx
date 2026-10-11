@@ -186,8 +186,8 @@ const MemberManagement = () => {
   return (
     <AppBackground>
       <PageHeader
-        title="Member Bank"
-        subtitle="Your global player list"
+        title="Club Players"
+        subtitle="Your club player list"
         onBack={() => navigate("/dashboard")}
       />
 
@@ -195,7 +195,7 @@ const MemberManagement = () => {
         {/* Title + Add button */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-white">Members</h1>
+            <h1 className="text-2xl font-bold text-white">Club Players</h1>
             <p className="text-sm text-white/70 mt-1">
               {members.length} member{members.length !== 1 ? "s" : ""} in the global bank
             </p>
@@ -205,7 +205,7 @@ const MemberManagement = () => {
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm hover:scale-[1.02] bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all"
           >
             <Plus className="w-4 h-4" />
-            Add Member
+            Add Player
           </button>
         </div>
 
