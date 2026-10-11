@@ -84,7 +84,7 @@ const ClubCard = ({ club, showRemove = false, defaultOpen = false }) => {
       <div className="flex items-center justify-between gap-3 px-4 pb-4 -mt-1">
         {rrStatus === "pending" ? (
           <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-300 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-full">
-            <Clock className="w-3.5 h-3.5" /> Round robin — awaiting approval
+            <Clock className="w-3.5 h-3.5" /> Club player request — awaiting approval
           </span>
         ) : (
           <button
@@ -94,7 +94,7 @@ const ClubCard = ({ club, showRemove = false, defaultOpen = false }) => {
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-gradient-to-r from-emerald-500 to-yellow-500 hover:from-emerald-600 hover:to-yellow-600 shadow-lg shadow-emerald-500/20 px-3 py-1.5 rounded-full disabled:opacity-60 transition-all"
           >
             {joining ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Shuffle className="w-3.5 h-3.5" />}
-            Join Round Robin
+            Join as Club Player
           </button>
         )}
       </div>

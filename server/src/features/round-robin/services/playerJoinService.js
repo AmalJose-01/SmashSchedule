@@ -18,8 +18,8 @@ const REASONS = {
   locked: "Registration is closed — the schedule has been finalized.",
   deadline: "Registration is closed — the deadline has passed.",
   full: "This round robin is full.",
-  notMember: "Join this club's round robin (from My Clubs) to register.",
-  pending: "Your club membership is waiting for admin approval.",
+  notMember: "Join this club as a club player (from My Clubs) to register.",
+  pending: "Your request to join as a club player is waiting for admin approval.",
   noGrade: "The club admin needs to set your grade before you can register.",
 };
 
