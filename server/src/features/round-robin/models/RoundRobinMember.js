@@ -21,6 +21,9 @@ const RoundRobinMemberSchema = new Schema(
     nationalMemberId: { type: String, trim: true },
     dateOfBirth: { type: Date },
     gender: { type: String, trim: true },
+    // true = club member, false = non-member (decides the round robin entry
+    // fee). null = not set yet: a self-joined player waiting for approval —
+    // the admin must choose one when approving, like the grade.
     isMember: { type: Boolean, default: true },
     isActive: { type: Boolean, default: true },
     // "pending" = the player asked to join from their own account; the admin

@@ -1,9 +1,48 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { CalendarDays, Trophy, Loader2, MapPin, Users } from "lucide-react";
+import { CalendarDays, Trophy, Loader2, MapPin, Users, CreditCard, CheckCircle2 } from "lucide-react";
 import AppBackground from "../../../../components/AppBackground.jsx";
 import PageHeader from "../../../../components/PageHeader.jsx";
 import { useRoundRobinView } from "../services/playerRoundRobin.js";
 import JoinStatus, { SlotsText } from "../components/JoinStatus.jsx";
+import { usePayRoundRobinEntryFee } from "../../../payments/services/stripePayments.js";
+
+// Entry fee card for a registered player: pay by card via Stripe Checkout, or
+// shows Paid. Hidden when there is no fee or the player hasn't joined.
+const EntryFeeCard = ({ roundRobinId, payment }) => {
+  const { mutate: pay, isPending } = usePayRoundRobinEntryFee();
+  if (!payment) return null;
+  const paid = payment.status === "COMPLETED";
+  const amount = `A$${Number(payment.amount).toFixed(2)}`;
+  return (
+    <Card className={`p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 ${paid ? "!border-emerald-500/40" : ""}`}>
+      <div className="flex-1">
+        <p className="text-white font-semibold">Entry fee {amount}</p>
+        <p className="text-xs text-slate-400 mt-0.5">
+          {paid
+            ? "Paid — thanks!"
+            : payment.status === "REFUNDED"
+            ? "Refunded"
+            : payment.canPayOnline
+            ? "Pay now by card, Apple Pay or Google Pay."
+            : "Pay the club on the day."}
+        </p>
+      </div>
+      {paid ? (
+        <span className="flex items-center gap-1.5 text-sm font-semibold text-emerald-400"><CheckCircle2 className="w-4 h-4" /> Paid</span>
+      ) : (
+        payment.canPayOnline && payment.status !== "REFUNDED" && (
+          <button
+            onClick={() => pay(roundRobinId)}
+            disabled={isPending}
+            className="inline-flex items-center justify-center gap-2 text-sm px-4 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-emerald-500 to-yellow-400 text-slate-900 disabled:opacity-60"
+          >
+            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />} Pay {amount}
+          </button>
+        )
+      )}
+    </Card>
+  );
+};
 
 const STATUS_LABELS = { Draft: "Upcoming", Scheduled: "Scheduled", Finalized: "Scheduled", Ongoing: "Live", Completed: "Completed", Active: "Active" };
 const MATCH_STATUS = {
@@ -180,6 +219,8 @@ const RoundRobinView = () => {
                 <JoinStatus roundRobinId={id} join={data.join} size="lg" />
               </Card>
             )}
+
+            {data?.join?.joined && <EntryFeeCard roundRobinId={id} payment={data?.payment} />}
 
             <div className="flex items-center justify-between">
               <h2 className="text-base sm:text-lg font-semibold text-white">My Matches</h2>
