@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Trophy, Trash2, ChevronRight, CalendarDays, Users, Clock } from "lucide-react";
+import { Plus, Trophy, Trash2, ChevronRight, CalendarDays, Users, Clock, CopyPlus } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -11,6 +11,7 @@ import {
 import { deleteRoundRobinTournamentAPI } from "../services/roundRobin.services.js";
 import AppBackground from "../../../../components/AppBackground.jsx";
 import PageHeader from "../../../../components/PageHeader.jsx";
+import BulkCreateTournamentsModal from "../components/BulkCreateTournamentsModal.jsx";
 
 const STATUS_STYLES = {
   Draft:      "bg-slate-500/15 text-slate-300 border border-slate-500/30",
@@ -28,6 +29,7 @@ const TournamentList = () => {
   const [selected, setSelected]         = useState(new Set());
   const [confirmBulk, setConfirmBulk]   = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkCreateOpen, setBulkCreateOpen] = useState(false);
 
   const { data, isLoading } = useGetRoundRobinTournaments();
   const { mutate: deleteTournament, isPending: isDeleting } = useDeleteRoundRobinTournament();
@@ -86,6 +88,16 @@ const TournamentList = () => {
         subtitle="All your tournaments in one place"
         onBack={() => navigate("/round-robin/dashboard")}
         actions={
+          <div className="flex items-center gap-2">
+          <button
+            onClick={() => setBulkCreateOpen(true)}
+            disabled={tournaments.length === 0}
+            title={tournaments.length === 0 ? "Create a tournament first to use it as a template" : "Create recurring tournaments from an existing one"}
+            className="flex items-center gap-2 border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed text-cyan-200 px-4 h-10 rounded-xl font-semibold text-sm transition-all"
+          >
+            <CopyPlus className="w-4 h-4" />
+            <span className="hidden sm:inline">Bulk Create</span>
+          </button>
           <button
             onClick={() => navigate("/round-robin/create-tournament")}
             className="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white px-4 h-10 rounded-xl font-semibold text-sm shadow-lg shadow-cyan-500/30 transition-all"
@@ -93,6 +105,7 @@ const TournamentList = () => {
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">New Tournament</span>
           </button>
+          </div>
         }
       />
 
@@ -232,6 +245,10 @@ const TournamentList = () => {
           </div>
         )}
       </div>
+
+      {bulkCreateOpen && (
+        <BulkCreateTournamentsModal tournaments={tournaments} onClose={() => setBulkCreateOpen(false)} />
+      )}
 
       {/* Single Delete Confirm */}
       {deletingId && (
