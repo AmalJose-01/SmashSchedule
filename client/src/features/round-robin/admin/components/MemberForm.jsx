@@ -31,7 +31,7 @@ const GRADE_DEFAULT_POINTS = {
 
 const EMPTY_FORM = {
   name: "", grade: "Unrated", points: GRADE_DEFAULT_POINTS.Unrated, email: "", contact: "",
-  nationalMemberId: "", dateOfBirth: "", gender: "", isMember: true,
+  nationalMemberId: "", dateOfBirth: "", gender: "", isMember: null, // membership must be chosen
 };
 
 // ── System field definitions & alias detection ────────────────────────────────
@@ -43,6 +43,7 @@ const SYSTEM_FIELDS = [
   { key: "nationalMemberId", label: "National Member ID", required: false },
   { key: "dateOfBirth",      label: "Date of Birth",      required: false },
   { key: "gender",           label: "Gender",             required: false },
+  { key: "isMember",         label: "Membership",         required: false },
 ];
 
 const ALIASES = {
@@ -66,6 +67,11 @@ const ALIASES = {
   "email address":       "email",
   "email":               "email",
   "grade":               "grade",
+  "membership":          "isMember",
+  "membership status":   "isMember",
+  "membership type":     "isMember",
+  "member status":       "isMember",
+  "is member":           "isMember",
   "level":               "grade",
   "skill level":         "grade",
 };
@@ -127,7 +133,7 @@ const ManualTab = ({ member, onClose, approveMode = false }) => {
           nationalMemberId: member.nationalMemberId ?? "",
           dateOfBirth: member.dateOfBirth ? member.dateOfBirth.slice(0, 10) : "",
           gender: member.gender ?? "",
-          isMember: member.isMember ?? true,
+          isMember: typeof member.isMember === "boolean" ? member.isMember : null,
         }
       : EMPTY_FORM
   );
@@ -144,6 +150,7 @@ const ManualTab = ({ member, onClose, approveMode = false }) => {
     if (!form.email.trim()) e.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Invalid email";
     if (!form.grade) e.grade = "Grade is required";
+    if (typeof form.isMember !== "boolean") e.isMember = "Membership is required";
     if (!isValidPhone(form.contact)) e.contact = INVALID_PHONE_MESSAGE;
     const pts = Number(form.points);
     if (form.points === "" || !Number.isFinite(pts)) e.points = "Points are required";
@@ -265,15 +272,22 @@ const ManualTab = ({ member, onClose, approveMode = false }) => {
 
         {/* Membership Status */}
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">Membership</label>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">
+            Membership <span className="text-red-400">*</span>
+          </label>
           <select
-            value={form.isMember ? "member" : "non-member"}
-            onChange={(e) => setForm((f) => ({ ...f, isMember: e.target.value === "member" }))}
-            className="w-full bg-slate-900/50 border border-slate-600 rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-500 [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+            value={form.isMember === true ? "member" : form.isMember === false ? "non-member" : ""}
+            onChange={(e) => {
+              setForm((f) => ({ ...f, isMember: e.target.value === "" ? null : e.target.value === "member" }));
+              if (errors.isMember) setErrors((er) => ({ ...er, isMember: undefined }));
+            }}
+            className={inputCls("isMember")}
           >
+            {typeof form.isMember !== "boolean" && <option value="">Select membership</option>}
             <option value="member">Member</option>
             <option value="non-member">Non-Member</option>
           </select>
+          {errors.isMember && <p className="text-red-400 text-xs mt-1">{errors.isMember}</p>}
         </div>
 
         {/* Gender */}
@@ -429,6 +443,7 @@ const BulkImportTab = () => {
       nationalMemberId: r.nationalMemberId || undefined,
       dateOfBirth: r.dateOfBirth || undefined,
       gender: r.gender || undefined,
+      isMember: r.isMember || undefined, // blank / not mapped → server defaults to Non-Member
     }));
     bulkImport(members, {
       onSuccess: (data) => {
@@ -476,7 +491,7 @@ const BulkImportTab = () => {
             Required columns: <span className="font-medium">Name</span>, <span className="font-medium">Email</span> — all others are mapped in the next step
           </p>
           <p className="text-xs text-slate-500 mt-1">
-            Imported files don't carry membership status — new members are added as <span className="font-medium">Non-Member</span> by default. Edit a member afterwards to mark them as a Member.
+            Map a <span className="font-medium">Membership</span> column (Member / Non-Member) if you have one. Anyone without a membership value is added as <span className="font-medium">Non-Member</span>.
           </p>
         </div>
 

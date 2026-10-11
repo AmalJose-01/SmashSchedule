@@ -12,6 +12,9 @@ const RoundRobinMemberController = {
       if (!name || !email) {
         return res.status(400).json({ message: "name and email are required" });
       }
+      if (typeof isMember !== "boolean") {
+        return res.status(400).json({ message: "Membership (Member or Non-Member) is required" });
+      }
       if (!isValidPhone(contact)) {
         return res.status(400).json({ message: INVALID_PHONE_MESSAGE });
       }
@@ -258,10 +261,24 @@ const RoundRobinMemberController = {
       const sanitiseGrade = (raw) =>
         VALID_GRADES.includes(raw) ? raw : "Unrated";
 
+      /**
+       * Read a Membership cell: Member / Non-Member (also yes/no, true/false,
+       * 1/0). Returns true, false, or undefined when blank / unrecognised.
+       */
+      const parseMembership = (raw) => {
+        if (typeof raw === "boolean") return raw;
+        const v = String(raw ?? "").trim().toLowerCase().replace(/[\s_-]+/g, "");
+        if (!v) return undefined;
+        if (["nonmember", "notmember", "no", "n", "false", "0", "guest", "visitor"].includes(v)) return false;
+        if (["member", "yes", "y", "true", "1", "active"].includes(v)) return true;
+        return undefined;
+      };
+
       const results = { success: 0, updated: 0, reactivated: 0, failed: 0, errors: [] };
 
       for (const m of members) {
         const { name, grade, email, contact, nationalMemberId, dateOfBirth, gender } = m;
+        const memberFlag = parseMembership(m.isMember);
         if (!name || !email) {
           results.failed++;
           results.errors.push({ email: email || "unknown", reason: "name and email are required" });
@@ -280,6 +297,9 @@ const RoundRobinMemberController = {
             ...(nationalMemberId && { nationalMemberId }),
             ...(cleanDOB        && { dateOfBirth: cleanDOB }),
             ...(gender          && { gender }),
+            // Only set when the file says so; existing members keep their
+            // current status when the cell is blank.
+            ...(memberFlag !== undefined && { isMember: memberFlag }),
           };
 
           const existing = await RoundRobinMember.findOne({ email: cleanEmail, adminId: req.userId });
@@ -297,14 +317,14 @@ const RoundRobinMemberController = {
               results.updated++;
             }
           } else {
-            // Import files have no membership column, so new members are
-            // marked non-member by default — admins flip this via Edit.
+            // No membership value in the file → Non-Member by default;
+            // admins can change it later via Edit.
             await RoundRobinMember.create({
               adminId: req.userId,
               email: cleanEmail,
               ...payload,
               points: GRADE_DEFAULT_POINTS[cleanGrade] ?? 0,
-              isMember: false,
+              isMember: memberFlag ?? false,
             });
             results.success++;
           }
