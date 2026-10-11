@@ -27,13 +27,16 @@ import {
   useAddMembersToTournament,
   useCollectPayment,
   useGetPaymentStatus,
-  useGetSquareStatus,
   useGetTournamentPayments,
+  useRefundPayment,
   useDownloadMatchSchedulePdf,
 } from "../services/roundRobin.queries.js";
 import AppBackground from "../../../../components/AppBackground.jsx";
 import { computeGroupStandings } from "../../shared/groupStandings.js";
 import PageHeader from "../../../../components/PageHeader.jsx";
+import PaymentQrModal from "../../../payments/components/PaymentQrModal.jsx";
+import { useStripeStatus } from "../../../payments/services/stripePayments.js";
+import Toggle from "../components/Toggle.jsx";
 
 const STATUS_STYLES = {
   Draft:     "bg-white/10 text-slate-300",
@@ -144,6 +147,9 @@ const ConfigTab = ({ tournament, isFinalized }) => {
   const { mutate: updateTournament, isPending } = useUpdateRoundRobinTournament();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({});
+  // Payment settings only appear once the club's Stripe payouts are active.
+  const { data: stripeStatusData } = useStripeStatus();
+  const payoutsReady = !!stripeStatusData?.data?.chargesEnabled;
 
   useEffect(() => {
     setForm({
@@ -156,6 +162,7 @@ const ConfigTab = ({ tournament, isFinalized }) => {
       numberOfCourts: tournament.numberOfCourts  ?? 1,
       numberOfSlots:  tournament.numberOfSlots ?? "",
       numberOfMatchesPerMember: tournament.numberOfMatchesPerMember ?? 3,
+      acceptOnlinePayment: tournament.acceptOnlinePayment ?? false,
       entryFeeMember:    tournament.entryFeeMember    ?? 0,
       entryFeeNonMember: tournament.entryFeeNonMember ?? 0,
       pointsForWin:   tournament.pointsForWin    ?? 2,
@@ -182,8 +189,12 @@ const ConfigTab = ({ tournament, isFinalized }) => {
           registrationDeadline: new Date(form.registrationDeadline).toISOString(),
           ...(form.numberOfSlots !== "" && { numberOfSlots: Number(form.numberOfSlots) }),
           numberOfMatchesPerMember: Number(form.numberOfMatchesPerMember),
-          entryFeeMember:    Number(form.entryFeeMember),
-          entryFeeNonMember: Number(form.entryFeeNonMember),
+          // Leave the stored value alone if payouts aren't active (the section is hidden).
+          ...(payoutsReady
+            ? { acceptOnlinePayment: !!form.acceptOnlinePayment }
+            : { acceptOnlinePayment: tournament.acceptOnlinePayment ?? false }),
+          entryFeeMember:    Number(form.entryFeeMember) || 0,
+          entryFeeNonMember: Number(form.entryFeeNonMember) || 0,
           pointsForWin:    Number(form.pointsForWin),
           pointsForLoss:   Number(form.pointsForLoss),
           numberOfSets:    Number(form.numberOfSets),
@@ -243,10 +254,25 @@ const ConfigTab = ({ tournament, isFinalized }) => {
             <ViewRow label="Courts"            value={tournament.numberOfCourts} />
             <ViewRow label="Player Slots"      value={tournament.numberOfSlots ?? "—"} />
             <ViewRow label="Grouping Strategy" value={tournament.groupingStrategy} />
-            <ViewRow label="Entry Fee (Member)" value={tournament.entryFeeMember > 0 ? `$${tournament.entryFeeMember.toFixed(2)}` : "Free"} />
-            <ViewRow label="Entry Fee (Non-Member)" value={tournament.entryFeeNonMember > 0 ? `$${tournament.entryFeeNonMember.toFixed(2)}` : "Free"} />
           </div>
         </div>
+
+        {payoutsReady && (
+          <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 overflow-hidden">
+            <div className="px-5 py-3 bg-slate-900/50 border-b border-slate-700/50">
+              <h3 className="font-semibold text-white text-sm">Payment</h3>
+            </div>
+            <div className="px-5 py-1">
+              <ViewRow label="Accept Online Payment" value={tournament.acceptOnlinePayment ? "On" : "Off"} />
+              {tournament.acceptOnlinePayment && (
+                <>
+                  <ViewRow label="Member Fee" value={tournament.entryFeeMember > 0 ? `A$${tournament.entryFeeMember.toFixed(2)}` : "Free"} />
+                  <ViewRow label="Non-Member Fee" value={tournament.entryFeeNonMember > 0 ? `A$${tournament.entryFeeNonMember.toFixed(2)}` : "Free"} />
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 overflow-hidden">
           <div className="px-5 py-3 bg-slate-900/50 border-b border-slate-700/50">
@@ -316,14 +342,26 @@ const ConfigTab = ({ tournament, isFinalized }) => {
             <input type="number" min={1} value={form.numberOfSlots} onChange={(e) => set("numberOfSlots", e.target.value)} className={inputCls()} />
           </Field>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Entry Fee — Member ($)">
-            <input type="number" min={0} step="0.01" value={form.entryFeeMember} onChange={(e) => set("entryFeeMember", e.target.value)} className={inputCls()} placeholder="0 = free" />
-          </Field>
-          <Field label="Entry Fee — Non-Member ($)">
-            <input type="number" min={0} step="0.01" value={form.entryFeeNonMember} onChange={(e) => set("entryFeeNonMember", e.target.value)} className={inputCls()} placeholder="0 = free" />
-          </Field>
-        </div>
+        {payoutsReady && (
+          <div className="border-t border-slate-700/50 pt-4 space-y-4">
+            <Toggle
+              label="Accept online payment"
+              hint="Players pay by card when they join, based on their membership type."
+              checked={!!form.acceptOnlinePayment}
+              onChange={(v) => set("acceptOnlinePayment", v)}
+            />
+            {form.acceptOnlinePayment && (
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Member Fee (A$)">
+                  <input type="number" min={0} step="0.01" value={form.entryFeeMember} onChange={(e) => set("entryFeeMember", e.target.value)} className={inputCls()} placeholder="0 = free" />
+                </Field>
+                <Field label="Non-Member Fee (A$)">
+                  <input type="number" min={0} step="0.01" value={form.entryFeeNonMember} onChange={(e) => set("entryFeeNonMember", e.target.value)} className={inputCls()} placeholder="0 = free" />
+                </Field>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Scoring Rules */}
@@ -540,64 +578,123 @@ const AddPlayersPanel = ({ tournamentId, existingPlayers, defaultOpen = false, n
   );
 };
 
-// Triggers a Square Terminal checkout for a single registered player's entry fee
-// and polls for the result (the Terminal pops up on the admin's paired device).
-// `existingPayment` is that player's latest payment record (if any), so the button
-// shows the correct state on load/refresh instead of always defaulting to "Collect Payment".
-const CollectPaymentButton = ({ tournamentId, player, existingPayment }) => {
+// Card payment for one registered player's entry fee via Stripe Checkout.
+// "Collect Payment" opens a QR code the player scans to pay on their phone;
+// the row polls until Stripe confirms. `existingPayment` is the player's latest
+// payment record, so the right state shows on load/refresh.
+const CollectPaymentButton = ({ tournamentId, player, existingPayment, entryFee, canCollect }) => {
   const [paymentId, setPaymentId] = useState(existingPayment?._id ?? null);
+  const [checkoutUrl, setCheckoutUrl] = useState(null);
+  const [qrOpen, setQrOpen] = useState(false);
   const { mutate: collect, isPending } = useCollectPayment();
+  const { mutate: refund, isPending: refunding } = useRefundPayment();
   const { data: statusData } = useGetPaymentStatus(paymentId);
-  const status = statusData?.data?.status ?? existingPayment?.status;
+  const payment = statusData?.data ?? existingPayment;
+  const status = payment?.status;
+  const isStripe = (payment?.provider ?? "stripe") === "stripe";
 
   useEffect(() => {
     setPaymentId(existingPayment?._id ?? null);
   }, [existingPayment?._id]);
 
-  const handleClick = () => {
+  const openQr = (url) => {
+    setCheckoutUrl(url);
+    setQrOpen(true);
+  };
+
+  const handleCollect = () => {
     collect(
       { tournamentId, playerId: player._id },
-      { onSuccess: (res) => setPaymentId(res?.data?.paymentId ?? null) }
+      {
+        onSuccess: (res) => {
+          setPaymentId(res?.data?.paymentId ?? null);
+          if (res?.data?.checkoutUrl) openQr(res.data.checkoutUrl);
+        },
+      }
     );
   };
 
+  const handleRefund = () => {
+    if (!window.confirm(`Refund A$${Number(payment?.amount ?? entryFee).toFixed(2)} to ${player.name}?`)) return;
+    refund(payment._id);
+  };
+
+  const modal = (
+    <PaymentQrModal
+      open={qrOpen && !!checkoutUrl}
+      onClose={() => setQrOpen(false)}
+      url={checkoutUrl}
+      playerName={player.name}
+      amount={payment?.amount ?? entryFee}
+      status={status}
+    />
+  );
+
   if (status === "COMPLETED") {
     return (
-      <span className="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold">
-        <CheckCircle className="w-3.5 h-3.5" /> Paid
+      <span className="flex items-center gap-3">
+        <span className="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold">
+          <CheckCircle className="w-3.5 h-3.5" /> Paid
+        </span>
+        {isStripe && (
+          <button onClick={handleRefund} disabled={refunding} className="text-[11px] text-slate-400 hover:text-red-300 disabled:opacity-50">
+            {refunding ? "Refunding…" : "Refund"}
+          </button>
+        )}
+        {modal}
       </span>
     );
   }
 
-  if (paymentId && ["PENDING", "IN_PROGRESS"].includes(status)) {
+  if (status === "REFUNDED") {
+    return <span className="text-xs text-slate-400 font-medium">Refunded</span>;
+  }
+
+  if (paymentId && status === "PENDING" && isStripe) {
     return (
-      <span className="flex items-center gap-1.5 text-xs text-amber-300 font-medium">
-        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Waiting on Terminal...
+      <span className="flex items-center gap-3">
+        <span className="flex items-center gap-1.5 text-xs text-amber-300 font-medium">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Awaiting payment
+        </span>
+        <button
+          onClick={() => (payment?.checkoutUrl ? openQr(payment.checkoutUrl) : handleCollect())}
+          className="text-[11px] font-semibold text-cyan-400 hover:underline"
+        >
+          Show QR
+        </button>
+        {modal}
       </span>
     );
   }
 
   return (
-    <button
-      onClick={handleClick}
-      disabled={isPending}
-      className="flex items-center gap-1.5 text-xs font-semibold text-cyan-400 border border-cyan-500/30 px-2.5 py-1 rounded-lg hover:bg-cyan-500/10 disabled:opacity-50 transition-colors"
-    >
-      <CreditCard className="w-3.5 h-3.5" />
-      {isPending ? "Sending..." : status === "CANCELED" || status === "FAILED" ? "Retry Payment" : "Collect Payment"}
-    </button>
+    <>
+      <button
+        onClick={handleCollect}
+        disabled={isPending || !canCollect}
+        title={canCollect ? undefined : "Set up payouts first"}
+        className="flex items-center gap-1.5 text-xs font-semibold text-cyan-400 border border-cyan-500/30 px-2.5 py-1 rounded-lg hover:bg-cyan-500/10 disabled:opacity-50 transition-colors"
+      >
+        <CreditCard className="w-3.5 h-3.5" />
+        {isPending ? "Creating..." : status === "CANCELED" || status === "FAILED" ? "Retry Payment" : "Collect Payment"}
+      </button>
+      {modal}
+    </>
   );
 };
 
 const PlayersTab = ({ tournamentId, isFinalized, tournament }) => {
-  const navigate = useNavigate();
   const { data, isLoading } = useGetTournamentPlayers(tournamentId);
   const { mutate: removePlayer, isPending } = useRemovePlayerFromTournament();
-  const { data: squareStatusData } = useGetSquareStatus();
-  const hasEntryFee = (tournament?.entryFeeMember ?? 0) > 0 || (tournament?.entryFeeNonMember ?? 0) > 0;
+  const { data: stripeStatusData } = useStripeStatus();
+  const payoutsReady = !!stripeStatusData?.data?.chargesEnabled;
+  // Payment column only when payouts are active AND online payment is switched on.
+  const hasEntryFee =
+    payoutsReady &&
+    tournament?.acceptOnlinePayment === true &&
+    ((tournament?.entryFeeMember ?? 0) > 0 || (tournament?.entryFeeNonMember ?? 0) > 0);
   const { data: paymentsData } = useGetTournamentPayments(hasEntryFee ? tournamentId : null);
   const players = data?.data ?? [];
-  const squareReady = !!squareStatusData?.data?.connected && !!squareStatusData?.data?.deviceId;
   const paymentsByPlayerId = (paymentsData?.data ?? []).reduce((map, payment) => {
     map[payment.playerId] = payment;
     return map;
@@ -622,17 +719,6 @@ const PlayersTab = ({ tournamentId, isFinalized, tournament }) => {
 
   return (
     <div className="space-y-3">
-      {hasEntryFee && !squareReady && (
-        <div className="flex items-center justify-between gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-2.5 text-sm text-amber-200">
-          <span>This tournament has an entry fee, but Square isn't fully set up yet.</span>
-          <button
-            onClick={() => navigate("/admin/square-settings")}
-            className="flex-shrink-0 text-xs font-semibold text-cyan-300 hover:underline"
-          >
-            Connect Square →
-          </button>
-        </div>
-      )}
       <div className="flex items-center justify-between">
         <p className="text-sm text-slate-400 font-medium">
           {players.length}
@@ -682,6 +768,8 @@ const PlayersTab = ({ tournamentId, isFinalized, tournament }) => {
                       tournamentId={tournamentId}
                       player={p}
                       existingPayment={paymentsByPlayerId[p._id]}
+                      entryFee={p.isMember ? tournament?.entryFeeMember : tournament?.entryFeeNonMember}
+                      canCollect={payoutsReady}
                     />
                   </td>
                 )}
