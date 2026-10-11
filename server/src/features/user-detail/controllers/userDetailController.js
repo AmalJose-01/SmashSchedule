@@ -205,7 +205,7 @@ const userDetailController = {
           await member.save();
         }
         return res.status(200).json({
-          message: member.status === "pending" ? "Your request is waiting for approval" : "You're already a member of this club's round robin",
+          message: member.status === "pending" ? "Your request to join as a club player is waiting for approval" : "You're already a club player at this club",
           data: { status: member.status || "approved" },
         });
       }

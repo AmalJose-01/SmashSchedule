@@ -1,17 +1,35 @@
 const nodemailer = require("nodemailer");
-const { google } = require("googleapis");
 
-const OAuth2 = google.auth.OAuth2;
-
-const oauth2Client = new OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  "https://developers.google.com/oauthplayground"
-);
-
-oauth2Client.setCredentials({
-  refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
-});
+// SMTP (cPanel mailbox) settings come from .env:
+//   SMTP_HOST=mail.rallix.com.au
+//   SMTP_PORT=465
+//   SMTP_USER=noreply@rallix.com.au
+//   SMTP_PASS=<the mailbox password>
+//   MAIL_FROM_NAME=Rallix            (optional)
+let transporter;
+const getTransporter = () => {
+  if (!transporter) {
+    const port = Number(process.env.SMTP_PORT) || 465;
+    transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port,
+      secure: port === 465, // 465 = implicit SSL/TLS
+      // One shared connection, one email at a time: cPanel mail servers often
+      // drop extra simultaneous connections (shows up as a TLS "wrong version" error).
+      connectionTimeout: 10000, // give up on a dead mail server after 10s
+      greetingTimeout: 10000,
+      socketTimeout: 20000,
+      pool: true,
+      maxConnections: 1,
+      maxMessages: 50,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+  }
+  return transporter;
+};
 
 const sendEmail = async ({ to, subject, html }) => {
   if (!to || typeof to !== "string") {
@@ -19,32 +37,31 @@ const sendEmail = async ({ to, subject, html }) => {
     return;
   }
 
-  try {
-    const accessToken = await oauth2Client.getAccessToken();
+  // Retry a couple of times: a flaky connection to the mail server (for
+  // example when mail.rallix.com.au resolves to more than one IP and one of
+  // them isn't the mail server) usually succeeds on the next attempt.
+  const MAX_ATTEMPTS = 3;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const info = await getTransporter().sendMail({
+        from: `"${process.env.MAIL_FROM_NAME || "Rallix"}" <${process.env.SMTP_USER}>`,
+        to,
+        subject,
+        html,
+      });
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        type: "OAuth2",
-        user: process.env.EMAIL_USER,
-        clientId: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
-        accessToken: accessToken.token,
-      },
-    });
-
-    const info = await transporter.sendMail({
-      from: `"Ballarat Masters Badminton Club" <${process.env.EMAIL_USER}>`,
-      to,
-      subject,
-      html,
-    });
-
-    console.log("📧 Email sent:", info.messageId);
-  } catch (err) {
-    // 🔥 DO NOT throw — prevents 500 / timeout
-    console.error("❌ Email failed:", err.message);
+      console.log("📧 Email sent:", info.messageId, "→", to);
+      return;
+    } catch (err) {
+      // DO NOT throw — prevents 500 / timeout
+      console.error(
+        `❌ Email failed (attempt ${attempt}/${MAX_ATTEMPTS}) to ${to}:`,
+        err.code || "",
+        err.address ? `[server IP ${err.address}:${err.port}]` : "",
+        err.message
+      );
+      if (attempt < MAX_ATTEMPTS) await new Promise((r) => setTimeout(r, 1500));
+    }
   }
 };
 

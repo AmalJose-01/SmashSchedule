@@ -1,112 +1,69 @@
-const buildPlayerMailBody = ({ teamName, tournamentDetail, playerOneName }) => {
+// Registration confirmation email sent to each player. Everything comes from
+// the database: tournament name / date / time / venue / access code from the
+// tournament, and the club name from the club profile (see mailContext.js).
+
+const escapeHtml = (v) =>
+  String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const formatDate = (d) => {
+  if (!d) return "";
+  const date = new Date(`${String(d).slice(0, 10)}T00:00:00`);
+  if (isNaN(date)) return String(d);
+  return date.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+};
+
+const formatTime = (t) => {
+  if (!t) return "";
+  const m = String(t).match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return String(t);
+  const h = Number(m[1]);
+  return `${h % 12 || 12}:${m[2]} ${h >= 12 ? "PM" : "AM"}`;
+};
+
+const buildPlayerMailBody = ({ teamName, playerName, playerOneName, tournamentDetail = {}, clubName }) => {
+  const name = playerName || playerOneName || "there";
+  const club = clubName || "The Rallix Team";
+  const when = [formatDate(tournamentDetail.date), formatTime(tournamentDetail.time)].filter(Boolean).join(" at ");
+  const siteUrl = process.env.CLIENT_URL || "https://rallix.com.au";
+
+  const rows = [
+    teamName && ["Team", teamName],
+    tournamentDetail.tournamentName && ["Tournament", tournamentDetail.tournamentName],
+    when && ["Date & time", when],
+    tournamentDetail.location && ["Venue", tournamentDetail.location],
+    tournamentDetail.uniqueKey && ["Viewing access code", tournamentDetail.uniqueKey],
+  ].filter(Boolean);
+
   return `
     <h2>🏸 Team Registration Confirmed</h2>
 
-    <p>Hi <strong>${playerOneName}</strong>,</p>
-
-    
+    <p>Hi <strong>${escapeHtml(name)}</strong>,</p>
 
     <p>
-      Welcome to the <strong>Ballarat Masters Open – Mens Doubles Badminton Tournament</strong>.
-      We’re excited to have you registered and look forward to a great day of competitive badminton
-      at Ken Kay Badminton Stadium.
+      Thanks for registering${tournamentDetail.tournamentName ? ` for <strong>${escapeHtml(tournamentDetail.tournamentName)}</strong>` : ""}.
+      Your team is confirmed. Here are the details:
     </p>
+
+    <table cellpadding="6" cellspacing="0" style="border-collapse:collapse;">
+      ${rows
+        .map(([k, v]) => `<tr><td style="color:#555;">${escapeHtml(k)}</td><td><strong>${escapeHtml(v)}</strong></td></tr>`)
+        .join("")}
+    </table>
 
     <p>
-      As we get closer to tournament day, here are a few important updates and reminders.
+      Fixtures, live scores and standings will be on
+      <a href="${escapeHtml(siteUrl)}" target="_blank" rel="noopener noreferrer">Rallix</a>${
+        tournamentDetail.uniqueKey ? " — use the viewing access code above to follow the tournament" : ""
+      }.
     </p>
 
-    <h3>🕘 Arrival & Check-In</h3>
-    <p>
-      Please arrive by <strong>
-       09:00 AM
-        , Saturday, 10 January 2026
-      </strong> for check-in and a prompt start.
+    <p>If you have any questions, feel free to reply to this email.</p>
+
+    <p style="margin-top:30px;">
+      Kind regards,<br />
+      <strong>${escapeHtml(club)}</strong>
     </p>
-
-    <h3>🌧️ Footwear Reminder (Weather Advisory)</h3>
-    <p>
-      There is a <strong>possibility of rain</strong> forecast for Ballarat on
-      <strong>Saturday, 10 January 2026</strong>.
-    </p>
-
-    <p>To help keep the venue clean and safe:</p>
-    <ul>
-      <li>Please arrive wearing <strong>runners or outdoor shoes</strong></li>
-      <li>Change into <strong>non-marking badminton shoes</strong> inside the stadium</li>
-      <li>The courts are timber/wooden – non-marking shoes are strongly recommended</li>
-    </ul>
-
-    <p>Thank you for helping us look after the venue!</p>
-
-    <h3>📊 Live Scores, Fixtures & Standings</h3>
-    <p>We’ll be using <strong>Rallix</strong> to manage:</p>
-    <ul>
-      <li>Match fixtures</li>
-      <li>Live score updates</li>
-      <li>Group standings & progression</li>
-    </ul>
-
-    <p>
-      * Website:
-     <a href="${process.env.CLIENT_URL || "https://rallix.com.au"}" target="_blank" rel="noopener noreferrer">
-  Rallix
-</a>
-      <br />
-      * Viewing Score Access Code:
-      <strong>${tournamentDetail?.uniqueKey || "To be announced"}</strong>
-    </p>
-
-    <p>
-      Scores will be updated throughout the day, so please check the platform regularly.
-    </p>
-
-    <h3>🏸 Tournament Format – Important Note</h3>
-       <p>
-
- <ul>
-      <li>The tournament is planned for <strong>32 teams</strong> across group stages.</li>
-      <li> If fewer than 32 teams participate, the
-      <strong>top 8 teams across all groups</strong>
-      will progress directly to the
-      <strong>quarter-finals</strong>.</li>
-    </ul>
-
-     
-    </p>
-
-    <h3>🚗 Venue & Parking</h3>
-    <ul>
-      <li>Plenty of parking available on site</li>
-      <li>No food or drink restrictions</li>
-    </ul>
-
-
-
-    <p>
-  <a 
-    href="https://drive.google.com/file/d/1zTqiVv4LghbHhYIfDCTz_n8v1ILhp0aK/view" 
-    style="color: red; font-weight: bold; text-decoration: none;" 
-    target="_blank" 
-    rel="noopener noreferrer"
-  >
-    Click here to view the player information pack containing the tournament format and rules.
-  </a>
-</p>
-
-    <p>
-      If you have any questions, feel free to reply to this email.
-      <br /><br />
-      We’re looking forward to a great day of badminton.
-      See you on court!
-    </p>
-
-  <p style="margin-top:30px; text-align:center;">
-  Kind regards,<br />
-  <strong>Ballarat Masters Badminton Club</strong><br />
-
-
-</p>
   `;
 };
+
 module.exports = buildPlayerMailBody;

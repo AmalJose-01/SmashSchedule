@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
+const jwt = require("jsonwebtoken");
 
 const Team = require("../model/team.js");
+const TournamentPlayer = require("../model/tournamentPlayer.js");
 const { getRemainingSlots, fullMessage } = require("../helpers/participantLimit.js");
 const adminTeamController = require("./adminTeamController.js");
 const Tournament = require("../model/tournamentModel.js");
@@ -17,15 +19,34 @@ const {
 const AdminUser = require("../model/adminUser.js");
 const sendEmail = require("../utils/sendEmail.js");
 const buildPlayerMailBody = require("../utils/playerMailTemplate.js");
+const getMailContext = require("../utils/mailContext.js");
 const buildAdminMailBody = require("../utils/adminMailTemplate.js");
 
 
-
 // Create a new team
+// The tournament page is public, but when a player is logged in we tell the
+// page whether they're already registered (matched by their account email).
+const isAlreadyRegistered = async (req, tournamentId) => {
+  try {
+    const header = req.headers.authorization || "";
+    if (!header.startsWith("Bearer ")) return false;
+    const decoded = jwt.verify(header.split(" ")[1], process.env.SECURITY_KEY_JWT);
+    const account = await AdminUser.findById(decoded.id).select("emailID").lean();
+    const email = String(account?.emailID || "").trim().toLowerCase();
+    if (!email) return false;
+    const exact = new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i");
+    const [team, player] = await Promise.all([
+      Team.exists({ tournamentId, $or: [{ playerOneEmail: exact }, { playerTwoEmail: exact }] }),
+      TournamentPlayer.exists({ tournamentId, email: exact }),
+    ]);
+    return !!(team || player);
+  } catch {
+    return false; // missing/expired token etc. → just treat as not registered
+  }
+};
+
 const teamController = {
   createTeam: async (req, res) => {
-    console.log("dfghjkl", req.body);
-
     try {
       const {
         teamName,
@@ -102,70 +123,61 @@ const teamController = {
         return res.status(500).json({ message: "Failed to create team" });
       }
 
-      const tournamentDetail = await Tournament.findOne({
-        _id: tournamentId,
-      }).select("adminId uniqueKey date time location");
-      console.log("tournamentDetail", tournamentDetail, tournamentId);
-
-      const AdminUserDetail = await AdminUser.findOne({
-        _id: tournamentDetail.adminId,
-      }).select("emailID");
-
-      // ==========================
-      // 📧 SEND EMAILS
-      // ==========================
-      console.log("AdminUserDetail", AdminUserDetail);
-
-
-
-      
-      // 1️⃣ Email to Players
-      const playerMailSubject = "✅ Team Registration Successful";
-      const adminMailSubject = "📢 New Team Registered";
-
-      const playerMailBody = buildPlayerMailBody({
-        teamName,
-        playerOneName,
-        playerTwoName,
-        tournamentDetail,
-      });
-
-      await Promise.all([
-        sendEmail({
-          to: playerOneEmail,
-          subject: playerMailSubject,
-          html: playerMailBody,
-        }),
-        sendEmail({
-          to: playerTwoEmail,
-          subject: playerMailSubject,
-          html: playerMailBody,
-        }),
-      ]);
-
-      if (AdminUserDetail?.emailID) {
-        const adminMailSubject = "📢 New Team Registered";
-
-        const adminMailBody = buildAdminMailBody({
-          teamName,
-          tournamentId,
-          playerOneName,
-          playerOneEmail,
-          playerTwoName,
-          playerTwoEmail
-        });
-
-        await sendEmail({
-          to: AdminUserDetail.emailID,
-          subject: adminMailSubject,
-          html: adminMailBody
-        });
-      }
-     
-
+      // Reply right away — the player shouldn't wait on the mail server.
       res
         .status(201)
         .json({ message: "Team created successfully", team: newTeam });
+
+      // 📧 Confirmation emails run in the background. sendEmail never throws,
+      // and this try/catch keeps any other failure from affecting the response.
+      (async () => {
+        try {
+          const tournamentDetail = await Tournament.findOne({
+            _id: tournamentId,
+          }).select("tournamentName adminId uniqueKey date time location");
+
+          const AdminUserDetail = await AdminUser.findOne({
+            _id: tournamentDetail.adminId,
+          }).select("emailID");
+
+          const playerMailSubject = "✅ Team Registration Successful";
+          const adminMailSubject = "📢 New Team Registered";
+
+          const { clubName } = await getMailContext(tournamentId);
+          const bodyFor = (playerName) =>
+            buildPlayerMailBody({ teamName, playerName, tournamentDetail, clubName });
+
+          await Promise.all([
+            sendEmail({
+              to: playerOneEmail,
+              subject: playerMailSubject,
+              html: bodyFor(playerOneName),
+            }),
+            sendEmail({
+              to: playerTwoEmail,
+              subject: playerMailSubject,
+              html: bodyFor(playerTwoName),
+            }),
+          ]);
+
+          if (AdminUserDetail?.emailID) {
+            await sendEmail({
+              to: AdminUserDetail.emailID,
+              subject: adminMailSubject,
+              html: buildAdminMailBody({
+                teamName,
+                tournamentId,
+                playerOneName,
+                playerOneEmail,
+                playerTwoName,
+                playerTwoEmail,
+              }),
+            });
+          }
+        } catch (err) {
+          console.error("Registration email error:", err.message);
+        }
+      })();
     } catch (error) {
       console.log("Create module error", error);
       res.status(500).json({ message: "Server Error", error: error.message });
@@ -274,8 +286,6 @@ const teamController = {
 
   // done
   getTournamentInformation: async (req, res) => {
-    console.log("eq.userId", req.userId);
-
     try {
       const { tournamentId } = req.params;
 
@@ -283,15 +293,12 @@ const teamController = {
         _id: tournamentId,
       }).select("-adminId -createdAt -updatedAt -groups -uniqueKey");
 
-      console.log(
-        "Tournaments fetched===========================================================================:",
-        tournament
-      );
       // Places taken (teams + singles players) so the player app knows if it's full.
       const registeredCount = tournament ? (await getRemainingSlots(tournamentId)).current : 0;
+      const alreadyRegistered = tournament ? await isAlreadyRegistered(req, tournamentId) : false;
       res.status(200).json({
         message: "Tournaments retrieved successfully",
-        tournaments: tournament ? { ...tournament.toObject(), registeredCount } : tournament,
+        tournaments: tournament ? { ...tournament.toObject(), registeredCount, alreadyRegistered } : tournament,
       });
     } catch (error) {
       console.log("Get tournaments error", error);
@@ -301,16 +308,12 @@ const teamController = {
 
   getTournamentDetails: async (req, res) => {
     try {
-      console.log("getTournamentDetails called with params:", req.params);
-
       const { tournamentId } = req.params;
       const tournamentGroup = await Group.find({ tournamentId: tournamentId });
       let tournamentMatches = await GroupMatch.find({
         tournamentId: tournamentId,
       });
 
-      console.log("tournamentGroup:", tournamentGroup);
-      console.log("tournamentMatches:", tournamentMatches);
       if (!tournamentGroup) {
         return res.status(404).json({ message: "Tournament not found" });
       }
@@ -319,8 +322,6 @@ const teamController = {
           .status(404)
           .json({ message: "No matches found for this tournament" });
       }
-
-
 
 
  // ===============================
@@ -374,12 +375,6 @@ const teamController = {
 
     // overwrite order ONLY
     tournamentMatches = sortedFlatMatches;
-
-
-
-
-
-
 
 
       res.status(200).json({

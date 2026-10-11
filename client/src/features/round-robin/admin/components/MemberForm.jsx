@@ -127,9 +127,7 @@ const ManualTab = ({ member, onClose, approveMode = false }) => {
           nationalMemberId: member.nationalMemberId ?? "",
           dateOfBirth: member.dateOfBirth ? member.dateOfBirth.slice(0, 10) : "",
           gender: member.gender ?? "",
-          // Self-joined players have no membership type yet (null) — the
-          // admin must choose Member / Non-Member to approve them.
-          isMember: typeof member.isMember === "boolean" ? member.isMember : approveMode ? null : true,
+          isMember: member.isMember ?? true,
         }
       : EMPTY_FORM
   );
@@ -146,7 +144,6 @@ const ManualTab = ({ member, onClose, approveMode = false }) => {
     if (!form.email.trim()) e.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Invalid email";
     if (!form.grade) e.grade = "Grade is required";
-    if (typeof form.isMember !== "boolean") e.isMember = "Membership type is required";
     if (!isValidPhone(form.contact)) e.contact = INVALID_PHONE_MESSAGE;
     const pts = Number(form.points);
     if (form.points === "" || !Number.isFinite(pts)) e.points = "Points are required";
@@ -196,7 +193,7 @@ const ManualTab = ({ member, onClose, approveMode = false }) => {
     <form onSubmit={handleSubmit} className="space-y-4">
       {approveMode && (
         <p className="text-sm text-amber-200 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3">
-          This player joined from their own account. Check their details and choose a grade and membership type to approve them.
+          This player joined from their own account. Check their details and choose a grade to approve them.
         </p>
       )}
       <div className="grid grid-cols-2 gap-3">
@@ -268,23 +265,15 @@ const ManualTab = ({ member, onClose, approveMode = false }) => {
 
         {/* Membership Status */}
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">
-            Membership <span className="text-red-400">*</span>
-          </label>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">Membership</label>
           <select
-            value={form.isMember === true ? "member" : form.isMember === false ? "non-member" : ""}
-            onChange={(e) => {
-              setForm((f) => ({ ...f, isMember: e.target.value === "" ? null : e.target.value === "member" }));
-              if (errors.isMember) setErrors((er) => ({ ...er, isMember: undefined }));
-            }}
-            className={inputCls("isMember")}
+            value={form.isMember ? "member" : "non-member"}
+            onChange={(e) => setForm((f) => ({ ...f, isMember: e.target.value === "member" }))}
+            className="w-full bg-slate-900/50 border border-slate-600 rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-500 [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
           >
-            {typeof form.isMember !== "boolean" && <option value="">Select membership</option>}
             <option value="member">Member</option>
             <option value="non-member">Non-Member</option>
           </select>
-          <p className="text-xs text-slate-400 mt-1">Decides which round robin entry fee the player pays.</p>
-          {errors.isMember && <p className="text-red-400 text-xs mt-1">{errors.isMember}</p>}
         </div>
 
         {/* Gender */}
