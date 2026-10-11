@@ -21,6 +21,7 @@ import {
 
   DollarSign,
   Key,
+  CheckCircle2,
 } from "lucide-react";
 import AppBackground from "../../components/AppBackground";
 import PageHeader from "../../components/PageHeader";
@@ -96,6 +97,7 @@ const ViewTournamentDetail = () => {
   const maxPlace = Number(tournamentDetail.maximumParticipants) || 0;
   const isOpen = tournamentDetail.status === "Create";
   const isFull = maxPlace > 0 && registered >= maxPlace;
+  const alreadyRegistered = !!tournamentDetail.alreadyRegistered;
   const isDoubles = tournamentDetail.matchType === "Doubles";
   const keyVerified = (() => {
     try {
@@ -149,7 +151,12 @@ const ViewTournamentDetail = () => {
         {/* Actions */}
         <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-700/50 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
           <div className="text-sm">
-            {isOpen ? (
+            {isOpen && alreadyRegistered ? (
+              <span className="text-emerald-300">
+                You're registered for this tournament · <span className="text-white font-semibold">{registered}/{maxPlace || "—"}</span>{" "}
+                {isDoubles ? "teams" : "players"} registered
+              </span>
+            ) : isOpen ? (
               isFull ? (
                 <span className="text-amber-300">Registration is full ({registered}/{maxPlace}).</span>
               ) : (
@@ -163,7 +170,13 @@ const ViewTournamentDetail = () => {
             )}
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
-            {isOpen && !isFull && (
+            {isOpen && alreadyRegistered && (
+              <span className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm font-semibold">
+                <CheckCircle2 className="w-4 h-4" />
+                Already registered
+              </span>
+            )}
+            {isOpen && !isFull && !alreadyRegistered && (
               <button
                 onClick={() => {
                   dispatch(setTournamentData({ ...tournament, ...tournamentDetail }));

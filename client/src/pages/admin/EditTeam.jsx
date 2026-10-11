@@ -5,17 +5,9 @@ import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { updateTeamAPI } from "../../services/teamServices";
 import { toast } from "sonner"; // make sure react-toastify is installed
-import Navbar from "../../components/Navbar";
-import {
-  X,
-  Users,
-  Mail,
-  Phone,
-  Trophy,
-  Upload,
-  UserPlus,
-  Save,
-} from "lucide-react";
+import AppBackground from "../../components/AppBackground.jsx";
+import PageHeader from "../../components/PageHeader.jsx";
+import { X, Users, Save } from "lucide-react";
 import { useSelector } from "react-redux";
 
 const TeamSetup = () => {
@@ -25,8 +17,6 @@ const TeamSetup = () => {
   const { state } = location;
   const team = state?.team;
 
-  console.log("team",team);
-  
 
   const tournament = useSelector((state) => state.tournament.tournamentData);
 
@@ -81,15 +71,13 @@ const TeamSetup = () => {
   });
 
   const onSubmit = async (data) => {
-    console.log("Form Data:", data);
     if (data.teamName.trim() === "") {
       data.teamName = data.playerOneName + " & " + data.playerTwoName;
     }
-    console.log("Updated Data:", data);
 
     try {
       await mutateAsync(data);
-    } catch (err) {
+    } catch {
       // handled in onError
     }
   };
@@ -99,195 +87,102 @@ const TeamSetup = () => {
     });
   };
 
+  const inputCls =
+    "w-full bg-slate-900/50 border border-slate-600 rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-500 [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all";
+  const errCls = "text-red-400 text-xs mt-1";
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white ">
-      <Navbar />
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white p-3">
-        <div className="card w-full max-w-xl mx-auto shadow-lg rounded-lg bg-blue-600 items-center mt-2">
-          <div className="flex  items-center justify-between p-4">
-            <div className="flex  items-center gap-3">
-              <Users className="w-6 h-6 text-white" />
-              <h2 className="text-2xl  text-white">Team Registration</h2>
+    <AppBackground>
+      <PageHeader title="Edit Team" subtitle={team?.teamName} onBack={onClose} />
+
+      <div className="px-3 py-6">
+        <div className="w-full max-w-xl mx-auto bg-slate-800/90 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-700/50">
+            <Users className="w-5 h-5 text-cyan-400" />
+            <h2 className="text-lg font-semibold text-white">Edit Team</h2>
+          </div>
+
+          <form className="flex flex-col p-6 gap-4" onSubmit={handleSubmit(onSubmit)}>
+            <div>
+              <label htmlFor="teamName" className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-1.5">
+                <Users className="w-4 h-4" />
+                Team Name
+              </label>
+              <input id="teamName" type="text" placeholder="Team Name" {...register("teamName")} className={inputCls} />
+              {errors.teamName && <p className={errCls}>{errors.teamName.message}</p>}
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-red-600 hover:bg-opacity-20 rounded-lg transition-colors text-white"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-          <div className="flex w-full bg-white rounded-b-lg">
-            <form
-              className="flex flex-col w-full mt-3 p-3 gap-3"
-              onSubmit={handleSubmit(onSubmit)}
-            >
-              {/* Team Information */}
-              <h3 className="text-lg  pb-2 border-b">Team Information</h3>
+
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400 pb-2 border-b border-slate-700/50 mt-2">
+              Team Members
+            </h3>
+
+            <div className="rounded-xl bg-slate-900/40 border border-slate-700/50 p-3">
+              <span className="block text-sm font-medium text-cyan-300 mb-2">Member 1</span>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="md:col-span-2">
-                  <label
-                    htmlFor="teamName"
-                    className="flex items-center gap-2 text-gray-700 mb-2"
-                  >
-                    <Users className="w-4 h-4" />
-                    Team Name
-                  </label>
-                  <div>
-                    <input
-                      type="text"
-                      placeholder="Team Name"
-                      {...register("teamName")}
-                      // value={team.teamName}
-                      className="w-full p-2 border rounded"
-                    />
-                    {errors.teamName && (
-                      <p className="text-red-500 text-sm">
-                        {errors.teamName.message}
-                      </p>
-                    )}
-                  </div>
+                <div>
+                  <input type="text" placeholder="Full Name" {...register("playerOneName")} className={inputCls} />
+                  {errors.playerOneName && <p className={errCls}>{errors.playerOneName.message}</p>}
+                </div>
+                <div>
+                  <input type="email" placeholder="Email" {...register("playerOneEmail")} className={inputCls} />
+                  {errors.playerOneEmail && <p className={errCls}>{errors.playerOneEmail.message}</p>}
+                </div>
+                <div>
+                  <input type="text" placeholder="Phone" {...register("playerOneContact")} className={inputCls} />
+                  {errors.playerOneContact && <p className={errCls}>{errors.playerOneContact.message}</p>}
+                </div>
+                <div>
+                  <input type="date" {...register("playerOneDOB")} className={inputCls} />
+                  {errors.playerOneDOB && <p className={errCls}>{errors.playerOneDOB.message}</p>}
                 </div>
               </div>
-              {/* Team Members */}
-              <h3 className="text-lg  pb-2 border-b mt-6">Team Information</h3>
+            </div>
 
-              {/* Player One */}
-              <div className="rounded-md bg-gray-100 p-2">
-                <span className="text-sm text-gray-600 ">Member 1</span>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <input
-                    type="text"
-                    placeholder="Full Name"
-                    {...register("playerOneName")}
-                    className="w-full p-2 border rounded"
-                    // value={team.playerOneName}
-                  />
-                  {errors.playerOneName && (
-                    <p className="text-red-500 text-sm">
-                      {errors.playerOneName.message}
-                    </p>
-                  )}
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    {...register("playerOneEmail")}
-                    className="w-full p-2 border rounded "
-                    // value={team.playerOneEmail}
-                  />
-                  {errors.playerOneEmail && (
-                    <p className="text-red-500 text-sm">
-                      {errors.playerOneEmail.message}
-                    </p>
-                  )}
-
-                  <input
-                    type="text"
-                    placeholder="Phone"
-                    {...register("playerOneContact")}
-                    className="w-full p-2 border rounded"
-                    // value={team.playerOneContact}
-                  />
-                  {errors.playerOneContact && (
-                    <p className="text-red-500 text-sm">
-                      {errors.playerOneContact.message}
-                    </p>
-                  )}
-
-                  <input
-                    type="date"
-                    {...register("playerOneDOB")}
-                    className="w-full p-2 border rounded"
-                    // value={team.playerOneDOB}
-                  />
-                  {errors.playerOneDOB && (
-                    <p className="text-red-500 text-sm">
-                      {errors.playerOneDOB.message}
-                    </p>
-                  )}
+            <div className="rounded-xl bg-slate-900/40 border border-slate-700/50 p-3">
+              <span className="block text-sm font-medium text-cyan-300 mb-2">Member 2</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <input type="text" placeholder="Full Name" {...register("playerTwoName")} className={inputCls} />
+                  {errors.playerTwoName && <p className={errCls}>{errors.playerTwoName.message}</p>}
+                </div>
+                <div>
+                  <input type="email" placeholder="Email" {...register("playerTwoEmail")} className={inputCls} />
+                  {errors.playerTwoEmail && <p className={errCls}>{errors.playerTwoEmail.message}</p>}
+                </div>
+                <div>
+                  <input type="text" placeholder="Phone" {...register("playerTwoContact")} className={inputCls} />
+                  {errors.playerTwoContact && <p className={errCls}>{errors.playerTwoContact.message}</p>}
+                </div>
+                <div>
+                  <input type="date" {...register("playerTwoDOB")} className={inputCls} />
+                  {errors.playerTwoDOB && <p className={errCls}>{errors.playerTwoDOB.message}</p>}
                 </div>
               </div>
+            </div>
 
-              {/* Player Two */}
-              <div className="rounded-md bg-gray-100 p-2">
-                <span className="text-sm text-gray-600 ">Member 2</span>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <input
-                    type="text"
-                    placeholder="Player Two Name"
-                    {...register("playerTwoName")}
-                    className="w-full p-2 border rounded mt-1"
-                    // value={team.playerTwoName}
-                  />
-                  {errors.playerTwoName && (
-                    <p className="text-red-500 text-sm">
-                      {errors.playerTwoName.message}
-                    </p>
-                  )}
-
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    {...register("playerTwoEmail")}
-                    className="w-full p-2 border rounded mt-2"
-                    // value={team.playerTwoEmail}
-                  />
-                  {errors.playerTwoEmail && (
-                    <p className="text-red-500 text-sm">
-                      {errors.playerTwoEmail.message}
-                    </p>
-                  )}
-
-                  <input
-                    type="text"
-                    placeholder="Phone"
-                    {...register("playerTwoContact")}
-                    className="w-full p-2 border rounded mt-2"
-                    // value={team.playerTwoContact}
-                  />
-                  {errors.playerTwoContact && (
-                    <p className="text-red-500 text-sm">
-                      {errors.playerTwoContact.message}
-                    </p>
-                  )}
-
-                  <input
-                    type="date"
-                    {...register("playerTwoDOB")}
-                    className="w-full p-2 border rounded mt-2"
-                    // value={team.playerTwoDOB}
-                  />
-                  {errors.playerTwoDOB && (
-                    <p className="text-red-500 text-sm">
-                      {errors.playerTwoDOB.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-              {/* Save and Cancel */}
-              <div className="flex w-full mb-3 gap-4">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={isLoading}
-                  className="flex items-center gap-4 justify-center bg-gray-500 text-white p-3 rounded-xl font-bold hover:bg-red-400 transition w-full mt-4"
-                >
-                  <X className="w-5 h-5" />
-                  {"Cancel"}
-                </button>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="flex items-center gap-4  justify-center bg-green-700 text-white p-3 rounded-xl font-bold hover:bg-green-800 transition w-full mt-4"
-                >
-                  <Save className="w-5 h-5" />
-                  {isLoading ? "Saving..." : "Save Teams"}
-                </button>
-              </div>
-            </form>
-          </div>
+            <div className="flex w-full gap-3 mt-2">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isLoading}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold border border-slate-600 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white transition-all"
+              >
+                <X className="w-4 h-4" />
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm disabled:opacity-50 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all"
+              >
+                <Save className="w-4 h-4" />
+                {isLoading ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
-    </div>
+    </AppBackground>
   );
 };
 
