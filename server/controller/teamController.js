@@ -17,15 +17,13 @@ const {
 const AdminUser = require("../model/adminUser.js");
 const sendEmail = require("../utils/sendEmail.js");
 const buildPlayerMailBody = require("../utils/playerMailTemplate.js");
+const getMailContext = require("../utils/mailContext.js");
 const buildAdminMailBody = require("../utils/adminMailTemplate.js");
-
 
 
 // Create a new team
 const teamController = {
   createTeam: async (req, res) => {
-    console.log("dfghjkl", req.body);
-
     try {
       const {
         teamName,
@@ -104,8 +102,7 @@ const teamController = {
 
       const tournamentDetail = await Tournament.findOne({
         _id: tournamentId,
-      }).select("adminId uniqueKey date time location");
-      console.log("tournamentDetail", tournamentDetail, tournamentId);
+      }).select("tournamentName adminId uniqueKey date time location");
 
       const AdminUserDetail = await AdminUser.findOne({
         _id: tournamentDetail.adminId,
@@ -114,8 +111,6 @@ const teamController = {
       // ==========================
       // 📧 SEND EMAILS
       // ==========================
-      console.log("AdminUserDetail", AdminUserDetail);
-
 
 
       
@@ -123,23 +118,20 @@ const teamController = {
       const playerMailSubject = "✅ Team Registration Successful";
       const adminMailSubject = "📢 New Team Registered";
 
-      const playerMailBody = buildPlayerMailBody({
-        teamName,
-        playerOneName,
-        playerTwoName,
-        tournamentDetail,
-      });
+      const { clubName } = await getMailContext(tournamentId);
+      const bodyFor = (playerName) =>
+        buildPlayerMailBody({ teamName, playerName, tournamentDetail, clubName });
 
       await Promise.all([
         sendEmail({
           to: playerOneEmail,
           subject: playerMailSubject,
-          html: playerMailBody,
+          html: bodyFor(playerOneName),
         }),
         sendEmail({
           to: playerTwoEmail,
           subject: playerMailSubject,
-          html: playerMailBody,
+          html: bodyFor(playerTwoName),
         }),
       ]);
 
@@ -274,8 +266,6 @@ const teamController = {
 
   // done
   getTournamentInformation: async (req, res) => {
-    console.log("eq.userId", req.userId);
-
     try {
       const { tournamentId } = req.params;
 
@@ -283,10 +273,6 @@ const teamController = {
         _id: tournamentId,
       }).select("-adminId -createdAt -updatedAt -groups -uniqueKey");
 
-      console.log(
-        "Tournaments fetched===========================================================================:",
-        tournament
-      );
       // Places taken (teams + singles players) so the player app knows if it's full.
       const registeredCount = tournament ? (await getRemainingSlots(tournamentId)).current : 0;
       res.status(200).json({
@@ -301,16 +287,12 @@ const teamController = {
 
   getTournamentDetails: async (req, res) => {
     try {
-      console.log("getTournamentDetails called with params:", req.params);
-
       const { tournamentId } = req.params;
       const tournamentGroup = await Group.find({ tournamentId: tournamentId });
       let tournamentMatches = await GroupMatch.find({
         tournamentId: tournamentId,
       });
 
-      console.log("tournamentGroup:", tournamentGroup);
-      console.log("tournamentMatches:", tournamentMatches);
       if (!tournamentGroup) {
         return res.status(404).json({ message: "Tournament not found" });
       }
@@ -319,8 +301,6 @@ const teamController = {
           .status(404)
           .json({ message: "No matches found for this tournament" });
       }
-
-
 
 
  // ===============================
@@ -374,12 +354,6 @@ const teamController = {
 
     // overwrite order ONLY
     tournamentMatches = sortedFlatMatches;
-
-
-
-
-
-
 
 
       res.status(200).json({

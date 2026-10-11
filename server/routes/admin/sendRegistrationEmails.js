@@ -1,6 +1,7 @@
 const buildAdminMailBody = require("../../utils/adminMailTemplate");
 const buildPlayerMailBody = require("../../utils/playerMailTemplate");
 const sendEmail = require("../../utils/sendEmail");
+const getMailContext = require("../../utils/mailContext");
 
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -12,32 +13,36 @@ async function sendRegistrationEmails({
   tournamentDetail,
   AdminUserDetail,
 }) {
+  // Fresh tournament details + club name from the database (the request body
+  // only carries a partial tournament object).
+  const ctx = await getMailContext(tournamentDetail?._id || tournamentDetail?.id);
+  const mailTournament = { ...tournamentDetail, ...ctx.tournamentDetail };
+
   for (const team of teams) {
 
-console.log("Sending email to team:", team.teamName);
 
-
-    const playerMailBody = buildPlayerMailBody({
-      teamName: team.teamName,
-      playerOneName: team.playerOneName,
-      playerTwoName: team.playerTwoName,
-      tournamentDetail,
-    });
+    const bodyFor = (playerName) =>
+      buildPlayerMailBody({
+        teamName: team.teamName,
+        playerName,
+        tournamentDetail: mailTournament,
+        clubName: ctx.clubName,
+      });
 
     if (team.playerOneEmail) {
       await sendEmail({
         to: team.playerOneEmail,
         subject: playerMailSubject,
-        html: playerMailBody,
+        html: bodyFor(team.playerOneName),
       });
-      await delay(1200); // ⏱ Gmail safe delay
+      await delay(1200);
     }
 
     if (team.playerTwoEmail) {
       await sendEmail({
         to: team.playerTwoEmail,
         subject: playerMailSubject,
-        html: playerMailBody,
+        html: bodyFor(team.playerTwoName),
       });
       await delay(1200);
     }
@@ -62,7 +67,6 @@ console.log("Sending email to team:", team.teamName);
     }
   }
 
-  console.log("✅ All registration emails processed");
 }
 
 module.exports = sendRegistrationEmails;

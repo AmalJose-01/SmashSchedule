@@ -67,15 +67,13 @@ const TeamSetup = () => {
   });
 
   const onSubmit = async (data) => {
-    console.log("Form Data:", data);
     if (data.teamName.trim() === "") {
       data.teamName = data.playerOneName + " & " + data.playerTwoName;
     }
-    console.log("Updated Data:", data);
 
     try {
       await mutateAsync(data);
-    } catch (err) {
+    } catch {
       // handled in onError
     }
   };
