@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Search, Pencil, Trash2, Users, ArrowUp, ArrowDown, ArrowUpDown, UserCheck, Clock } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Users, ArrowUp, ArrowDown, ArrowUpDown, UserCheck, UserX, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import MemberForm from "../components/MemberForm.jsx";
@@ -10,7 +10,7 @@ import {
   useDeleteRoundRobinMember,
   rrKeys,
 } from "../services/roundRobin.queries.js";
-import { deleteRoundRobinMemberAPI } from "../services/roundRobin.services.js";
+import { deleteRoundRobinMemberAPI, bulkSetMembershipAPI } from "../services/roundRobin.services.js";
 import AppBackground from "../../../../components/AppBackground.jsx";
 import PageHeader from "../../../../components/PageHeader.jsx";
 
@@ -70,6 +70,7 @@ const MemberManagement = () => {
   const [selected, setSelected] = useState(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [confirmBulk, setConfirmBulk] = useState(false);
+  const [bulkUpdating, setBulkUpdating] = useState(null); // "member" | "non-member" | null
 
   const { data, isLoading } = useGetRoundRobinMembers();
   const { data: pendingData } = useGetPendingRoundRobinMembers();
@@ -163,19 +164,38 @@ const MemberManagement = () => {
     }
   };
 
+  const handleBulkMembership = async (isMember) => {
+    const ids = [...selected];
+    setBulkUpdating(isMember ? "member" : "non-member");
+    try {
+      await bulkSetMembershipAPI({ memberIds: ids, isMember });
+      toast.success(
+        `${ids.length} player${ids.length !== 1 ? "s" : ""} marked as ${isMember ? "Member" : "Non-Member"}`
+      );
+      clearSelection();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update membership");
+    } finally {
+      queryClient.invalidateQueries({ queryKey: rrKeys.members });
+      setBulkUpdating(null);
+    }
+  };
+
+  const bulkBusy = bulkDeleting || bulkUpdating !== null;
+
   return (
     <AppBackground>
       <PageHeader
-        title="Member Bank"
-        subtitle="Your global player list"
-        onBack={() => navigate("/round-robin/dashboard")}
+        title="Club Players"
+        subtitle="Your club player list"
+        onBack={() => navigate("/dashboard")}
       />
 
       <div className="px-[10px] py-6 w-full">
         {/* Title + Add button */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-white">Members</h1>
+            <h1 className="text-2xl font-bold text-white">Club Players</h1>
             <p className="text-sm text-white/70 mt-1">
               {members.length} member{members.length !== 1 ? "s" : ""} in the global bank
             </p>
@@ -185,7 +205,7 @@ const MemberManagement = () => {
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm hover:scale-[1.02] bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all"
           >
             <Plus className="w-4 h-4" />
-            Add Member
+            Add Player
           </button>
         </div>
 
@@ -245,11 +265,11 @@ const MemberManagement = () => {
 
         {/* Bulk action bar */}
         {someSelected && (
-          <div className="flex items-center justify-between bg-cyan-500/10 border border-cyan-500/30 backdrop-blur-xl rounded-xl px-4 py-2.5 mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-cyan-500/10 border border-cyan-500/30 backdrop-blur-xl rounded-xl px-4 py-2.5 mb-4">
             <span className="text-sm font-medium text-cyan-300">
               {selected.size} selected
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={clearSelection}
                 className="text-sm text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors"
@@ -257,8 +277,24 @@ const MemberManagement = () => {
                 Deselect all
               </button>
               <button
+                onClick={() => handleBulkMembership(true)}
+                disabled={bulkBusy}
+                className="flex items-center gap-1.5 text-sm font-semibold text-emerald-200 bg-emerald-500/15 border border-emerald-500/40 hover:bg-emerald-500/25 disabled:opacity-60 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                <UserCheck className="w-3.5 h-3.5" />
+                {bulkUpdating === "member" ? "Updating..." : "Mark as Member"}
+              </button>
+              <button
+                onClick={() => handleBulkMembership(false)}
+                disabled={bulkBusy}
+                className="flex items-center gap-1.5 text-sm font-semibold text-slate-200 bg-slate-500/15 border border-slate-500/40 hover:bg-slate-500/25 disabled:opacity-60 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                <UserX className="w-3.5 h-3.5" />
+                {bulkUpdating === "non-member" ? "Updating..." : "Mark as Non-Member"}
+              </button>
+              <button
                 onClick={() => setConfirmBulk(true)}
-                disabled={bulkDeleting}
+                disabled={bulkBusy}
                 className="flex items-center gap-1.5 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 px-3 py-1.5 rounded-lg transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" />

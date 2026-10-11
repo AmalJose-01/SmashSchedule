@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, ListChecks, Users } from "lucide-react"; // CreditCard was only used by the now-hidden Square Payments tile below
+import { Plus, ListChecks } from "lucide-react"; // CreditCard was only used by the now-hidden Square Payments tile below
 import { useGetRoundRobinTournaments, useGetRoundRobinMembers } from "../services/roundRobin.queries.js";
 import AppBackground from "../../../../components/AppBackground.jsx";
 import PageHeader from "../../../../components/PageHeader.jsx";
@@ -21,13 +21,7 @@ const actionCards = [
     description: "View, edit, and manage all your round robin tournaments and their standings.",
     path: "/round-robin/tournaments",
   },
-  {
-    icon: Users,
-    gradient: "from-purple-400 to-indigo-500",
-    title: "Manage Members",
-    description: "Maintain your global player bank. Add, edit, or bulk import members.",
-    path: "/round-robin/members",
-  },
+  // "Manage Members" now lives on the main admin Dashboard (/members).
   // Square Payments tile hidden for now (not currently used) — the
   // /admin/square-settings page and its route are left intact, so this
   // can be re-added by just restoring this entry if Square payments come

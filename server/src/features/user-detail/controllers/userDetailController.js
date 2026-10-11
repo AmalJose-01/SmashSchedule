@@ -1,4 +1,5 @@
 const UserDetail = require("../models/UserDetail");
+const { deletePlayerAccount } = require("../services/accountDeletionService");
 const mongoose = require("mongoose");
 const AdminUser = require("../../login-signup/model/adminUser");
 const Club = require("../../../../model/club");
@@ -223,7 +224,7 @@ const userDetailController = {
 
       if (member) {
         // Previously removed member re-joining: back to pending for approval.
-        Object.assign(member, personal, { isActive: true, status: "pending", userId: req.userId, grade: null, points: null });
+        Object.assign(member, personal, { isActive: true, status: "pending", userId: req.userId, grade: null, points: null, isMember: null });
         await member.save();
       } else {
         member = await RoundRobinMember.create({
@@ -232,7 +233,7 @@ const userDetailController = {
           ...personal,
           grade: null,
           points: null,
-          isMember: false,
+          isMember: null, // admin sets Member / Non-Member on approval
           status: "pending",
           userId: req.userId,
         });
@@ -285,6 +286,22 @@ const userDetailController = {
       return res.status(500).json({ message: "Internal server error" });
     }
   },
+};
+
+// DELETE /user-detail/account — player permanently deletes their account and
+// all related data. Body must include { confirm: "DELETE" }.
+userDetailController.deleteMyAccount = async (req, res) => {
+  try {
+    if (req.body?.confirm !== "DELETE") {
+      return res.status(400).json({ message: 'Type DELETE to confirm account deletion.' });
+    }
+    const summary = await deletePlayerAccount(req.userId);
+    return res.status(200).json({ message: "Your account and data have been deleted.", data: summary });
+  } catch (error) {
+    if (error?.status) return res.status(error.status).json({ message: error.message });
+    console.error("deleteMyAccount error:", error);
+    return res.status(500).json({ message: "Could not delete your account. Please try again." });
+  }
 };
 
 module.exports = userDetailController;

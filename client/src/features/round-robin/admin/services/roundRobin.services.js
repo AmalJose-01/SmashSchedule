@@ -44,6 +44,9 @@ export const getPendingRoundRobinMembersAPI = () =>
 export const approveRoundRobinMemberAPI = ({ memberId, data }) =>
   apiClient.patch(`${BASE}/members/${memberId}/approve`, data).then((r) => r.data);
 
+export const bulkSetMembershipAPI = ({ memberIds, isMember }) =>
+  apiClient.patch(`${BASE}/members/bulk-membership`, { memberIds, isMember }).then((r) => r.data);
+
 export const bulkImportRoundRobinMembersAPI = (members) =>
   apiClient.post(`${BASE}/members/bulk-import`, { members }).then((r) => r.data);
 

@@ -13,4 +13,7 @@ router.patch("/clubs/:clubId", auth, userDetailController.setClubFavourite);
 router.delete("/clubs/:clubId", auth, userDetailController.removeMyClub);
 router.post("/clubs/:clubId/join-round-robin", auth, userDetailController.joinClubRoundRobin);
 
+// Player permanently deletes their account + related data
+router.delete("/account", auth, userDetailController.deleteMyAccount);
+
 module.exports = router;
