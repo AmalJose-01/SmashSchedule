@@ -74,8 +74,8 @@ const Dashboard = () => {
           <DashboardTile
             icon={Users}
             gradient="from-purple-400 to-indigo-500"
-            title="Manage Members"
-            description="Maintain your global player bank. Add, edit, or bulk import members."
+            title="Club Players"
+            description="Maintain your club player list. Add, edit, or bulk import players."
             onClick={() => navigate("/members")}
           />
 

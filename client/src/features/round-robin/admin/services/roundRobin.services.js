@@ -12,6 +12,9 @@ export const getRoundRobinTournamentByIdAPI = (id) =>
 export const createRoundRobinTournamentAPI = (data) =>
   apiClient.post(`${BASE}/tournaments`, data).then((r) => r.data);
 
+export const bulkCreateRoundRobinTournamentsAPI = (data) =>
+  apiClient.post(`${BASE}/tournaments/bulk-create`, data).then((r) => r.data);
+
 export const updateRoundRobinTournamentAPI = ({ id, data }) =>
   apiClient.put(`${BASE}/tournaments/${id}`, data).then((r) => r.data);
 

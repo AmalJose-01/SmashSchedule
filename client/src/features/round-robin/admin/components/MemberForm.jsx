@@ -353,7 +353,7 @@ const ManualTab = ({ member, onClose, approveMode = false }) => {
       >
         {isPending
           ? approveMode ? "Approving..." : member ? "Saving..." : "Adding..."
-          : approveMode ? "Approve Member" : member ? "Save Changes" : "Add Member"}
+          : approveMode ? "Approve Member" : member ? "Save Changes" : "Add Player"}
       </button>
     </form>
   );
@@ -664,7 +664,7 @@ const MemberForm = ({ member, onClose, approveMode = false }) => {
       <div className="bg-slate-800/90 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50">
           <h2 className="text-lg font-semibold text-white">
-            {approveMode ? "Approve Member" : isEditMode ? "Edit Member" : "Add Member"}
+            {approveMode ? "Approve Member" : isEditMode ? "Edit Member" : "Add Player"}
           </h2>
           <button onClick={onClose} className="p-2 rounded-xl text-slate-400 hover:bg-white/10 hover:text-white transition-colors">
             <X className="w-5 h-5" />

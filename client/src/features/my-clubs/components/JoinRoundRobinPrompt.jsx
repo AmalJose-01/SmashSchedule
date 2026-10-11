@@ -18,9 +18,9 @@ const JoinRoundRobinPrompt = ({ club, onClose }) => {
         <div className="mx-auto mb-4 inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-yellow-400 shadow-lg shadow-emerald-500/30">
           <Shuffle className="w-7 h-7 text-slate-900" />
         </div>
-        <h3 className="text-lg font-semibold text-white mb-1">Join the round robin?</h3>
+        <h3 className="text-lg font-semibold text-white mb-1">Join as a club player?</h3>
         <p className="text-sm text-slate-400 mb-6">
-          Do you want to join <span className="text-slate-200 font-medium">{club?.name || "this club"}</span>&apos;s round robin?
+          Become a club player at <span className="text-slate-200 font-medium">{club?.name || "this club"}</span> to play in its round robins.
           The club admin will approve your request.
         </p>
         <div className="flex gap-3">
