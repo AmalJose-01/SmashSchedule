@@ -6,6 +6,7 @@ const cors = require(`cors`);
 const errorHandler = require('./middleware/errorHandler');
 const stripeWebhook = require("./routes/stripeWebhook")
 const squareWebhook = require("./src/features/payments/square/squareWebhook")
+const stripePaymentsWebhook = require("./src/features/payments/stripe/stripePaymentsWebhook")
 const path = require("path");
 
 
@@ -49,6 +50,10 @@ app.use(
 );
 
 app.use("/webhook/square", squareWebhook);
+
+// Stripe Connect payments (club entry fees + account.updated). Mounted before
+// the generic /webhook handler so it gets the untouched raw body.
+app.use("/webhook/stripe-payments", stripePaymentsWebhook);
 
 
 // Connect to the database
