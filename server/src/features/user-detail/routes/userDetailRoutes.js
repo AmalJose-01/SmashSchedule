@@ -1,5 +1,6 @@
 const express = require("express");
 const auth = require("../../../../middleware/auth");
+const blockWhenImpersonating = require("../../../../middleware/blockWhenImpersonating");
 const userDetailController = require("../controllers/userDetailController");
 
 const router = express.Router();
@@ -14,6 +15,6 @@ router.delete("/clubs/:clubId", auth, userDetailController.removeMyClub);
 router.post("/clubs/:clubId/join-round-robin", auth, userDetailController.joinClubRoundRobin);
 
 // Player permanently deletes their account + related data
-router.delete("/account", auth, userDetailController.deleteMyAccount);
+router.delete("/account", auth, blockWhenImpersonating, userDetailController.deleteMyAccount);
 
 module.exports = router;

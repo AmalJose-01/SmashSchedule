@@ -32,6 +32,9 @@ const adminLoginController = {
         return res.status(400).json({ message: "Invalid account type" });
       }
       // Existing accounts must use their own portal — never switch type here.
+      if (checkUserISExist?.accountType === "master") {
+        return res.status(403).json({ message: "Google sign-in isn't available for this account." });
+      }
       if (checkUserISExist) {
         const mismatch = accountTypeMismatch(checkUserISExist.accountType, accountType);
         if (mismatch) return res.status(403).json({ message: mismatch });
@@ -130,6 +133,11 @@ const adminLoginController = {
         return res.status(400).json({ message: "Invalid username or password" });
       }
 
+      // Master accounts sign in only through /master/login.
+      if (user.accountType === "master") {
+        return res.status(400).json({ message: "Invalid username or password" });
+      }
+
       // Only after the password checks out (so this can't be used to probe
       // which emails exist): admins must use Admin Login, players User Login.
       const mismatch = accountTypeMismatch(user.accountType, accountType);
@@ -182,6 +190,9 @@ const adminLoginController = {
         return res.status(400).json({ message: "Invalid account type" });
       }
       // Existing accounts must use their own portal — never switch type here.
+      if (checkUserISExist?.accountType === "master") {
+        return res.status(403).json({ message: "Google sign-in isn't available for this account." });
+      }
       if (checkUserISExist) {
         const mismatch = accountTypeMismatch(checkUserISExist.accountType, accountType);
         if (mismatch) return res.status(403).json({ message: mismatch });

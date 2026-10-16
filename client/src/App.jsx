@@ -1,6 +1,8 @@
 import { useState, lazy, Suspense } from "react";
 import AdminRoutes from "./routes/AdminRoutes.jsx";
 import UserRoutes from "./routes/UserRoutes.jsx";
+import MasterRoutes from "./routes/MasterRoutes.jsx";
+import SupportBanner from "./features/master/components/SupportBanner.jsx";
 import "./App.css";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import TeamSetup from "./pages/admin/TeamSetup.jsx";
@@ -15,7 +17,6 @@ import Success from "./pages/common/Success.jsx";
 import ViewTournamentDetail from "./pages/user/ViewTournamentDetail.jsx";
 import Login from "./pages/admin/Login.jsx";
 import LoginSelector from "./pages/common/LoginSelector.jsx";
-import PaymentResult from "./features/payments/pages/PaymentResult.jsx";
 
 const CheckoutPage = lazy(() => import("./pages/admin/CheckoutPage.jsx"));
 
@@ -30,8 +31,6 @@ function App() {
             <Route path="/" element={<LoginSelector />} />
             {/* <Route path="/" element={<Success />} /> */}
                         <Route path="/success" element={<Success />} />
-            {/* Stripe Checkout return page (public: players may pay from a QR scan) */}
-            <Route path="/payment/result" element={<PaymentResult />} />
 
 
             <Route path="/teams" element={<TeamSetup />} />
@@ -62,8 +61,12 @@ function App() {
 
             {/* User routes */}
             {UserRoutes()}
+
+            {/* Master admin console */}
+            {MasterRoutes()}
           </Routes>
           <Footer />
+          <SupportBanner />
         </Router>
         <Toaster richColors position="top-center" />
       </div>

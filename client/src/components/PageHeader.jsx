@@ -21,6 +21,12 @@ const ACCENTS = {
     eyebrow: "from-cyan-400 to-emerald-400",
     line: "via-cyan-500/60",
   },
+  master: {
+    back: "hover:border-violet-400/40",
+    logo: "from-violet-400 to-rose-500 shadow-violet-500/30",
+    eyebrow: "from-violet-300 to-rose-300",
+    line: "via-violet-500/60",
+  },
   user: {
     back: "hover:border-emerald-400/40",
     logo: "from-emerald-400 to-yellow-400 shadow-emerald-500/30",

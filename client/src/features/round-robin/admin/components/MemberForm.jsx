@@ -200,7 +200,7 @@ const ManualTab = ({ member, onClose, approveMode = false }) => {
     <form onSubmit={handleSubmit} className="space-y-4">
       {approveMode && (
         <p className="text-sm text-amber-200 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3">
-          This player joined from their own account. Check their details and choose a grade and membership type to approve them.
+          This player joined from their own account. Check their details and choose a grade to approve them.
         </p>
       )}
       <div className="grid grid-cols-2 gap-3">
@@ -287,7 +287,6 @@ const ManualTab = ({ member, onClose, approveMode = false }) => {
             <option value="member">Member</option>
             <option value="non-member">Non-Member</option>
           </select>
-          <p className="text-xs text-slate-400 mt-1">Decides which round robin entry fee the player pays.</p>
           {errors.isMember && <p className="text-red-400 text-xs mt-1">{errors.isMember}</p>}
         </div>
 

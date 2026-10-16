@@ -22,12 +22,6 @@ export const useJoinRoundRobin = () => {
   return useMutation({
     mutationFn: joinRoundRobin,
     onSuccess: (res, id) => {
-      // Entry fee (by membership type) → straight to Stripe Checkout.
-      if (res?.data?.checkoutUrl) {
-        toast.success(res?.message || "Taking you to payment…");
-        window.location.assign(res.data.checkoutUrl);
-        return;
-      }
       toast.success(res?.message || "You're registered!");
       qc.invalidateQueries({ queryKey: ["player-round-robin", id] });
       qc.invalidateQueries({ queryKey: ["club-events"] });
