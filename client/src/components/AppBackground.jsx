@@ -20,6 +20,11 @@ const THEMES = {
     bg: "from-slate-900 via-emerald-950 to-slate-900",
     blobs: ["bg-emerald-500", "bg-yellow-400", "bg-green-500"],
   },
+  // variant="master": violet / rose glow for the master admin console.
+  master: {
+    bg: "from-slate-950 via-violet-950 to-slate-900",
+    blobs: ["bg-violet-500", "bg-rose-500", "bg-indigo-500"],
+  },
 };
 
 const AppBackground = ({ children, className = "", variant = "admin" }) => {

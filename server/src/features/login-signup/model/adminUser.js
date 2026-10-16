@@ -62,7 +62,7 @@ const adminUserSchema = new mongoose.Schema(
     },
     accountType: {
       type: String,
-      enum: ["user", "admin"],
+      enum: ["user", "admin", "master"], // "master" = Webfluence support; seeded by scripts/createMaster.js only
       default: "admin",
     },
     

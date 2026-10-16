@@ -1,6 +1,8 @@
 import { useState, lazy, Suspense } from "react";
 import AdminRoutes from "./routes/AdminRoutes.jsx";
 import UserRoutes from "./routes/UserRoutes.jsx";
+import MasterRoutes from "./routes/MasterRoutes.jsx";
+import SupportBanner from "./features/master/components/SupportBanner.jsx";
 import "./App.css";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import TeamSetup from "./pages/admin/TeamSetup.jsx";
@@ -59,8 +61,12 @@ function App() {
 
             {/* User routes */}
             {UserRoutes()}
+
+            {/* Master admin console */}
+            {MasterRoutes()}
           </Routes>
           <Footer />
+          <SupportBanner />
         </Router>
         <Toaster richColors position="top-center" />
       </div>
