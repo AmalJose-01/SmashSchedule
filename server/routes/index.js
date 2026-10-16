@@ -13,6 +13,7 @@ const clubRouter = require("./clubRoutes")
 const adminRoundRobinRouter = require("./admin/adminRoundRobinRouter")
 const squareRouter = require("../src/features/payments/square/squareRoutes")
 const userDetailRouter = require("../src/features/user-detail/routes/userDetailRoutes")
+const masterRouter = require("../src/features/master/routes/masterRoutes")
 
 const router = express();
 
@@ -30,6 +31,7 @@ router.use("/club", clubRouter);
 router.use("/admin/round-robin", adminRoundRobinRouter);
 router.use("/admin/square", squareRouter);
 router.use("/user-detail", userDetailRouter);
+router.use("/master", masterRouter);
 
 router.use("/mail", mailTest);
 

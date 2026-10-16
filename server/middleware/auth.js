@@ -1,12 +1,12 @@
 const jwt = require("jsonwebtoken");
 const AdminUser = require("../src/features/login-signup/model/adminUser");
 const { isUnverifiedAdmin, sendAdminNotVerified } = require("../utils/adminVerification");
+const { logMasterAction } = require("../src/features/master/services/auditService");
 
 require("dotenv").config();
 
 const auth = async (req, res, next) => {
   try {
-    console.log("req.headers Authorization", req.headers.authorization);
     //  Always check for Authorization header first
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -41,6 +41,25 @@ const auth = async (req, res, next) => {
 
     //  Attach user info to request
     req.userId = user._id;
+
+    // Support mode: token minted by a master admin (see /master/.../impersonate).
+    if (decoded.impersonatedBy) {
+      req.impersonatedBy = decoded.impersonatedBy;
+      // Audit every change a master makes inside a club's account.
+      if (!["GET", "HEAD", "OPTIONS"].includes(req.method)) {
+        res.on("finish", () => {
+          logMasterAction(req, {
+            action: "impersonated_write",
+            masterId: decoded.impersonatedBy,
+            masterEmail: decoded.impersonatedByEmail || "",
+            targetAdminId: user._id,
+            method: req.method,
+            path: (req.originalUrl || "").split("?")[0].slice(0, 200),
+            statusCode: res.statusCode,
+          });
+        });
+      }
+    }
 
     //  Continue to next middleware
     next();

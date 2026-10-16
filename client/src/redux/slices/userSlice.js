@@ -50,6 +50,12 @@ const userSlice = createSlice({
       localStorage.removeItem("refreshToken");
       localStorage.removeItem("memberId");
       localStorage.removeItem("selectedClubId");
+      // Leaving a master "support mode" session ends the banner too.
+      try {
+        sessionStorage.removeItem("supportMode");
+      } catch {
+        /* storage unavailable */
+      }
     },
     clearUser: (state) => {
       state.user = null;
